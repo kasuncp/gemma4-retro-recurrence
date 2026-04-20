@@ -2,12 +2,18 @@
 # One-shot runner for the PLE x recurrence probes on RunPod.
 #
 # Usage:
-#   ./run.sh                          # round 2a (default)
+#   ./run.sh                          # round 2a, wrapped in tmux (default)
 #   ./run.sh --mode original          # round 1 sanity check
 #   ./run.sh --mode ple-variants      # round 2a (explicit)
 #   ./run.sh --target-layer 22 ...    # any flags pass through to the python script
+#   ./run.sh --no-tmux                # run inline without a tmux wrapper
+#
+# By default the run is launched inside a detached-friendly tmux session named
+# "gemma-recurrence" so closing your SSH terminal will NOT kill the experiment.
+# Detach: Ctrl+B then D. Re-attach: tmux attach -t gemma-recurrence.
 #
 # Steps:
+#   0. (Re-)enter a tmux session unless --no-tmux is passed.
 #   1. Source .env (creates a stub if missing).
 #   2. Validate HF_TOKEN.
 #   3. Install/upgrade transformers, datasets, accelerate.
@@ -17,6 +23,79 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
+
+SESSION_NAME="${TMUX_SESSION:-gemma-recurrence}"
+
+# ---------- 0. tmux wrapper ----------
+# Detect --no-tmux in args and strip it from what we forward to the python script.
+USE_TMUX=1
+FORWARDED_ARGS=()
+for arg in "$@"; do
+    if [[ "$arg" == "--no-tmux" ]]; then
+        USE_TMUX=0
+    else
+        FORWARDED_ARGS+=("$arg")
+    fi
+done
+
+if [[ "$USE_TMUX" == "1" && -z "${TMUX:-}" ]]; then
+    if ! command -v tmux >/dev/null 2>&1; then
+        echo "tmux not found --- installing ..."
+        SUDO=""
+        if [[ $EUID -ne 0 ]] && command -v sudo >/dev/null 2>&1; then
+            SUDO="sudo"
+        fi
+        # Try every supported package manager. Don't let `set -e` abort us
+        # mid-attempt --- we want to print a useful hint on failure.
+        install_ok=0
+        if command -v apt-get >/dev/null 2>&1; then
+            $SUDO apt-get update -qq && $SUDO apt-get install -y -qq tmux && install_ok=1 || true
+        elif command -v yum >/dev/null 2>&1; then
+            $SUDO yum install -y -q tmux && install_ok=1 || true
+        elif command -v dnf >/dev/null 2>&1; then
+            $SUDO dnf install -y -q tmux && install_ok=1 || true
+        elif command -v apk >/dev/null 2>&1; then
+            $SUDO apk add --no-cache tmux && install_ok=1 || true
+        elif command -v brew >/dev/null 2>&1; then
+            brew install tmux && install_ok=1 || true
+        else
+            echo "ERROR: no supported package manager found to install tmux."
+            echo "Install tmux manually, or re-run with --no-tmux."
+            exit 1
+        fi
+        # Verify the install actually produced a usable tmux binary.
+        if [[ "$install_ok" != "1" ]] || ! command -v tmux >/dev/null 2>&1; then
+            echo "ERROR: tmux install failed (network down? repo missing the package?)."
+            echo "Re-run with --no-tmux to proceed without a tmux wrapper:"
+            echo "  ./run.sh --no-tmux ${FORWARDED_ARGS[*]+${FORWARDED_ARGS[*]}}"
+            echo "Or use nohup as a lightweight alternative:"
+            echo "  nohup ./run.sh --no-tmux ${FORWARDED_ARGS[*]+${FORWARDED_ARGS[*]}} > run.log 2>&1 &"
+            exit 1
+        fi
+        echo "tmux installed: $(tmux -V)"
+    fi
+
+    # If a session with this name already exists, just attach.
+    if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+        echo "Existing tmux session '$SESSION_NAME' found --- attaching."
+        echo "Detach: Ctrl+B then D.  Kill the session: tmux kill-session -t $SESSION_NAME"
+        exec tmux attach -t "$SESSION_NAME"
+    fi
+
+    # Build a robustly-quoted inner command so args with spaces survive.
+    QUOTED_ARGS=$(printf '%q ' "${FORWARDED_ARGS[@]+"${FORWARDED_ARGS[@]}"}")
+    QUOTED_DIR=$(printf '%q' "$SCRIPT_DIR")
+    INNER_CMD="cd $QUOTED_DIR && ./run.sh ${QUOTED_ARGS}--no-tmux; status=\$?; echo; echo '=== run finished (exit=$status). Type exit or Ctrl+D to close session. ==='; exec bash"
+
+    echo "Launching tmux session '$SESSION_NAME' ..."
+    echo "  Detach (run keeps going): Ctrl+B then D"
+    echo "  Re-attach later:          tmux attach -t $SESSION_NAME"
+    echo "  Kill session:             tmux kill-session -t $SESSION_NAME"
+    exec tmux new-session -s "$SESSION_NAME" "$INNER_CMD"
+fi
+
+# Once we're past the wrapper, only the python-script args remain.
+set -- "${FORWARDED_ARGS[@]+"${FORWARDED_ARGS[@]}"}"
 
 # ---------- 1. Load .env ----------
 if [[ ! -f .env ]]; then
