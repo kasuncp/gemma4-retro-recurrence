@@ -191,6 +191,16 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 fi
 
 FILES_TO_ADD=()
+# New-style: everything under results/. The python script always writes
+# there now (flag --output-json can override). Legacy bare filenames are
+# still staged if they're present at the repo root, so existing result
+# JSONs don't get orphaned mid-migration.
+if [[ -d results ]]; then
+    # shellcheck disable=SC2207
+    while IFS= read -r f; do
+        FILES_TO_ADD+=("$f")
+    done < <(find results -maxdepth 1 -type f -name '*.json' 2>/dev/null)
+fi
 for f in results.json results_round2a.json results_round2a_addendum.json results_round2a_fixed.json results_round2b_importance.json results_round2b_location.json results_round2c_full_map.json results_round3a_pair_looping.json; do
     [[ -f "$f" ]] && FILES_TO_ADD+=("$f")
 done
