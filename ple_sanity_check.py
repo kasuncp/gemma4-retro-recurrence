@@ -39,6 +39,14 @@ references from round 3b, plus three new KV-consumer probes: G (15-24,
 down the maximum viable block width (G vs H vs D) and tests whether
 block position matters within the consumer zone (I vs D).
 
+Round 4 (mode=reasoning-eval): 7 configurations (baseline, D-r4, D-r8,
+G-r4, G-r8, A-r8, D-r1) x zero-shot GSM8K (and optionally ARC-Easy).
+Greedy decoding, KV cache disabled during generation (the loop hooks
+re-enter decoder layers so per-step caching is unsafe). Produces per-
+configuration accuracy, a pairwise agreement matrix, and a D-r1 vs
+baseline bitwise check. Answers plan4's question: does recurrence
+preserve, help, or degrade reasoning zero-shot?
+
 Cloud-server friendly: argparse flags, HF cache redirect to persistent
 volume, env-info dump, JSON result save.
 
@@ -70,6 +78,9 @@ Recommended RunPod usage:
 
     # Round 3c (extended-blocks probe, 18 cells = A/B/D refs + G/H/I):
     python ple_sanity_check.py --mode block-looping-3c
+
+    # Round 4 (zero-shot reasoning eval: 7 configs x GSM8K +/- ARC):
+    python ple_sanity_check.py --mode reasoning-eval
 """
 
 import argparse
@@ -95,6 +106,7 @@ from probes.mode_round2c import run_full_looping_map
 from probes.mode_round3a import run_pair_looping_map
 from probes.mode_round3b import run_block_looping_map
 from probes.mode_round3c import run_block_looping_3c_map
+from probes.mode_round4 import run_reasoning_eval_mode
 
 
 def parse_args():
@@ -110,6 +122,7 @@ def parse_args():
             "pair-looping-map",
             "block-looping",
             "block-looping-3c",
+            "reasoning-eval",
         ],
         default="original",
         help=(
@@ -121,7 +134,9 @@ def parse_args():
             "pair-looping-map = round-3a 34 pairs x {r=2,4,8}, vanilla only; "
             "block-looping = round-3b 6 blocks x {r=2,4,8}, vanilla only; "
             "block-looping-3c = round-3c A/B/D refs + G/H/I extension probes "
-            "x {r=2,4,8}, vanilla only"
+            "x {r=2,4,8}, vanilla only; "
+            "reasoning-eval = round-4 zero-shot GSM8K (+/- ARC) over 7 "
+            "configs (baseline, D-r4, D-r8, G-r4, G-r8, A-r8, D-r1)"
         ),
     )
     p.add_argument("--target-layer", type=int, default=17)
@@ -214,6 +229,43 @@ def parse_args():
         help="plan2a-add1: under --mode ple-variants, run only the zero-PLE "
              "diagnostic (vanilla r=1 vs zero r=1) and skip the full grid.",
     )
+
+    # Round 4 (reasoning-eval) specific flags.
+    p.add_argument(
+        "--num-gsm8k-problems",
+        type=int,
+        default=250,
+        help="reasoning-eval: number of GSM8K problems to run (first N of "
+             "test split). Set to 0 to skip GSM8K. Default 250.",
+    )
+    p.add_argument(
+        "--num-arc-problems",
+        type=int,
+        default=200,
+        help="reasoning-eval: number of ARC-Easy problems to run (first N of "
+             "test split). Ignored unless --run-arc is passed. Default 200.",
+    )
+    p.add_argument(
+        "--max-gen-tokens",
+        type=int,
+        default=256,
+        help="reasoning-eval: max new tokens per generation. Default 256.",
+    )
+    p.add_argument(
+        "--run-arc",
+        action="store_true",
+        help="reasoning-eval: also run ARC-Easy as a secondary axis. GSM8K "
+             "runs unconditionally (unless --num-gsm8k-problems 0). ARC is "
+             "opt-in because it roughly doubles eval time.",
+    )
+    p.add_argument(
+        "--configs",
+        nargs="+",
+        default=None,
+        help="reasoning-eval: restrict to a subset of configuration names "
+             "(baseline, D-r4, D-r8, G-r4, G-r8, A-r8, D-r1). Preserves "
+             "the order given. Default: all 7.",
+    )
     return p.parse_args()
 
 
@@ -235,7 +287,12 @@ def main():
         print(f"ERROR: target-layer={args.target_layer} out of range.")
         sys.exit(1)
 
-    inputs = prepare_inputs(tokenizer, args.num_sequences, args.max_length)
+    # Wikitext perplexity inputs are unused by reasoning-eval. Skip the
+    # dataset download + tokenisation to keep that mode snappy.
+    if args.mode != "reasoning-eval":
+        inputs = prepare_inputs(tokenizer, args.num_sequences, args.max_length)
+    else:
+        inputs = None
 
     if args.mode == "original":
         if args.only_diagnostic:
@@ -277,6 +334,11 @@ def main():
             print("ERROR: --only-diagnostic only applies under --mode ple-variants.")
             sys.exit(1)
         run_block_looping_3c_map(args, model, decoder_layers, inputs)
+    elif args.mode == "reasoning-eval":
+        if args.only_diagnostic:
+            print("ERROR: --only-diagnostic only applies under --mode ple-variants.")
+            sys.exit(1)
+        run_reasoning_eval_mode(args, model, tokenizer, decoder_layers)
     else:
         raise ValueError(f"unknown mode: {args.mode}")
 
