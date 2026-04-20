@@ -1,0 +1,627 @@
+{
+  "config": {
+    "mode": "block-looping-3c",
+    "model_id": "google/gemma-4-E2B",
+    "blocks": [
+      {
+        "name": "A",
+        "label": "valley-core",
+        "start": 15,
+        "end": 19
+      },
+      {
+        "name": "B",
+        "label": "valley-narrow",
+        "start": 15,
+        "end": 18
+      },
+      {
+        "name": "D",
+        "label": "valley-extend-up",
+        "start": 15,
+        "end": 22
+      },
+      {
+        "name": "G",
+        "label": "valley-extend-up-10",
+        "start": 15,
+        "end": 24
+      },
+      {
+        "name": "H",
+        "label": "valley-extend-up-9",
+        "start": 15,
+        "end": 23
+      },
+      {
+        "name": "I",
+        "label": "valley-shifted-late",
+        "start": 20,
+        "end": 27
+      }
+    ],
+    "r_values": [
+      2,
+      4,
+      8
+    ],
+    "ple_mode": "vanilla",
+    "num_sequences": 50,
+    "max_length": 512,
+    "dtype": "bf16",
+    "ple_kwarg": "per_layer_input",
+    "round2c_json": "results/results_round2c_full_map.json"
+  },
+  "unmodified": {
+    "mean_nll": 2.5286514263766544,
+    "ppl": 12.536588219504221
+  },
+  "inspection": {
+    "strategy": "A",
+    "layer_class": "Gemma4TextDecoderLayer",
+    "source_file": "/usr/local/lib/python3.11/dist-packages/transformers/models/gemma4/modeling_gemma4.py",
+    "start_lineno": 1354,
+    "signature": "(self, hidden_states: torch.Tensor, per_layer_input: torch.Tensor = None, shared_kv_states: dict[int, tuple[torch.Tensor, torch.Tensor]] | None = None, position_embeddings: torch.Tensor = None, attention_mask: torch.Tensor | None = None, position_ids: torch.LongTensor | None = None, past_key_values: transformers.cache_utils.Cache | None = None, **kwargs) -> torch.Tensor",
+    "ple_kwarg": "per_layer_input"
+  },
+  "layer_metadata": [
+    {
+      "layer": 0,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 1,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 2,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 3,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 4,
+      "attention_type": "full_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 5,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 6,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 7,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 8,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 9,
+      "attention_type": "full_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 10,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 11,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 12,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 13,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 14,
+      "attention_type": "full_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 15,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 16,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 17,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 18,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 19,
+      "attention_type": "full_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 20,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 21,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 22,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 23,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 24,
+      "attention_type": "full_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 25,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 26,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 27,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 28,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 29,
+      "attention_type": "full_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 30,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 31,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 32,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 33,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 34,
+      "attention_type": "full_attention",
+      "is_kv_consumer": true
+    }
+  ],
+  "regression_checks": {
+    "blocks_tested": [
+      {
+        "name": "B",
+        "start": 15,
+        "end": 18
+      },
+      {
+        "name": "G",
+        "start": 15,
+        "end": 24
+      }
+    ],
+    "max_rel_drift": 0.0,
+    "all_pass": true,
+    "per_block": [
+      {
+        "name": "B",
+        "start": 15,
+        "end": 18,
+        "width": 4,
+        "ppl_block_r1": 12.536588219504221,
+        "rel_drift": 0.0,
+        "matches_baseline": true
+      },
+      {
+        "name": "G",
+        "start": 15,
+        "end": 24,
+        "width": 10,
+        "ppl_block_r1": 12.536588219504221,
+        "rel_drift": 0.0,
+        "matches_baseline": true
+      }
+    ]
+  },
+  "block_cells": [
+    {
+      "name": "A",
+      "label": "valley-core",
+      "start": 15,
+      "end": 19,
+      "width": 5,
+      "r": 2,
+      "mean_nll": 3.3062937780377077,
+      "ppl": 27.283817968450222
+    },
+    {
+      "name": "A",
+      "label": "valley-core",
+      "start": 15,
+      "end": 19,
+      "width": 5,
+      "r": 4,
+      "mean_nll": 3.3922560108711393,
+      "ppl": 29.732954531690662
+    },
+    {
+      "name": "A",
+      "label": "valley-core",
+      "start": 15,
+      "end": 19,
+      "width": 5,
+      "r": 8,
+      "mean_nll": 3.4036832365055965,
+      "ppl": 30.07466841427191
+    },
+    {
+      "name": "B",
+      "label": "valley-narrow",
+      "start": 15,
+      "end": 18,
+      "width": 4,
+      "r": 2,
+      "mean_nll": 3.2495949070222196,
+      "ppl": 25.779894547413853
+    },
+    {
+      "name": "B",
+      "label": "valley-narrow",
+      "start": 15,
+      "end": 18,
+      "width": 4,
+      "r": 4,
+      "mean_nll": 3.3556756227407325,
+      "ppl": 28.664964351665944
+    },
+    {
+      "name": "B",
+      "label": "valley-narrow",
+      "start": 15,
+      "end": 18,
+      "width": 4,
+      "r": 8,
+      "mean_nll": 3.3921623830164105,
+      "ppl": 29.730170829261187
+    },
+    {
+      "name": "D",
+      "label": "valley-extend-up",
+      "start": 15,
+      "end": 22,
+      "width": 8,
+      "r": 2,
+      "mean_nll": 3.5181005861836336,
+      "ppl": 33.72031875835191
+    },
+    {
+      "name": "D",
+      "label": "valley-extend-up",
+      "start": 15,
+      "end": 22,
+      "width": 8,
+      "r": 4,
+      "mean_nll": 3.487975803868071,
+      "ppl": 32.719649640484725
+    },
+    {
+      "name": "D",
+      "label": "valley-extend-up",
+      "start": 15,
+      "end": 22,
+      "width": 8,
+      "r": 8,
+      "mean_nll": 3.505156036415738,
+      "ppl": 33.28663737479184
+    },
+    {
+      "name": "G",
+      "label": "valley-extend-up-10",
+      "start": 15,
+      "end": 24,
+      "width": 10,
+      "r": 2,
+      "mean_nll": 3.6301690504713857,
+      "ppl": 37.71919252551814
+    },
+    {
+      "name": "G",
+      "label": "valley-extend-up-10",
+      "start": 15,
+      "end": 24,
+      "width": 10,
+      "r": 4,
+      "mean_nll": 3.565844184341453,
+      "ppl": 35.36929901330454
+    },
+    {
+      "name": "G",
+      "label": "valley-extend-up-10",
+      "start": 15,
+      "end": 24,
+      "width": 10,
+      "r": 8,
+      "mean_nll": 3.5838258018916926,
+      "ppl": 36.01104877882739
+    },
+    {
+      "name": "H",
+      "label": "valley-extend-up-9",
+      "start": 15,
+      "end": 23,
+      "width": 9,
+      "r": 2,
+      "mean_nll": 3.564707730846422,
+      "ppl": 35.32912628136856
+    },
+    {
+      "name": "H",
+      "label": "valley-extend-up-9",
+      "start": 15,
+      "end": 23,
+      "width": 9,
+      "r": 4,
+      "mean_nll": 3.620530412161918,
+      "ppl": 37.35737737527245
+    },
+    {
+      "name": "H",
+      "label": "valley-extend-up-9",
+      "start": 15,
+      "end": 23,
+      "width": 9,
+      "r": 8,
+      "mean_nll": 3.601731541546247,
+      "ppl": 36.661660703891606
+    },
+    {
+      "name": "I",
+      "label": "valley-shifted-late",
+      "start": 20,
+      "end": 27,
+      "width": 8,
+      "r": 2,
+      "mean_nll": 6.787888297937706,
+      "ppl": 887.0384217942744
+    },
+    {
+      "name": "I",
+      "label": "valley-shifted-late",
+      "start": 20,
+      "end": 27,
+      "width": 8,
+      "r": 4,
+      "mean_nll": 7.0741272174970575,
+      "ppl": 1181.0122839988246
+    },
+    {
+      "name": "I",
+      "label": "valley-shifted-late",
+      "start": 20,
+      "end": 27,
+      "width": 8,
+      "r": 8,
+      "mean_nll": 6.87755972321216,
+      "ppl": 970.2557758796827
+    }
+  ],
+  "analysis": {
+    "target_r": 8,
+    "unmodified_ppl": 12.536588219504221,
+    "comparison": [
+      {
+        "name": "A",
+        "label": "valley-core",
+        "start": 15,
+        "end": 19,
+        "width": 5,
+        "block_ppl": 30.07466841427191,
+        "worst_single_in_block_ppl": 108.08855402254906,
+        "best_single_in_block_ppl": 35.285626019294206,
+        "improvement_over_worst_single": 3.5940065085224924
+      },
+      {
+        "name": "B",
+        "label": "valley-narrow",
+        "start": 15,
+        "end": 18,
+        "width": 4,
+        "block_ppl": 29.730170829261187,
+        "worst_single_in_block_ppl": 108.08855402254906,
+        "best_single_in_block_ppl": 35.285626019294206,
+        "improvement_over_worst_single": 3.6356519659202755
+      },
+      {
+        "name": "D",
+        "label": "valley-extend-up",
+        "start": 15,
+        "end": 22,
+        "width": 8,
+        "block_ppl": 33.28663737479184,
+        "worst_single_in_block_ppl": 975.6146528874953,
+        "best_single_in_block_ppl": 35.285626019294206,
+        "improvement_over_worst_single": 29.3094986406267
+      },
+      {
+        "name": "G",
+        "label": "valley-extend-up-10",
+        "start": 15,
+        "end": 24,
+        "width": 10,
+        "block_ppl": 36.01104877882739,
+        "worst_single_in_block_ppl": 4390.726274600373,
+        "best_single_in_block_ppl": 35.285626019294206,
+        "improvement_over_worst_single": 121.92719799879558
+      },
+      {
+        "name": "H",
+        "label": "valley-extend-up-9",
+        "start": 15,
+        "end": 23,
+        "width": 9,
+        "block_ppl": 36.661660703891606,
+        "worst_single_in_block_ppl": 975.6146528874953,
+        "best_single_in_block_ppl": 35.285626019294206,
+        "improvement_over_worst_single": 26.611305493423394
+      },
+      {
+        "name": "I",
+        "label": "valley-shifted-late",
+        "start": 20,
+        "end": 27,
+        "width": 8,
+        "block_ppl": 970.2557758796827,
+        "worst_single_in_block_ppl": 4390.726274600373,
+        "best_single_in_block_ppl": 416.9346455607616,
+        "improvement_over_worst_single": 4.525328664618893
+      }
+    ],
+    "counts_within_baseline_multiples": {
+      "within_5x": 5,
+      "within_10x": 5,
+      "within_50x": 5,
+      "within_100x": 6
+    },
+    "n_blocks_scored": 6
+  },
+  "interpretation_hint": "Width axis: Bucket 1 (G works) --- stable region extends to >=layer 24. Use block G (15-24) as the retrofit recurrent block: 10 layers, 25% more effective compute than D. Worth pushing further to layer 25+ (follow-up: block 15-25).\n\nPosition axis: Bucket 5 (I breaks, D works) --- position matters: block must anchor near layer 15. Possibly because layer 15 is the first KV consumer; the producer->consumer transition is a natural anchor point.",
+  "analysis_extra": {
+    "baseline_ppl": 12.536588219504221,
+    "top_r": 8,
+    "d_reference_ppl_top_r": 33.28663737479184,
+    "rows": [
+      {
+        "name": "A",
+        "label": "valley-core",
+        "start": 15,
+        "end": 19,
+        "width": 5,
+        "ppl_by_r": {
+          "2": 27.283817968450222,
+          "4": 29.732954531690662,
+          "8": 30.07466841427191
+        },
+        "vs_block_D_top_r": 0.9035057544457052
+      },
+      {
+        "name": "B",
+        "label": "valley-narrow",
+        "start": 15,
+        "end": 18,
+        "width": 4,
+        "ppl_by_r": {
+          "2": 25.779894547413853,
+          "4": 28.664964351665944,
+          "8": 29.730170829261187
+        },
+        "vs_block_D_top_r": 0.8931563286045835
+      },
+      {
+        "name": "D",
+        "label": "valley-extend-up",
+        "start": 15,
+        "end": 22,
+        "width": 8,
+        "ppl_by_r": {
+          "2": 33.72031875835191,
+          "4": 32.719649640484725,
+          "8": 33.28663737479184
+        },
+        "vs_block_D_top_r": 1.0
+      },
+      {
+        "name": "G",
+        "label": "valley-extend-up-10",
+        "start": 15,
+        "end": 24,
+        "width": 10,
+        "ppl_by_r": {
+          "2": 37.71919252551814,
+          "4": 35.36929901330454,
+          "8": 36.01104877882739
+        },
+        "vs_block_D_top_r": 1.081846999844411
+      },
+      {
+        "name": "H",
+        "label": "valley-extend-up-9",
+        "start": 15,
+        "end": 23,
+        "width": 9,
+        "ppl_by_r": {
+          "2": 35.32912628136856,
+          "4": 37.35737737527245,
+          "8": 36.661660703891606
+        },
+        "vs_block_D_top_r": 1.101392738806825
+      },
+      {
+        "name": "I",
+        "label": "valley-shifted-late",
+        "start": 20,
+        "end": 27,
+        "width": 8,
+        "ppl_by_r": {
+          "2": 887.0384217942744,
+          "4": 1181.0122839988246,
+          "8": 970.2557758796827
+        },
+        "vs_block_D_top_r": 29.14850680034334
+      }
+    ]
+  }
+}
