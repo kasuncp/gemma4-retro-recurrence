@@ -85,7 +85,7 @@ if [[ "$USE_TMUX" == "1" && -z "${TMUX:-}" ]]; then
     # Build a robustly-quoted inner command so args with spaces survive.
     QUOTED_ARGS=$(printf '%q ' "${FORWARDED_ARGS[@]+"${FORWARDED_ARGS[@]}"}")
     QUOTED_DIR=$(printf '%q' "$SCRIPT_DIR")
-    INNER_CMD="cd $QUOTED_DIR && ./run.sh ${QUOTED_ARGS}--no-tmux; status=\$?; echo; echo '=== run finished (exit=$status). Type exit or Ctrl+D to close session. ==='; exec bash"
+    INNER_CMD="cd $QUOTED_DIR && ./run.sh ${QUOTED_ARGS}--no-tmux; status=\$?; echo; echo \"=== run finished (exit=\$status). Type exit or Ctrl+D to close session. ===\"; exec bash"
 
     echo "Launching tmux session '$SESSION_NAME' ..."
     echo "  Detach (run keeps going): Ctrl+B then D"
