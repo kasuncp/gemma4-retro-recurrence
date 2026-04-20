@@ -72,6 +72,12 @@ def parse_args():
     p.add_argument("--output-json", default=None,
                    help="default: results.json (original) / results_round2a.json (ple-variants)")
     p.add_argument("--model-id", default=MODEL_ID)
+    p.add_argument(
+        "--only-diagnostic",
+        action="store_true",
+        help="plan2a-add1: under --mode ple-variants, run only the zero-PLE "
+             "diagnostic (vanilla r=1 vs zero r=1) and skip the full grid.",
+    )
     return p.parse_args()
 
 
@@ -257,7 +263,8 @@ def make_looped_forward_ple(orig_forward, r, ple_mode, ple_kwarg):
     Round-2a hook: loop the decoder layer `r` times with controlled PLE
     re-injection.
 
-    ple_mode in {"vanilla", "scaled", "once"}.
+    ple_mode in {"vanilla", "scaled", "once", "zero"}.
+      - "zero" (plan2a-add1): always pass scale=0.0, including at i=0.
 
     Approach: leave the decoder layer's forward untouched; intercept the PLE
     kwarg and multiply by the chosen scale before delegating. This avoids any
@@ -277,6 +284,8 @@ def make_looped_forward_ple(orig_forward, r, ple_mode, ple_kwarg):
                 scale = 1.0 / r
             elif ple_mode == "once":
                 scale = 1.0 if i == 0 else 0.0
+            elif ple_mode == "zero":
+                scale = 0.0  # plan2a-add1: always zero, from iteration 0
             else:
                 raise ValueError(f"unknown ple_mode={ple_mode!r}")
 
@@ -344,6 +353,88 @@ def run_original_mode(args, model, decoder_layers, inputs):
         "results": {str(r): v for r, v in results.items()},
         "summary": summary,
         "hook_drift": drift,
+    }
+    Path(output_json).write_text(json.dumps(output, indent=2))
+    print(f"\nWrote {output_json}")
+
+
+def run_zero_diagnostic(args, model, decoder_layers, inputs):
+    """plan2a-add1: distinguish 'three-way tie is real' from 'patch broken'.
+
+    Round 2a produced bitwise-identical perplexities for vanilla / scaled / once
+    at every r. That is ambiguous: either PLE at TARGET_LAYER genuinely doesn't
+    move the needle under our loop, or the patch never intercepted PLE at all.
+
+    This function runs the minimal cell that distinguishes the two: vanilla r=1
+    and zero r=1 at the same TARGET_LAYER, in the same execution (so evaluation
+    state is identical). If they differ, the patch is working.
+    """
+    output_json = args.output_json or "results_round2a_addendum.json"
+
+    target_layer = decoder_layers[args.target_layer]
+    inspection = inspect_ple_strategy(target_layer)
+    print_ple_inspection(inspection)
+
+    if inspection["strategy"] != "A":
+        print(
+            f"ERROR: PLE wiring is Strategy {inspection['strategy']}, not A. "
+            "Cannot run zero-PLE diagnostic via kwarg interception."
+        )
+        sys.exit(2)
+
+    ple_kwarg = inspection["ple_kwarg"]
+    print(f"Strategy A confirmed. PLE kwarg = {ple_kwarg!r}.\n")
+
+    orig_forward = target_layer.forward
+    try:
+        target_layer.forward = make_looped_forward_ple(
+            orig_forward, r=1, ple_mode="vanilla", ple_kwarg=ple_kwarg,
+        )
+        nll_v1, ppl_v1 = compute_perplexity(model, inputs)
+
+        target_layer.forward = make_looped_forward_ple(
+            orig_forward, r=1, ple_mode="zero", ple_kwarg=ple_kwarg,
+        )
+        nll_z1, ppl_z1 = compute_perplexity(model, inputs)
+    finally:
+        target_layer.forward = orig_forward
+
+    nll_diff = abs(nll_z1 - nll_v1)
+    status = "WORKING" if nll_diff > 1e-6 else "BROKEN"
+
+    print("=== Zero-PLE diagnostic ===")
+    print(f"vanilla r=1:  ppl = {ppl_v1}")
+    print(f"zero    r=1:  ppl = {ppl_z1}")
+    print()
+    print(f"Difference: {nll_diff:.6f}  (absolute NLL difference)")
+    print(f"Patch status: {status}")
+
+    output = {
+        "config": {
+            "mode": "ple-variants",
+            "diagnostic": "zero-ple",
+            "model_id": args.model_id,
+            "target_layer": args.target_layer,
+            "r": 1,
+            "num_sequences": args.num_sequences,
+            "max_length": args.max_length,
+            "dtype": args.dtype,
+            "ple_kwarg": ple_kwarg,
+        },
+        "inspection": {
+            "strategy": inspection["strategy"],
+            "layer_class": inspection["layer_class"],
+            "source_file": inspection["source_file"],
+            "start_lineno": inspection["start_lineno"],
+            "signature": inspection["signature"],
+            "ple_kwarg": inspection["ple_kwarg"],
+        },
+        "cells": [
+            {"ple_mode": "vanilla", "r": 1, "mean_nll": nll_v1, "ppl": ppl_v1},
+            {"ple_mode": "zero", "r": 1, "mean_nll": nll_z1, "ppl": ppl_z1},
+        ],
+        "nll_difference": nll_diff,
+        "patch_status": status,
     }
     Path(output_json).write_text(json.dumps(output, indent=2))
     print(f"\nWrote {output_json}")
@@ -526,9 +617,15 @@ def main():
     inputs = prepare_inputs(tokenizer, args.num_sequences, args.max_length)
 
     if args.mode == "original":
+        if args.only_diagnostic:
+            print("ERROR: --only-diagnostic only applies under --mode ple-variants.")
+            sys.exit(1)
         run_original_mode(args, model, decoder_layers, inputs)
     elif args.mode == "ple-variants":
-        run_ple_variants_mode(args, model, decoder_layers, inputs)
+        if args.only_diagnostic:
+            run_zero_diagnostic(args, model, decoder_layers, inputs)
+        else:
+            run_ple_variants_mode(args, model, decoder_layers, inputs)
     else:
         raise ValueError(f"unknown mode: {args.mode}")
 
