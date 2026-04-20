@@ -258,24 +258,53 @@ def print_ple_inspection(report):
     print("=" * 60)
 
 
-def make_looped_forward_ple(orig_forward, r, ple_mode, ple_kwarg):
+def make_looped_forward_ple(orig_forward, r, ple_mode, ple_kwarg, location_recorder=None):
     """
-    Round-2a hook: loop the decoder layer `r` times with controlled PLE
-    re-injection.
+    Round-2a hook (post-addendum2): loop the decoder layer `r` times with
+    controlled PLE re-injection, handling per_layer_input passed either
+    positionally or as a kwarg.
+
+    Background (plan2a-add2): the Gemma 4 decoder layer signature is
+        forward(self, hidden_states, per_layer_input=None, shared_kv_states=None, ...)
+    and Gemma4Model.forward passes per_layer_input positionally on the
+    transformers version we tested. The pre-fix version of this hook only
+    looked in kwargs, so it never actually intercepted PLE --- every loop
+    iteration got the original tensor back via *args, making zero-mode
+    bitwise-identical to vanilla. Now we detect both paths.
+
+    location_recorder: optional dict; on the first hook call, its
+    "ple_location" key is set to "positional" | "kwarg" | "missing". Lets
+    callers observe which code path the hook actually took.
 
     ple_mode in {"vanilla", "scaled", "once", "zero"}.
-      - "zero" (plan2a-add1): always pass scale=0.0, including at i=0.
+      - "zero": always pass scale=0.0, including at i=0.
 
-    Approach: leave the decoder layer's forward untouched; intercept the PLE
-    kwarg and multiply by the chosen scale before delegating. This avoids any
-    monkey-patching of model source code.
-
-    For r=1 with mode in {scaled, once}, ple_scale == 1.0 by construction,
-    and we pass the original tensor unchanged --- so plan2a's regression
-    checks 2 and 3 are bitwise-identical to vanilla r=1.
+    For r=1 with mode in {vanilla, scaled, once}, scale == 1.0 by
+    construction and we pass the original args/kwargs through unchanged ---
+    so plan2a's regression checks 2 and 3 stay bitwise-identical to vanilla
+    r=1.
     """
+    first_call = [True]
+
     def looped(hidden_states, *args, **kwargs):
-        original_ple = kwargs.get(ple_kwarg, None)
+        if ple_kwarg in kwargs:
+            original_ple = kwargs[ple_kwarg]
+            ple_location = "kwarg"
+        elif len(args) >= 1:
+            # *args captures everything after hidden_states; per_layer_input
+            # is the first positional after hidden_states, so args[0].
+            original_ple = args[0]
+            ple_location = "positional"
+        else:
+            original_ple = None
+            ple_location = "missing"
+
+        if first_call[0]:
+            print(f"  [hook] PLE arrives via {ple_location} (mode={ple_mode}, r={r})")
+            if location_recorder is not None:
+                location_recorder.setdefault("ple_location", ple_location)
+            first_call[0] = False
+
         out = None
         for i in range(r):
             if ple_mode == "vanilla":
@@ -285,17 +314,26 @@ def make_looped_forward_ple(orig_forward, r, ple_mode, ple_kwarg):
             elif ple_mode == "once":
                 scale = 1.0 if i == 0 else 0.0
             elif ple_mode == "zero":
-                scale = 0.0  # plan2a-add1: always zero, from iteration 0
+                scale = 0.0
             else:
                 raise ValueError(f"unknown ple_mode={ple_mode!r}")
 
-            call_kwargs = dict(kwargs)
-            if original_ple is not None and scale != 1.0:
-                # scale=0.0 zeros out PLE; fractional scales dilute it.
-                call_kwargs[ple_kwarg] = original_ple * scale
-            # else: scale==1.0 --- pass original tensor unchanged for bitwise identity.
+            if original_ple is None or scale == 1.0:
+                # Pass through unchanged --- preserves bitwise identity at
+                # scale=1.0, and there's nothing to scale when PLE is None.
+                call_args = args
+                call_kwargs = kwargs
+            else:
+                scaled_ple = original_ple * scale
+                if ple_location == "kwarg":
+                    call_args = args
+                    call_kwargs = dict(kwargs)
+                    call_kwargs[ple_kwarg] = scaled_ple
+                else:  # "positional"
+                    call_args = (scaled_ple,) + args[1:]
+                    call_kwargs = kwargs
 
-            out = orig_forward(hidden_states, *args, **call_kwargs)
+            out = orig_forward(hidden_states, *call_args, **call_kwargs)
             hidden_states = out[0] if isinstance(out, tuple) else out
         return out
     return looped
@@ -386,14 +424,17 @@ def run_zero_diagnostic(args, model, decoder_layers, inputs):
     print(f"Strategy A confirmed. PLE kwarg = {ple_kwarg!r}.\n")
 
     orig_forward = target_layer.forward
+    location_recorder = {}
     try:
         target_layer.forward = make_looped_forward_ple(
             orig_forward, r=1, ple_mode="vanilla", ple_kwarg=ple_kwarg,
+            location_recorder=location_recorder,
         )
         nll_v1, ppl_v1 = compute_perplexity(model, inputs)
 
         target_layer.forward = make_looped_forward_ple(
             orig_forward, r=1, ple_mode="zero", ple_kwarg=ple_kwarg,
+            location_recorder=location_recorder,
         )
         nll_z1, ppl_z1 = compute_perplexity(model, inputs)
     finally:
@@ -401,6 +442,7 @@ def run_zero_diagnostic(args, model, decoder_layers, inputs):
 
     nll_diff = abs(nll_z1 - nll_v1)
     status = "WORKING" if nll_diff > 1e-6 else "BROKEN"
+    ple_location = location_recorder.get("ple_location", "unknown")
 
     print("=== Zero-PLE diagnostic ===")
     print(f"vanilla r=1:  ppl = {ppl_v1}")
@@ -408,6 +450,7 @@ def run_zero_diagnostic(args, model, decoder_layers, inputs):
     print()
     print(f"Difference: {nll_diff:.6f}  (absolute NLL difference)")
     print(f"Patch status: {status}")
+    print(f"PLE location: {ple_location}")
 
     output = {
         "config": {
@@ -435,6 +478,7 @@ def run_zero_diagnostic(args, model, decoder_layers, inputs):
         ],
         "nll_difference": nll_diff,
         "patch_status": status,
+        "ple_location": ple_location,
     }
     Path(output_json).write_text(json.dumps(output, indent=2))
     print(f"\nWrote {output_json}")
@@ -493,40 +537,61 @@ def run_ple_variants_mode(args, model, decoder_layers, inputs):
     orig_forward = target_layer.forward
     cells = []
     cell_index = {}  # (mode, r) -> ppl, for table rendering
+    location_recorder = {}  # plan2a-add2: capture detected PLE arrival path
 
     try:
         # ---- Step 4: regression checks BEFORE collecting experiment data ----
-        print("\n=== Regression checks (plan2a Step 4) ===")
+        print("\n=== Regression checks (plan2a Step 4 + add2) ===")
 
         target_layer.forward = make_looped_forward_ple(
             orig_forward, r=1, ple_mode="vanilla", ple_kwarg=ple_kwarg,
+            location_recorder=location_recorder,
         )
         nll_v1, ppl_v1 = compute_perplexity(model, inputs)
         print(f"  vanilla r=1: ppl = {ppl_v1:.6f}")
 
         target_layer.forward = make_looped_forward_ple(
             orig_forward, r=1, ple_mode="scaled", ple_kwarg=ple_kwarg,
+            location_recorder=location_recorder,
         )
         nll_s1, ppl_s1 = compute_perplexity(model, inputs)
         print(f"  scaled  r=1: ppl = {ppl_s1:.6f}")
 
         target_layer.forward = make_looped_forward_ple(
             orig_forward, r=1, ple_mode="once", ple_kwarg=ple_kwarg,
+            location_recorder=location_recorder,
         )
         nll_o1, ppl_o1 = compute_perplexity(model, inputs)
         print(f"  once    r=1: ppl = {ppl_o1:.6f}")
+
+        # plan2a-add2 check 4: inline zero-PLE diagnostic. The original bug
+        # made every mode behave like vanilla, so zero r=1 was bitwise-equal
+        # to vanilla r=1. After the fix, zero must produce a different ppl.
+        target_layer.forward = make_looped_forward_ple(
+            orig_forward, r=1, ple_mode="zero", ple_kwarg=ple_kwarg,
+            location_recorder=location_recorder,
+        )
+        nll_z1, ppl_z1 = compute_perplexity(model, inputs)
+        print(f"  zero    r=1: ppl = {ppl_z1:.6f}")
 
         # Tolerances: vanilla-vs-round1 we allow numerical drift across HW;
         # scaled/once vs vanilla at r=1 must be bitwise equal (scale=1.0).
         check1 = math.isclose(ppl_v1, ROUND1_UNMODIFIED_PPL, rel_tol=1e-3)
         check2 = ppl_s1 == ppl_v1
         check3 = ppl_o1 == ppl_v1
+        check4 = abs(nll_z1 - nll_v1) > 1e-6  # zero must differ from vanilla
         print(f"  check 1 (vanilla r=1 ~= round1 unmodified={ROUND1_UNMODIFIED_PPL:.4f}): {check1}")
         print(f"  check 2 (scaled r=1 == vanilla r=1):  {check2}")
         print(f"  check 3 (once   r=1 == vanilla r=1):  {check3}")
-        if not (check1 and check2 and check3):
+        print(f"  check 4 (zero   r=1 != vanilla r=1):  {check4}   "
+              f"[NLL diff = {abs(nll_z1 - nll_v1):.6f}]")
+        if not (check1 and check2 and check3 and check4):
             target_layer.forward = orig_forward
             print("\nERROR: regression checks failed --- aborting before main run.")
+            if not check4:
+                print("  check 4 failure means the PLE patch is BROKEN: zero-mode "
+                      "produced bitwise-identical perplexity to vanilla. The hook "
+                      "is not actually intercepting per_layer_input.")
             sys.exit(3)
 
         # Reuse r=1 measurements (identical across modes by construction).
@@ -546,6 +611,7 @@ def run_ple_variants_mode(args, model, decoder_layers, inputs):
                     continue
                 target_layer.forward = make_looped_forward_ple(
                     orig_forward, r=r, ple_mode=ple_mode, ple_kwarg=ple_kwarg,
+                    location_recorder=location_recorder,
                 )
                 mean_nll, ppl = compute_perplexity(model, inputs)
                 cell_index[(ple_mode, r)] = ppl
@@ -553,6 +619,9 @@ def run_ple_variants_mode(args, model, decoder_layers, inputs):
                 print(f"  {ple_mode:7s} r={r:2d}: mean NLL = {mean_nll:.4f}   perplexity = {ppl:.4f}")
     finally:
         target_layer.forward = orig_forward
+
+    ple_location = location_recorder.get("ple_location", "unknown")
+    print(f"\nPLE location detected: {ple_location}")
 
     # ---- Step 6: printed table ----
     print("\n=== PLE variants (layer {}) ===".format(args.target_layer))
@@ -587,8 +656,16 @@ def run_ple_variants_mode(args, model, decoder_layers, inputs):
             "vanilla_r1_matches_round1": check1,
             "scaled_r1_equals_vanilla_r1": check2,
             "once_r1_equals_vanilla_r1": check3,
+            "zero_r1_differs_from_vanilla_r1": check4,
             "vanilla_r1_ppl": ppl_v1,
+            "zero_r1_ppl": ppl_z1,
+            "zero_vs_vanilla_nll_diff": abs(nll_z1 - nll_v1),
             "round1_unmodified_ppl": ROUND1_UNMODIFIED_PPL,
+        },
+        "addendum2": {
+            "ple_location": ple_location,
+            "zero_diagnostic_passed": check4,
+            "fix_applied": "handle_positional_ple_args",
         },
         "cells": cells,
     }
