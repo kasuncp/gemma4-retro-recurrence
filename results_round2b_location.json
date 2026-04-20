@@ -1,0 +1,254 @@
+{
+  "config": {
+    "mode": "layer-location",
+    "model_id": "google/gemma-4-E2B",
+    "layers": [
+      5,
+      17,
+      28
+    ],
+    "r_values": [
+      4,
+      8
+    ],
+    "ple_modes": [
+      "vanilla",
+      "once"
+    ],
+    "num_sequences": 50,
+    "max_length": 512,
+    "dtype": "bf16",
+    "ple_kwarg": "per_layer_input"
+  },
+  "round1_baseline": {
+    "unmodified_ppl": 12.53165455614523
+  },
+  "unmodified": {
+    "mean_nll": 2.5286514263766544,
+    "ppl": 12.536588219504221
+  },
+  "inspection": {
+    "strategy": "A",
+    "layer_class": "Gemma4TextDecoderLayer",
+    "source_file": "/usr/local/lib/python3.11/dist-packages/transformers/models/gemma4/modeling_gemma4.py",
+    "start_lineno": 1354,
+    "signature": "(self, hidden_states: torch.Tensor, per_layer_input: torch.Tensor = None, shared_kv_states: dict[int, tuple[torch.Tensor, torch.Tensor]] | None = None, position_embeddings: torch.Tensor = None, attention_mask: torch.Tensor | None = None, position_ids: torch.LongTensor | None = None, past_key_values: transformers.cache_utils.Cache | None = None, **kwargs) -> torch.Tensor",
+    "ple_kwarg": "per_layer_input"
+  },
+  "ple_location": "positional",
+  "layer_info": {
+    "5": {
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    "17": {
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    "28": {
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    }
+  },
+  "regressions": [
+    {
+      "layer": 5,
+      "ppl_vanilla_r1": 12.536588219504221,
+      "ppl_once_r1": 12.536588219504221,
+      "round1_baseline_matches": true,
+      "once_eq_vanilla_r1": true
+    },
+    {
+      "layer": 17,
+      "ppl_vanilla_r1": 12.536588219504221,
+      "ppl_once_r1": 12.536588219504221,
+      "round1_baseline_matches": true,
+      "once_eq_vanilla_r1": true
+    },
+    {
+      "layer": 28,
+      "ppl_vanilla_r1": 12.536588219504221,
+      "ppl_once_r1": 12.536588219504221,
+      "round1_baseline_matches": true,
+      "once_eq_vanilla_r1": true
+    }
+  ],
+  "cells": [
+    {
+      "layer": 5,
+      "ple_mode": "vanilla",
+      "r": 1,
+      "mean_nll": 2.5286514263766544,
+      "ppl": 12.536588219504221
+    },
+    {
+      "layer": 5,
+      "ple_mode": "once",
+      "r": 1,
+      "mean_nll": 2.5286514263766544,
+      "ppl": 12.536588219504221
+    },
+    {
+      "layer": 5,
+      "ple_mode": "vanilla",
+      "r": 4,
+      "mean_nll": 5.428399320524661,
+      "ppl": 227.7843437327753
+    },
+    {
+      "layer": 5,
+      "ple_mode": "once",
+      "r": 4,
+      "mean_nll": 5.681674429067175,
+      "ppl": 293.4403638655541
+    },
+    {
+      "layer": 5,
+      "ple_mode": "vanilla",
+      "r": 8,
+      "mean_nll": 6.6517254542437385,
+      "ppl": 774.1188805548478
+    },
+    {
+      "layer": 5,
+      "ple_mode": "once",
+      "r": 8,
+      "mean_nll": 7.042496049936735,
+      "ppl": 1144.2401256262194
+    },
+    {
+      "layer": 17,
+      "ple_mode": "vanilla",
+      "r": 1,
+      "mean_nll": 2.5286514263766544,
+      "ppl": 12.536588219504221
+    },
+    {
+      "layer": 17,
+      "ple_mode": "once",
+      "r": 1,
+      "mean_nll": 2.5286514263766544,
+      "ppl": 12.536588219504221
+    },
+    {
+      "layer": 17,
+      "ple_mode": "vanilla",
+      "r": 4,
+      "mean_nll": 3.019424588813823,
+      "ppl": 20.479504157401262
+    },
+    {
+      "layer": 17,
+      "ple_mode": "once",
+      "r": 4,
+      "mean_nll": 2.919655360088447,
+      "ppl": 18.53489849308636
+    },
+    {
+      "layer": 17,
+      "ple_mode": "vanilla",
+      "r": 8,
+      "mean_nll": 3.7516032122064633,
+      "ppl": 42.58930699271465
+    },
+    {
+      "layer": 17,
+      "ple_mode": "once",
+      "r": 8,
+      "mean_nll": 3.6007860546669592,
+      "ppl": 36.62701396632209
+    },
+    {
+      "layer": 28,
+      "ple_mode": "vanilla",
+      "r": 1,
+      "mean_nll": 2.5286514263766544,
+      "ppl": 12.536588219504221
+    },
+    {
+      "layer": 28,
+      "ple_mode": "once",
+      "r": 1,
+      "mean_nll": 2.5286514263766544,
+      "ppl": 12.536588219504221
+    },
+    {
+      "layer": 28,
+      "ple_mode": "vanilla",
+      "r": 4,
+      "mean_nll": 3.3860819919890863,
+      "ppl": 29.54994823249308
+    },
+    {
+      "layer": 28,
+      "ple_mode": "once",
+      "r": 4,
+      "mean_nll": 3.385955959648806,
+      "ppl": 29.546224218040226
+    },
+    {
+      "layer": 28,
+      "ple_mode": "vanilla",
+      "r": 8,
+      "mean_nll": 6.261403680395458,
+      "ppl": 523.9538879720433
+    },
+    {
+      "layer": 28,
+      "ple_mode": "once",
+      "r": 8,
+      "mean_nll": 6.33675222455587,
+      "ppl": 564.9584703026991
+    }
+  ],
+  "summary": [
+    {
+      "layer": 5,
+      "r": 4,
+      "vanilla_ppl": 227.7843437327753,
+      "once_ppl": 293.4403638655541,
+      "once_over_vanilla": 1.2882376332668544,
+      "nll_improvement": -0.253275108542514
+    },
+    {
+      "layer": 5,
+      "r": 8,
+      "vanilla_ppl": 774.1188805548478,
+      "once_ppl": 1144.2401256262194,
+      "once_over_vanilla": 1.4781193875623964,
+      "nll_improvement": -0.3907705956929961
+    },
+    {
+      "layer": 17,
+      "r": 4,
+      "vanilla_ppl": 20.479504157401262,
+      "once_ppl": 18.53489849308636,
+      "once_over_vanilla": 0.9050462526158317,
+      "nll_improvement": 0.09976922872537575
+    },
+    {
+      "layer": 17,
+      "r": 8,
+      "vanilla_ppl": 42.58930699271465,
+      "once_ppl": 36.62701396632209,
+      "once_over_vanilla": 0.8600049297018975,
+      "nll_improvement": 0.1508171575395041
+    },
+    {
+      "layer": 28,
+      "r": 4,
+      "vanilla_ppl": 29.54994823249308,
+      "once_ppl": 29.546224218040226,
+      "once_over_vanilla": 0.9998739756014612,
+      "nll_improvement": 0.00012603234028052412
+    },
+    {
+      "layer": 28,
+      "r": 8,
+      "vanilla_ppl": 523.9538879720433,
+      "once_ppl": 564.9584703026991,
+      "once_over_vanilla": 1.0782599065909473,
+      "nll_improvement": -0.07534854416041181
+    }
+  ]
+}
