@@ -1,0 +1,37 @@
+{
+  "config": {
+    "mode": "ple-variants",
+    "diagnostic": "zero-ple",
+    "model_id": "google/gemma-4-E2B",
+    "target_layer": 17,
+    "r": 1,
+    "num_sequences": 50,
+    "max_length": 512,
+    "dtype": "bf16",
+    "ple_kwarg": "per_layer_input"
+  },
+  "inspection": {
+    "strategy": "A",
+    "layer_class": "Gemma4TextDecoderLayer",
+    "source_file": "/usr/local/lib/python3.11/dist-packages/transformers/models/gemma4/modeling_gemma4.py",
+    "start_lineno": 1354,
+    "signature": "(self, hidden_states: torch.Tensor, per_layer_input: torch.Tensor = None, shared_kv_states: dict[int, tuple[torch.Tensor, torch.Tensor]] | None = None, position_embeddings: torch.Tensor = None, attention_mask: torch.Tensor | None = None, position_ids: torch.LongTensor | None = None, past_key_values: transformers.cache_utils.Cache | None = None, **kwargs) -> torch.Tensor",
+    "ple_kwarg": "per_layer_input"
+  },
+  "cells": [
+    {
+      "ple_mode": "vanilla",
+      "r": 1,
+      "mean_nll": 2.5286514263766544,
+      "ppl": 12.536588219504221
+    },
+    {
+      "ple_mode": "zero",
+      "r": 1,
+      "mean_nll": 2.5286514263766544,
+      "ppl": 12.536588219504221
+    }
+  ],
+  "nll_difference": 0.0,
+  "patch_status": "BROKEN"
+}

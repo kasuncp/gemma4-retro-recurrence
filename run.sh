@@ -159,6 +159,64 @@ if [[ $# -eq 0 ]]; then
     set -- --mode ple-variants
 fi
 
+RUN_ARGS=("$@")
+
 echo
-echo "=== Running: $PYTHON ple_sanity_check.py $* ==="
-exec "$PYTHON" ple_sanity_check.py "$@"
+echo "=== Running: $PYTHON ple_sanity_check.py ${RUN_ARGS[*]} ==="
+set +e
+"$PYTHON" ple_sanity_check.py "${RUN_ARGS[@]}"
+RUN_STATUS=$?
+set -e
+
+if [[ $RUN_STATUS -ne 0 ]]; then
+    echo
+    echo "=== Python exited with status $RUN_STATUS --- skipping git push. ==="
+    exit $RUN_STATUS
+fi
+
+# ---------- 5. Commit & push results ----------
+# Only explicit result JSONs. Never `git add -A` --- .env lives here and must
+# not be pushed. Push failure is warned-on but not fatal (push manually once
+# credentials are sorted).
+echo
+echo "=== Committing and pushing results ==="
+
+if ! command -v git >/dev/null 2>&1; then
+    echo "git not available --- skipping push."
+    exit 0
+fi
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "Not inside a git repo --- skipping push."
+    exit 0
+fi
+
+FILES_TO_ADD=()
+for f in results.json results_round2a.json results_round2a_addendum.json; do
+    [[ -f "$f" ]] && FILES_TO_ADD+=("$f")
+done
+
+if [[ ${#FILES_TO_ADD[@]} -eq 0 ]]; then
+    echo "No result JSONs on disk --- nothing to commit."
+    exit 0
+fi
+
+git add "${FILES_TO_ADD[@]}"
+
+if git diff --cached --quiet; then
+    echo "Result JSONs unchanged --- nothing to commit."
+    exit 0
+fi
+
+TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+HOSTNAME_SHORT=$(hostname -s 2>/dev/null || hostname || echo "unknown-host")
+COMMIT_MSG="results: ${RUN_ARGS[*]:-default} @ ${TIMESTAMP} (${HOSTNAME_SHORT})"
+git commit -m "$COMMIT_MSG"
+
+echo "Pushing to origin ..."
+if git push; then
+    echo "=== Push successful. ==="
+else
+    echo "WARNING: git push failed. Commit is local at $(git rev-parse HEAD)."
+    echo "Push manually once credentials / network are sorted:  git push"
+    exit 1
+fi
