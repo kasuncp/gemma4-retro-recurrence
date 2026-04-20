@@ -1,6 +1,6 @@
 """Forward-pass hooks for the looping probes.
 
-Three flavours, corresponding to the experimental rounds:
+Four flavours, corresponding to the experimental rounds:
 
   make_looped_forward      --- Round 1: naive loop of one layer, no PLE control.
   make_looped_forward_ple  --- Round 2a+: loop one layer with controlled PLE
@@ -8,6 +8,9 @@ Three flavours, corresponding to the experimental rounds:
   install_pair_loop_hooks  --- Round 3a: loop a CONTIGUOUS PAIR (L, L+1) as a
                                 unit, using PyTorch pre/post hooks (no forward
                                 replacement).
+  install_block_loop_hooks --- Round 3b: loop a CONTIGUOUS BLOCK [L_start..L_end]
+                                as a unit. Generalization of the pair hook to
+                                arbitrary block width.
 """
 
 
@@ -195,5 +198,87 @@ def install_pair_loop_hooks(decoder_layers, L, r):
             h.remove()
         captured_L.clear()
         captured_L1.clear()
+
+    return uninstall
+
+
+def install_block_loop_hooks(decoder_layers, L_start, L_end, r):
+    """Install forward hooks to loop the block [L_start..L_end] as a unit r times.
+
+    Generalisation of ``install_pair_loop_hooks`` to a contiguous range of
+    decoder layers of any width >= 1. Uses one PyTorch forward_pre_hook
+    per layer in the block (with_kwargs=True) to capture whatever args and
+    kwargs the outer model passes --- including each layer's own
+    ``per_layer_input`` (PLE), ``shared_kv_states``, position / mask tensors
+    --- and a single forward_hook on the *last* layer that re-runs the whole
+    block (r-1) additional times after the outer model's first pass.
+
+    Why this works (plan3b Step 0): the Gemma 4 outer text-model forward
+    computes per-layer PLE tensors up front and passes each layer's slice
+    positionally when it calls that layer. Pre-hooks observe those calls
+    and capture the exact positional/keyword arguments --- no need to find,
+    recompute, or monkey-patch the PLE plumbing at the outer-model level.
+
+    At r=1 the post-hook does zero extra iterations and returns the
+    unmodified output --- so perplexity at r=1 must bitwise-match the
+    unmodified baseline (regression check).
+
+    Inner re-runs use ``module.forward(...)`` rather than ``module(...)``
+    to bypass ``__call__`` and avoid retriggering our own hooks.
+
+    Returns an uninstall callable.
+    """
+    if L_start < 0 or L_end >= len(decoder_layers) or L_start > L_end:
+        raise ValueError(
+            f"block [{L_start}..{L_end}] out of range for "
+            f"{len(decoder_layers)} layers"
+        )
+
+    block_layers = [decoder_layers[i] for i in range(L_start, L_end + 1)]
+    captured = [{} for _ in block_layers]
+    handles = []
+
+    def make_pre(idx):
+        def pre(module, args, kwargs):
+            captured[idx]["args"] = args
+            captured[idx]["kwargs"] = kwargs
+        return pre
+
+    def post_last(module, input, output):
+        if r <= 1:
+            return output
+        for i, cap in enumerate(captured):
+            if "args" not in cap:
+                raise RuntimeError(
+                    "block-loop hook fired without pre-hook capture for "
+                    f"block offset {i} (global layer {L_start + i})"
+                )
+
+        is_tuple = isinstance(output, tuple)
+        x = output[0] if is_tuple else output
+
+        # r-1 additional iterations (the outer forward already applied the
+        # block once to produce `output`).
+        for _ in range(r - 1):
+            for i, layer in enumerate(block_layers):
+                new_args = (x,) + captured[i]["args"][1:]
+                out = layer.forward(*new_args, **captured[i]["kwargs"])
+                x = out[0] if isinstance(out, tuple) else out
+
+        if is_tuple:
+            return (x,) + output[1:]
+        return x
+
+    for idx, layer in enumerate(block_layers):
+        handles.append(
+            layer.register_forward_pre_hook(make_pre(idx), with_kwargs=True)
+        )
+    handles.append(block_layers[-1].register_forward_hook(post_last))
+
+    def uninstall():
+        for h in handles:
+            h.remove()
+        for cap in captured:
+            cap.clear()
 
     return uninstall

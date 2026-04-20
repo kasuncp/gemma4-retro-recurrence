@@ -11,6 +11,7 @@ Submodule layout:
     mode_round2b  --- per-layer PLE importance scan and layer-location sweep.
     mode_round2c  --- full 35-layer vanilla/once looping-tolerance map.
     mode_round3a  --- pair-of-layers looping probe.
+    mode_round3b  --- block-of-layers (width >= 4) looping probe.
 
 The HF cache redirect below runs at package-import time --- BEFORE any
 submodule imports torch/transformers --- so that Gemma's ~5 GB download
