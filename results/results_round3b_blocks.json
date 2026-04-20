@@ -1,0 +1,542 @@
+{
+  "config": {
+    "mode": "block-looping",
+    "model_id": "google/gemma-4-E2B",
+    "blocks": [
+      {
+        "name": "A",
+        "label": "valley-core",
+        "start": 15,
+        "end": 19
+      },
+      {
+        "name": "B",
+        "label": "valley-narrow",
+        "start": 15,
+        "end": 18
+      },
+      {
+        "name": "C",
+        "label": "valley-extend-down",
+        "start": 12,
+        "end": 19
+      },
+      {
+        "name": "D",
+        "label": "valley-extend-up",
+        "start": 15,
+        "end": 22
+      },
+      {
+        "name": "E",
+        "label": "valley-centered",
+        "start": 13,
+        "end": 22
+      },
+      {
+        "name": "F",
+        "label": "late-block",
+        "start": 25,
+        "end": 32
+      }
+    ],
+    "r_values": [
+      2,
+      4,
+      8
+    ],
+    "ple_mode": "vanilla",
+    "num_sequences": 50,
+    "max_length": 512,
+    "dtype": "bf16",
+    "ple_kwarg": "per_layer_input",
+    "round2c_json": "results/results_round2c_full_map.json"
+  },
+  "unmodified": {
+    "mean_nll": 2.5286514263766544,
+    "ppl": 12.536588219504221
+  },
+  "inspection": {
+    "strategy": "A",
+    "layer_class": "Gemma4TextDecoderLayer",
+    "source_file": "/usr/local/lib/python3.11/dist-packages/transformers/models/gemma4/modeling_gemma4.py",
+    "start_lineno": 1354,
+    "signature": "(self, hidden_states: torch.Tensor, per_layer_input: torch.Tensor = None, shared_kv_states: dict[int, tuple[torch.Tensor, torch.Tensor]] | None = None, position_embeddings: torch.Tensor = None, attention_mask: torch.Tensor | None = None, position_ids: torch.LongTensor | None = None, past_key_values: transformers.cache_utils.Cache | None = None, **kwargs) -> torch.Tensor",
+    "ple_kwarg": "per_layer_input"
+  },
+  "layer_metadata": [
+    {
+      "layer": 0,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 1,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 2,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 3,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 4,
+      "attention_type": "full_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 5,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 6,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 7,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 8,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 9,
+      "attention_type": "full_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 10,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 11,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 12,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 13,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 14,
+      "attention_type": "full_attention",
+      "is_kv_consumer": false
+    },
+    {
+      "layer": 15,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 16,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 17,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 18,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 19,
+      "attention_type": "full_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 20,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 21,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 22,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 23,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 24,
+      "attention_type": "full_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 25,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 26,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 27,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 28,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 29,
+      "attention_type": "full_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 30,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 31,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 32,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 33,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true
+    },
+    {
+      "layer": 34,
+      "attention_type": "full_attention",
+      "is_kv_consumer": true
+    }
+  ],
+  "regression_checks": {
+    "blocks_tested": [
+      {
+        "name": "B",
+        "start": 15,
+        "end": 18
+      },
+      {
+        "name": "E",
+        "start": 13,
+        "end": 22
+      }
+    ],
+    "max_rel_drift": 0.0,
+    "all_pass": true,
+    "per_block": [
+      {
+        "name": "B",
+        "start": 15,
+        "end": 18,
+        "width": 4,
+        "ppl_block_r1": 12.536588219504221,
+        "rel_drift": 0.0,
+        "matches_baseline": true
+      },
+      {
+        "name": "E",
+        "start": 13,
+        "end": 22,
+        "width": 10,
+        "ppl_block_r1": 12.536588219504221,
+        "rel_drift": 0.0,
+        "matches_baseline": true
+      }
+    ]
+  },
+  "block_cells": [
+    {
+      "name": "A",
+      "label": "valley-core",
+      "start": 15,
+      "end": 19,
+      "width": 5,
+      "r": 2,
+      "mean_nll": 3.3062937780377077,
+      "ppl": 27.283817968450222
+    },
+    {
+      "name": "A",
+      "label": "valley-core",
+      "start": 15,
+      "end": 19,
+      "width": 5,
+      "r": 4,
+      "mean_nll": 3.3922560108711393,
+      "ppl": 29.732954531690662
+    },
+    {
+      "name": "A",
+      "label": "valley-core",
+      "start": 15,
+      "end": 19,
+      "width": 5,
+      "r": 8,
+      "mean_nll": 3.4036832365055965,
+      "ppl": 30.07466841427191
+    },
+    {
+      "name": "B",
+      "label": "valley-narrow",
+      "start": 15,
+      "end": 18,
+      "width": 4,
+      "r": 2,
+      "mean_nll": 3.2495949070222196,
+      "ppl": 25.779894547413853
+    },
+    {
+      "name": "B",
+      "label": "valley-narrow",
+      "start": 15,
+      "end": 18,
+      "width": 4,
+      "r": 4,
+      "mean_nll": 3.3556756227407325,
+      "ppl": 28.664964351665944
+    },
+    {
+      "name": "B",
+      "label": "valley-narrow",
+      "start": 15,
+      "end": 18,
+      "width": 4,
+      "r": 8,
+      "mean_nll": 3.3921623830164105,
+      "ppl": 29.730170829261187
+    },
+    {
+      "name": "C",
+      "label": "valley-extend-down",
+      "start": 12,
+      "end": 19,
+      "width": 8,
+      "r": 2,
+      "mean_nll": 11.537954581146286,
+      "ppl": 102534.49742146028
+    },
+    {
+      "name": "C",
+      "label": "valley-extend-down",
+      "start": 12,
+      "end": 19,
+      "width": 8,
+      "r": 4,
+      "mean_nll": 11.931895263874003,
+      "ppl": 152039.443651813
+    },
+    {
+      "name": "C",
+      "label": "valley-extend-down",
+      "start": 12,
+      "end": 19,
+      "width": 8,
+      "r": 8,
+      "mean_nll": 12.250330332961992,
+      "ppl": 209050.3336811269
+    },
+    {
+      "name": "D",
+      "label": "valley-extend-up",
+      "start": 15,
+      "end": 22,
+      "width": 8,
+      "r": 2,
+      "mean_nll": 3.5181005861836336,
+      "ppl": 33.72031875835191
+    },
+    {
+      "name": "D",
+      "label": "valley-extend-up",
+      "start": 15,
+      "end": 22,
+      "width": 8,
+      "r": 4,
+      "mean_nll": 3.487975803868071,
+      "ppl": 32.719649640484725
+    },
+    {
+      "name": "D",
+      "label": "valley-extend-up",
+      "start": 15,
+      "end": 22,
+      "width": 8,
+      "r": 8,
+      "mean_nll": 3.505156036415738,
+      "ppl": 33.28663737479184
+    },
+    {
+      "name": "E",
+      "label": "valley-centered",
+      "start": 13,
+      "end": 22,
+      "width": 10,
+      "r": 2,
+      "mean_nll": 12.07527576442431,
+      "ppl": 175479.19439846635
+    },
+    {
+      "name": "E",
+      "label": "valley-centered",
+      "start": 13,
+      "end": 22,
+      "width": 10,
+      "r": 4,
+      "mean_nll": 13.829328181119198,
+      "ppl": 1013913.527725053
+    },
+    {
+      "name": "E",
+      "label": "valley-centered",
+      "start": 13,
+      "end": 22,
+      "width": 10,
+      "r": 8,
+      "mean_nll": 13.648750545249236,
+      "ppl": 846402.7128543647
+    },
+    {
+      "name": "F",
+      "label": "late-block",
+      "start": 25,
+      "end": 32,
+      "width": 8,
+      "r": 2,
+      "mean_nll": 3.6130181025265364,
+      "ppl": 37.07778868255507
+    },
+    {
+      "name": "F",
+      "label": "late-block",
+      "start": 25,
+      "end": 32,
+      "width": 8,
+      "r": 4,
+      "mean_nll": 9.53601001199127,
+      "ppl": 13849.577586646377
+    },
+    {
+      "name": "F",
+      "label": "late-block",
+      "start": 25,
+      "end": 32,
+      "width": 8,
+      "r": 8,
+      "mean_nll": 12.732330136173736,
+      "ppl": 338517.1843342691
+    }
+  ],
+  "analysis": {
+    "target_r": 8,
+    "unmodified_ppl": 12.536588219504221,
+    "comparison": [
+      {
+        "name": "A",
+        "label": "valley-core",
+        "start": 15,
+        "end": 19,
+        "width": 5,
+        "block_ppl": 30.07466841427191,
+        "worst_single_in_block_ppl": 108.08855402254906,
+        "best_single_in_block_ppl": 35.285626019294206,
+        "improvement_over_worst_single": 3.5940065085224924
+      },
+      {
+        "name": "B",
+        "label": "valley-narrow",
+        "start": 15,
+        "end": 18,
+        "width": 4,
+        "block_ppl": 29.730170829261187,
+        "worst_single_in_block_ppl": 108.08855402254906,
+        "best_single_in_block_ppl": 35.285626019294206,
+        "improvement_over_worst_single": 3.6356519659202755
+      },
+      {
+        "name": "C",
+        "label": "valley-extend-down",
+        "start": 12,
+        "end": 19,
+        "width": 8,
+        "block_ppl": 209050.3336811269,
+        "worst_single_in_block_ppl": 261567.0296796258,
+        "best_single_in_block_ppl": 35.285626019294206,
+        "improvement_over_worst_single": 1.251215556912742
+      },
+      {
+        "name": "D",
+        "label": "valley-extend-up",
+        "start": 15,
+        "end": 22,
+        "width": 8,
+        "block_ppl": 33.28663737479184,
+        "worst_single_in_block_ppl": 975.6146528874953,
+        "best_single_in_block_ppl": 35.285626019294206,
+        "improvement_over_worst_single": 29.3094986406267
+      },
+      {
+        "name": "E",
+        "label": "valley-centered",
+        "start": 13,
+        "end": 22,
+        "width": 10,
+        "block_ppl": 846402.7128543647,
+        "worst_single_in_block_ppl": 261567.0296796258,
+        "best_single_in_block_ppl": 35.285626019294206,
+        "improvement_over_worst_single": 0.30903377991019276
+      },
+      {
+        "name": "F",
+        "label": "late-block",
+        "start": 25,
+        "end": 32,
+        "width": 8,
+        "block_ppl": 338517.1843342691,
+        "worst_single_in_block_ppl": 56540.59789066196,
+        "best_single_in_block_ppl": 480.431846085616,
+        "improvement_over_worst_single": 0.16702430631950105
+      }
+    ],
+    "counts_within_baseline_multiples": {
+      "within_5x": 3,
+      "within_10x": 3,
+      "within_50x": 3,
+      "within_100x": 3
+    },
+    "n_blocks_scored": 6
+  },
+  "interpretation_hint": "Bucket 5 (unexpected pattern) --- the results do not fit scenarios X or Y cleanly (e.g., non-monotone in width, or one valley anchor catastrophic but not the other). Pause, paste the comparison table, and discuss before further plans."
+}

@@ -52,7 +52,7 @@
     "max_length": 512,
     "dtype": "bf16",
     "ple_kwarg": "per_layer_input",
-    "importance_json": "results_round2b_importance.json"
+    "importance_json": "results/results_round2b_importance.json"
   },
   "round1_baseline": {
     "unmodified_ppl": 12.53165455614523
