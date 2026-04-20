@@ -191,7 +191,7 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 fi
 
 FILES_TO_ADD=()
-for f in results.json results_round2a.json results_round2a_addendum.json results_round2a_fixed.json; do
+for f in results.json results_round2a.json results_round2a_addendum.json results_round2a_fixed.json results_round2b_importance.json results_round2b_location.json; do
     [[ -f "$f" ]] && FILES_TO_ADD+=("$f")
 done
 
