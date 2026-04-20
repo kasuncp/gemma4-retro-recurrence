@@ -142,17 +142,32 @@ def _format_arc_prompt(problem):
 
 def _generate(model, tokenizer, prompt, max_new_tokens):
     """Greedy decode, no sampling, no KV cache. Returns the generated text
-    only (not including the prompt)."""
+    only (not including the prompt).
+
+    Gemma 4's saved generation_config carries sampling defaults (top_p,
+    top_k, temperature). With do_sample=False those are silently ignored
+    but transformers prints a noisy "flags not valid" warning per call.
+    We clone the config and null those fields so the warning never fires;
+    the model's own config on disk is left untouched.
+    """
     enc = tokenizer(prompt, return_tensors="pt").to(model.device)
     input_len = enc["input_ids"].shape[1]
     pad_id = tokenizer.pad_token_id
     if pad_id is None:
         pad_id = tokenizer.eos_token_id
+
+    from copy import deepcopy
+    gen_cfg = deepcopy(model.generation_config)
+    gen_cfg.do_sample = False
+    gen_cfg.top_p = None
+    gen_cfg.top_k = None
+    gen_cfg.temperature = None
+
     with torch.no_grad():
         out = model.generate(
             **enc,
+            generation_config=gen_cfg,
             max_new_tokens=max_new_tokens,
-            do_sample=False,
             use_cache=False,
             pad_token_id=pad_id,
         )
