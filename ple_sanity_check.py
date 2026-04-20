@@ -213,10 +213,16 @@ def make_looped_forward(orig_forward, r):
 
 
 def compute_perplexity(model, inputs):
+    # use_cache=False: we are computing forward-pass perplexity, not generating.
+    # When the loop hooks re-enter a decoder layer with caching on, the layer's
+    # self_attn appends new K/V to past_key_values on each iteration, making
+    # the K-length grow beyond the attention mask's shape (crash observed as
+    # "expanded size of tensor (1023) must match existing size (512)" on
+    # sliding-attention layers). Disabling cache makes the measurement pure.
     total_nll, total_tokens = 0.0, 0
     with torch.no_grad():
         for inp in inputs:
-            out = model(**inp, labels=inp["input_ids"])
+            out = model(**inp, labels=inp["input_ids"], use_cache=False)
             n_tokens = inp["input_ids"].numel() - 1
             total_nll += out.loss.item() * n_tokens
             total_tokens += n_tokens
