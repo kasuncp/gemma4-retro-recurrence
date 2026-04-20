@@ -83,7 +83,14 @@ if [[ "$USE_TMUX" == "1" && -z "${TMUX:-}" ]]; then
     fi
 
     # Build a robustly-quoted inner command so args with spaces survive.
-    QUOTED_ARGS=$(printf '%q ' "${FORWARDED_ARGS[@]+"${FORWARDED_ARGS[@]}"}")
+    # Guard against empty FORWARDED_ARGS: `printf '%q '` with no args emits a
+    # literal '' (empty quoted string), which would become an empty arg
+    # passed through to argparse and rejected as an unknown argument.
+    if [[ ${#FORWARDED_ARGS[@]} -eq 0 ]]; then
+        QUOTED_ARGS=""
+    else
+        QUOTED_ARGS=$(printf '%q ' "${FORWARDED_ARGS[@]}")
+    fi
     QUOTED_DIR=$(printf '%q' "$SCRIPT_DIR")
     INNER_CMD="cd $QUOTED_DIR && ./run.sh ${QUOTED_ARGS}--no-tmux; status=\$?; echo; echo \"=== run finished (exit=\$status). Type exit or Ctrl+D to close session. ===\"; exec bash"
 
