@@ -232,6 +232,48 @@ def _interpret_block_map(blocks, r_values, block_ppl, unmod_ppl):
 def run_block_looping_map(args, model, decoder_layers, inputs):
     """Round 3b: 6 candidate blocks x {r=2, r=4, r=8} = 18 cells, vanilla only.
 
+    Thin wrapper around ``_run_block_looping_sweep`` that pins the
+    round-3b default block set, output filename, mode name, and
+    bucket interpreter. Round 3c reuses the same helper with its own
+    defaults (see ``probes/mode_round3c.py``).
+    """
+    _run_block_looping_sweep(
+        args, model, decoder_layers, inputs,
+        default_blocks=DEFAULT_BLOCKS,
+        default_output_filename="results_round3b_blocks.json",
+        mode_name="block-looping",
+        interpreter_fn=_interpret_block_map,
+    )
+
+
+def _run_block_looping_sweep(
+    args, model, decoder_layers, inputs,
+    *,
+    default_blocks,
+    default_output_filename,
+    mode_name,
+    interpreter_fn,
+    extra_analysis_fn=None,
+):
+    """Shared block-looping runner for rounds 3b and 3c.
+
+    Parameters
+    ----------
+    default_blocks : list of dict
+        Blocks to sweep when the user did not pass ``--blocks``. Each
+        dict has keys ``name``, ``label``, ``start``, ``end``.
+    default_output_filename : str
+        Filename (not full path) to write under ``results/`` when
+        ``--output-json`` is not set.
+    mode_name : str
+        String recorded in the output JSON's ``config.mode`` field.
+        Lets downstream consumers tell rounds apart in merged datasets.
+    interpreter_fn : callable(blocks, r_values, block_ppl, unmod_ppl) -> str
+        Round-specific bucket classifier printed after the main sweep.
+    extra_analysis_fn : callable(blocks, r_values, block_ppl, unmod_ppl) -> dict, optional
+        Optional round-specific extra analysis; return dict is merged into
+        the output JSON under ``analysis_extra``.
+
     Regression (before the main sweep): r=1 block-loop on at least two
     blocks (smallest and largest by width) must match the unmodified
     baseline. At r=1 the forward_hook does zero extra iterations and
@@ -240,11 +282,11 @@ def run_block_looping_map(args, model, decoder_layers, inputs):
     """
     n_layers = len(decoder_layers)
     r_values = args.r_values if args.r_values is not None else [2, 4, 8]
-    output_json = args.output_json or _results_path("results_round3b_blocks.json")
+    output_json = args.output_json or _results_path(default_output_filename)
 
     if 1 in r_values:
         print(
-            "ERROR: --mode block-looping uses r=1 only as a regression "
+            f"ERROR: --mode {mode_name} uses r=1 only as a regression "
             "check. Do not include 1 in --r-values."
         )
         sys.exit(1)
@@ -256,7 +298,7 @@ def run_block_looping_map(args, model, decoder_layers, inputs):
             print(f"ERROR: {e}")
             sys.exit(1)
     else:
-        blocks = [dict(b) for b in DEFAULT_BLOCKS]
+        blocks = [dict(b) for b in default_blocks]
 
     for b in blocks:
         if b["start"] < 0 or b["end"] >= n_layers or b["start"] > b["end"]:
@@ -330,7 +372,7 @@ def run_block_looping_map(args, model, decoder_layers, inputs):
         )
         out_payload = {
             "config": {
-                "mode": "block-looping",
+                "mode": mode_name,
                 "model_id": args.model_id,
                 "blocks": blocks,
                 "r_values": r_values,
@@ -410,12 +452,18 @@ def run_block_looping_map(args, model, decoder_layers, inputs):
     analysis = _analyze_block_map(
         blocks, r_values, block_ppl, single_ppl, unmod_ppl,
     )
-    hint = _interpret_block_map(blocks, r_values, block_ppl, unmod_ppl)
+    hint = interpreter_fn(blocks, r_values, block_ppl, unmod_ppl)
     print(f"\n=== Interpretation hint ===\n{hint}")
+
+    analysis_extra = None
+    if extra_analysis_fn is not None:
+        analysis_extra = extra_analysis_fn(
+            blocks, r_values, block_ppl, unmod_ppl,
+        )
 
     output = {
         "config": {
-            "mode": "block-looping",
+            "mode": mode_name,
             "model_id": args.model_id,
             "blocks": blocks,
             "r_values": r_values,
@@ -449,5 +497,7 @@ def run_block_looping_map(args, model, decoder_layers, inputs):
         "analysis": analysis,
         "interpretation_hint": hint,
     }
+    if analysis_extra is not None:
+        output["analysis_extra"] = analysis_extra
     _write_results_json(output_json, output)
     print(f"\nWrote {output_json}")

@@ -32,6 +32,13 @@ Discriminates between "valley is a hard ceiling" (only a tight 4-5 layer
 block is loopable) and "valley is a floor" (a wider valley-anchored
 block works because within-block re-processing dominates at scale).
 
+Round 3c (mode=block-looping-3c): 6 blocks x {r=2, r=4, r=8} = 18
+cells, vanilla PLE only. Re-runs A (15-19), B (15-18), D (15-22) as
+references from round 3b, plus three new KV-consumer probes: G (15-24,
+10 layers), H (15-23, 9 layers), I (20-27, 8 layers shifted late). Pins
+down the maximum viable block width (G vs H vs D) and tests whether
+block position matters within the consumer zone (I vs D).
+
 Cloud-server friendly: argparse flags, HF cache redirect to persistent
 volume, env-info dump, JSON result save.
 
@@ -60,6 +67,9 @@ Recommended RunPod usage:
 
     # Round 3b (block-looping probe, 18 cells):
     python ple_sanity_check.py --mode block-looping
+
+    # Round 3c (extended-blocks probe, 18 cells = A/B/D refs + G/H/I):
+    python ple_sanity_check.py --mode block-looping-3c
 """
 
 import argparse
@@ -84,6 +94,7 @@ from probes.mode_round2b import run_importance_scan_mode, run_layer_location_mod
 from probes.mode_round2c import run_full_looping_map
 from probes.mode_round3a import run_pair_looping_map
 from probes.mode_round3b import run_block_looping_map
+from probes.mode_round3c import run_block_looping_3c_map
 
 
 def parse_args():
@@ -98,6 +109,7 @@ def parse_args():
             "full-looping-map",
             "pair-looping-map",
             "block-looping",
+            "block-looping-3c",
         ],
         default="original",
         help=(
@@ -107,7 +119,9 @@ def parse_args():
             "layer-location = round-2b {vanilla, once} x {r=4,8} across layers; "
             "full-looping-map = round-2c 35 x {vanilla,once} x {r=2,4,8} sweep; "
             "pair-looping-map = round-3a 34 pairs x {r=2,4,8}, vanilla only; "
-            "block-looping = round-3b 6 blocks x {r=2,4,8}, vanilla only"
+            "block-looping = round-3b 6 blocks x {r=2,4,8}, vanilla only; "
+            "block-looping-3c = round-3c A/B/D refs + G/H/I extension probes "
+            "x {r=2,4,8}, vanilla only"
         ),
     )
     p.add_argument("--target-layer", type=int, default=17)
@@ -120,8 +134,9 @@ def parse_args():
             "r values to sweep. "
             "Default: [1,2,4,8] for original, [1,4,8] for ple-variants, "
             "[1] for ple-importance-scan, [4,8] for layer-location, "
-            "[2,4,8] for full-looping-map, pair-looping-map, and "
-            "block-looping (r=1 is used as a regression check only)."
+            "[2,4,8] for full-looping-map, pair-looping-map, "
+            "block-looping, and block-looping-3c (r=1 is used as a "
+            "regression check only)."
         ),
     )
     p.add_argument(
@@ -156,9 +171,11 @@ def parse_args():
         default=None,
         help=(
             "Block specs as space-separated START-END pairs (e.g. "
-            "--blocks 15-19 12-19 13-22). Only used under "
-            "--mode=block-looping. Default: the 6 plan3b candidates "
-            "(A 15-19, B 15-18, C 12-19, D 15-22, E 13-22, F 25-32)."
+            "--blocks 15-19 12-19 13-22). Used under --mode=block-looping "
+            "and --mode=block-looping-3c. Defaults: the 6 plan3b candidates "
+            "(A 15-19, B 15-18, C 12-19, D 15-22, E 13-22, F 25-32) for "
+            "block-looping; the 6 plan3c candidates (A 15-19, B 15-18, "
+            "D 15-22, G 15-24, H 15-23, I 20-27) for block-looping-3c."
         ),
     )
     p.add_argument(
@@ -186,7 +203,8 @@ def parse_args():
             "(layer-location), results/results_round2c_full_map.json "
             "(full-looping-map), results/results_round3a_pair_looping.json "
             "(pair-looping-map), results/results_round3b_blocks.json "
-            "(block-looping)."
+            "(block-looping), results/results_round3c_extended_blocks.json "
+            "(block-looping-3c)."
         ),
     )
     p.add_argument("--model-id", default=MODEL_ID)
@@ -254,6 +272,11 @@ def main():
             print("ERROR: --only-diagnostic only applies under --mode ple-variants.")
             sys.exit(1)
         run_block_looping_map(args, model, decoder_layers, inputs)
+    elif args.mode == "block-looping-3c":
+        if args.only_diagnostic:
+            print("ERROR: --only-diagnostic only applies under --mode ple-variants.")
+            sys.exit(1)
+        run_block_looping_3c_map(args, model, decoder_layers, inputs)
     else:
         raise ValueError(f"unknown mode: {args.mode}")
 
