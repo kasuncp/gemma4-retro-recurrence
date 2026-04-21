@@ -47,6 +47,15 @@ configuration accuracy, a pairwise agreement matrix, and a D-r1 vs
 baseline bitwise check. Answers plan4's question: does recurrence
 preserve, help, or degrade reasoning zero-shot?
 
+Round 5 (mode=reasoning-eval-r5): fixes the GSM8K baseline (chat
+template on E2B-it + 8-shot Wei-et-al CoT + max_gen_tokens raised to
+512), runs a 9-config width + start-position sweep on ARC-Easy
+(baseline, W2/W3/W4/W5-r8, W5-r1 sanity, S10-W3, S20-W3) plus a PLE
+ablation (W5-r8-noPLE). Two-pass model loading: GSM8K on
+google/gemma-4-E2B-it, ARC on base google/gemma-4-E2B for round-4
+cross-round parity. Adds truncation_rate per config and a W5-r8 vs
+round-4 A-r8 cross-round delta sanity check.
+
 Cloud-server friendly: argparse flags, HF cache redirect to persistent
 volume, env-info dump, JSON result save.
 
@@ -81,6 +90,15 @@ Recommended RunPod usage:
 
     # Round 4 (zero-shot reasoning eval: 7 configs x GSM8K +/- ARC):
     python ple_sanity_check.py --mode reasoning-eval
+
+    # Round 5 validation gate (plan5 Part 1 --- MUST PASS first, accuracy
+    # must land in [40%, 55%] on Gemma 4 E2B-it before the full sweep is
+    # run):
+    python ple_sanity_check.py --mode reasoning-eval-r5 \
+        --configs baseline --num-gsm8k-problems 50 --num-arc-problems 0
+
+    # Round 5 full sweep (9 configs x fixed GSM8K + ARC):
+    python ple_sanity_check.py --mode reasoning-eval-r5
 """
 
 import argparse
@@ -107,6 +125,10 @@ from probes.mode_round3a import run_pair_looping_map
 from probes.mode_round3b import run_block_looping_map
 from probes.mode_round3c import run_block_looping_3c_map
 from probes.mode_round4 import run_reasoning_eval_mode
+from probes.mode_round5 import (
+    run_reasoning_eval_r5_mode,
+    summarize_checkpoints_r5,
+)
 
 
 def parse_args():
@@ -123,6 +145,7 @@ def parse_args():
             "block-looping",
             "block-looping-3c",
             "reasoning-eval",
+            "reasoning-eval-r5",
         ],
         default="original",
         help=(
@@ -136,7 +159,10 @@ def parse_args():
             "block-looping-3c = round-3c A/B/D refs + G/H/I extension probes "
             "x {r=2,4,8}, vanilla only; "
             "reasoning-eval = round-4 zero-shot GSM8K (+/- ARC) over 7 "
-            "configs (baseline, D-r4, D-r8, G-r4, G-r8, A-r8, D-r1)"
+            "configs (baseline, D-r4, D-r8, G-r4, G-r8, A-r8, D-r1); "
+            "reasoning-eval-r5 = round-5 fixed-baseline width + start + PLE "
+            "sweep, 9 configs over GSM8K (E2B-it + chat template + 8-shot "
+            "CoT) and ARC-Easy (base E2B, raw prompt, round-4 parity)"
         ),
     )
     p.add_argument("--target-layer", type=int, default=17)
@@ -248,8 +274,32 @@ def parse_args():
     p.add_argument(
         "--max-gen-tokens",
         type=int,
-        default=256,
-        help="reasoning-eval: max new tokens per generation. Default 256.",
+        default=512,
+        help="reasoning-eval / reasoning-eval-r5: max new tokens per "
+             "generation. Default 512 (raised from round-4's 256 --- "
+             "plan5 Part 1 fix; 256 truncated 155/238 wrong GSM8K "
+             "baselines mid-arithmetic).",
+    )
+    p.add_argument(
+        "--gsm8k-model-id",
+        default="google/gemma-4-E2B-it",
+        help="reasoning-eval-r5 only: model used for the GSM8K pass. "
+             "Defaults to the instruction-tuned variant so chat template "
+             "+ few-shot CoT work as intended. Ignored by round 4.",
+    )
+    p.add_argument(
+        "--arc-model-id",
+        default="google/gemma-4-E2B",
+        help="reasoning-eval-r5 only: model used for the ARC-Easy pass. "
+             "Defaults to the base variant so the round-4 cross-round "
+             "anchor (A-r8 = 40.0%%) stays meaningful. Ignored by round 4.",
+    )
+    p.add_argument(
+        "--round4-json",
+        default=None,
+        help="reasoning-eval-r5: path to round-4 results JSON, used for "
+             "the W5-r8 vs A-r8 cross-round delta sanity check. Default: "
+             "results/results_round4_reasoning.json.",
     )
     p.add_argument(
         "--run-arc",
@@ -298,6 +348,21 @@ def main():
     if args.mode == "reasoning-eval" and args.summarize_only:
         from probes.mode_round4 import summarize_checkpoints
         summarize_checkpoints(args)
+        return
+    if args.mode == "reasoning-eval-r5" and args.summarize_only:
+        summarize_checkpoints_r5(args)
+        return
+
+    # Round 5 drives its own (two-pass) model loading inside the mode
+    # handler, so we short-circuit the top-level load_model here. We
+    # still print_env to confirm CUDA availability before spending
+    # minutes downloading the IT variant.
+    if args.mode == "reasoning-eval-r5":
+        if args.only_diagnostic:
+            print("ERROR: --only-diagnostic only applies under --mode ple-variants.")
+            sys.exit(1)
+        print_env()
+        run_reasoning_eval_r5_mode(args)
         return
 
     print_env()

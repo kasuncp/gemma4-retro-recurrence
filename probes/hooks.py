@@ -202,7 +202,12 @@ def install_pair_loop_hooks(decoder_layers, L, r):
     return uninstall
 
 
-def install_block_loop_hooks(decoder_layers, L_start, L_end, r):
+def install_block_loop_hooks(
+    decoder_layers, L_start, L_end, r,
+    *,
+    ple_strategy="every-iter",
+    ple_kwarg="per_layer_input",
+):
     """Install forward hooks to loop the block [L_start..L_end] as a unit r times.
 
     Generalisation of ``install_pair_loop_hooks`` to a contiguous range of
@@ -226,6 +231,23 @@ def install_block_loop_hooks(decoder_layers, L_start, L_end, r):
     Inner re-runs use ``module.forward(...)`` rather than ``module(...)``
     to bypass ``__call__`` and avoid retriggering our own hooks.
 
+    PLE injection strategy (plan5 Part 4):
+      - ``ple_strategy="every-iter"`` (default) --- replay iterations reuse
+        the captured PLE tensor each iteration. Matches rounds 3b/3c/4.
+      - ``ple_strategy="iter1-only"`` --- iteration 1 runs during the
+        outer model's natural forward pass and gets the real PLE. Replay
+        iterations 2..r substitute a same-shape zero tensor for the PLE
+        arg (equivalent to "no PLE contribution"). Zero tensor is safer
+        than None because the layer's forward may dereference it
+        unconditionally; zero makes the addition a no-op without altering
+        dtype / device / shape expectations.
+
+    ``ple_kwarg`` names the PLE kwarg on the decoder layer's forward
+    signature. Gemma 4 uses ``per_layer_input`` (confirmed via
+    ``probes.introspect``). The hook first looks for PLE as a kwarg; if
+    absent, falls back to positional arg index 1 (``args[1]`` is PLE
+    because ``args[0]`` is ``hidden_states``).
+
     Returns an uninstall callable.
     """
     if L_start < 0 or L_end >= len(decoder_layers) or L_start > L_end:
@@ -233,6 +255,8 @@ def install_block_loop_hooks(decoder_layers, L_start, L_end, r):
             f"block [{L_start}..{L_end}] out of range for "
             f"{len(decoder_layers)} layers"
         )
+    if ple_strategy not in ("every-iter", "iter1-only"):
+        raise ValueError(f"unknown ple_strategy={ple_strategy!r}")
 
     block_layers = [decoder_layers[i] for i in range(L_start, L_end + 1)]
     captured = [{} for _ in block_layers]
@@ -244,6 +268,29 @@ def install_block_loop_hooks(decoder_layers, L_start, L_end, r):
             captured[idx]["kwargs"] = kwargs
         return pre
 
+    def _replay_args_for(cap):
+        """Return (args, kwargs) to use for iterations >= 2.
+
+        For ``every-iter`` this is just the captured args/kwargs. For
+        ``iter1-only`` we clone and substitute a zero tensor for the PLE
+        arg so the first-iter PLE contribution is not re-added on replay.
+        Non-tensor PLE (None or missing) is left alone --- there is
+        nothing to zero out in that case.
+        """
+        args_i = cap["args"]
+        kwargs_i = cap["kwargs"]
+        if ple_strategy != "iter1-only":
+            return args_i, kwargs_i
+
+        if ple_kwarg in kwargs_i and hasattr(kwargs_i[ple_kwarg], "shape"):
+            orig = kwargs_i[ple_kwarg]
+            kwargs_i = dict(kwargs_i)
+            kwargs_i[ple_kwarg] = orig.new_zeros(orig.shape)
+        elif len(args_i) >= 2 and hasattr(args_i[1], "shape"):
+            orig = args_i[1]
+            args_i = args_i[:1] + (orig.new_zeros(orig.shape),) + args_i[2:]
+        return args_i, kwargs_i
+
     def post_last(module, input, output):
         if r <= 1:
             return output
@@ -254,15 +301,21 @@ def install_block_loop_hooks(decoder_layers, L_start, L_end, r):
                     f"block offset {i} (global layer {L_start + i})"
                 )
 
+        # Build per-layer replay args once; identical across r-1 iterations
+        # (the captured PLE tensor and zero-substitute are fixed for the
+        # duration of this forward call).
+        replay = [_replay_args_for(cap) for cap in captured]
+
         is_tuple = isinstance(output, tuple)
         x = output[0] if is_tuple else output
 
         # r-1 additional iterations (the outer forward already applied the
-        # block once to produce `output`).
+        # block once to produce `output` using the real, iter-1 PLE).
         for _ in range(r - 1):
             for i, layer in enumerate(block_layers):
-                new_args = (x,) + captured[i]["args"][1:]
-                out = layer.forward(*new_args, **captured[i]["kwargs"])
+                a_i, k_i = replay[i]
+                new_args = (x,) + a_i[1:]
+                out = layer.forward(*new_args, **k_i)
                 x = out[0] if isinstance(out, tuple) else out
 
         if is_tuple:
