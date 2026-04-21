@@ -266,11 +266,40 @@ def parse_args():
              "(baseline, D-r4, D-r8, G-r4, G-r8, A-r8, D-r1). Preserves "
              "the order given. Default: all 7.",
     )
+    p.add_argument(
+        "--checkpoint-dir",
+        default=None,
+        help="reasoning-eval: override the directory where per-problem "
+             "JSONL checkpoints are written. Default: results/round4_partial/.",
+    )
+    p.add_argument(
+        "--no-resume",
+        action="store_true",
+        help="reasoning-eval: wipe the checkpoint dir before running so the "
+             "sweep starts fresh. Default is to resume from any existing "
+             "JSONL data on disk.",
+    )
+    p.add_argument(
+        "--summarize-only",
+        action="store_true",
+        help="reasoning-eval: skip model loading and just print the plan4 "
+             "summary table from whatever JSONL data is in the checkpoint "
+             "dir. Use from a separate shell to inspect a running job.",
+    )
     return p.parse_args()
 
 
 def main():
     args = parse_args()
+
+    # --summarize-only short-circuits before print_env / load_model so
+    # the inspector can run from a CPU shell while the GPU box keeps
+    # generating. It only reads JSONLs from the checkpoint dir.
+    if args.mode == "reasoning-eval" and args.summarize_only:
+        from probes.mode_round4 import summarize_checkpoints
+        summarize_checkpoints(args)
+        return
+
     print_env()
 
     dtype = DTYPE_MAP[args.dtype]
