@@ -159,6 +159,20 @@ export HF_TOKEN="${HF_TOKEN:-${HUGGING_FACE_HUB_TOKEN}}"
 PYTHON="${PYTHON:-python3}"
 mkdir -p "$LOG_DIR"
 
+# --- Install python deps (mirrors run.sh step 3) ---
+# Must complete BEFORE any shard launches, otherwise three parallel
+# pip installs would race on the same site-packages tree.
+# Shares run.sh's marker file so a prior `./run.sh` run satisfies this.
+INSTALL_MARKER=".deps-installed"
+if [[ ! -f "$INSTALL_MARKER" || "${FORCE_INSTALL:-0}" == "1" ]]; then
+    echo "Installing/upgrading transformers, datasets, accelerate ..."
+    "$PYTHON" -m pip install -U pip
+    "$PYTHON" -m pip install -U transformers datasets accelerate
+    touch "$INSTALL_MARKER"
+else
+    echo "Deps already installed (delete $INSTALL_MARKER or set FORCE_INSTALL=1 to reinstall)."
+fi
+
 # --- GPU visibility preflight ---
 if command -v nvidia-smi >/dev/null 2>&1; then
     VISIBLE_GPUS=$(nvidia-smi --query-gpu=index --format=csv,noheader | wc -l | tr -d ' ')
@@ -169,8 +183,14 @@ if command -v nvidia-smi >/dev/null 2>&1; then
     fi
 fi
 
-# Route each shard's args through a helper so bash's array-passing
-# quirks don't silently drop configs.
+# Launch one shard. Appends the shard's PID to the global PIDS array.
+#
+# Critical: this function must NOT be called via $(launch_shard ...) /
+# `pid=$(...)`. Command substitution runs the function in a subshell,
+# and bash backgrounds (`&`) inside a subshell orphan the process to
+# init once the subshell exits --- subsequent `wait $pid` in the outer
+# shell then fails with "not a child of this shell". Modify PIDS
+# directly instead.
 launch_shard() {
     local gpu_id=$1
     shift
@@ -178,25 +198,22 @@ launch_shard() {
     local ckpt_dir="${PARTIAL_DIR_PREFIX}${gpu_id}"
     local log_file="$LOG_DIR/shard_gpu${gpu_id}.log"
 
-    # Status goes to stderr so the final `echo $!` is the only thing on
-    # stdout --- otherwise $(launch_shard ...) captures the status lines
-    # too and the calling `wait $pid` chokes on a multi-line blob.
-    echo "[gpu${gpu_id}] configs: ${configs[*]}" >&2
-    echo "[gpu${gpu_id}] ckpt:    ${ckpt_dir}" >&2
-    echo "[gpu${gpu_id}] log:     ${log_file}" >&2
+    echo "[gpu${gpu_id}] configs: ${configs[*]}"
+    echo "[gpu${gpu_id}] ckpt:    ${ckpt_dir}"
+    echo "[gpu${gpu_id}] log:     ${log_file}"
     CUDA_VISIBLE_DEVICES="$gpu_id" "$PYTHON" ple_sanity_check.py \
         "${COMMON_ARGS[@]}" \
         --configs "${configs[@]}" \
         --checkpoint-dir "$ckpt_dir" \
         > "$log_file" 2>&1 &
-    echo $!
+    PIDS+=("$!")
 }
 
 echo "=== Launching $NUM_GPUS shards ==="
 PIDS=()
-PID0=$(launch_shard 0 "${SHARD_0[@]}");    PIDS+=("$PID0")
-PID1=$(launch_shard 1 "${SHARD_1[@]}");    PIDS+=("$PID1")
-PID2=$(launch_shard 2 "${SHARD_2[@]}");    PIDS+=("$PID2")
+launch_shard 0 "${SHARD_0[@]}"
+launch_shard 1 "${SHARD_1[@]}"
+launch_shard 2 "${SHARD_2[@]}"
 
 echo
 echo "=== Shards launched. Tailing aggregated progress every 30s ==="
