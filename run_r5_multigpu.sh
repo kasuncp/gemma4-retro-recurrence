@@ -8,8 +8,14 @@
 # summary tables, agreement matrix, and sanity checks.
 #
 # Usage:
-#   ./run_r5_multigpu.sh                 # 3-GPU default, inside existing tmux or foreground
-#   tmux new -s r5 './run_r5_multigpu.sh'
+#   ./run_r5_multigpu.sh                 # auto-wraps in tmux session 'gemma-r5'
+#   ./run_r5_multigpu.sh --no-tmux       # run inline (no tmux)
+#
+# By default the run is launched inside a detached-friendly tmux session
+# named "gemma-r5" so closing your SSH terminal will NOT kill the shards.
+# Detach: Ctrl+B then D.  Re-attach: tmux attach -t gemma-r5.
+# If tmux is not installed, the script tries to install it automatically
+# (apt / yum / dnf / apk / brew).
 #
 # Shard assignment (kept deliberate):
 #   * baseline + W5-r1 share GPU0. Plan5 requires W5-r1 generations to
@@ -27,6 +33,83 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
+
+# ---------- tmux wrapper (mirrors run.sh) ----------
+# Auto-wraps this script in a detached-friendly tmux session so SSH
+# drops don't kill the multi-hour shards. Installs tmux if missing.
+SESSION_NAME="${TMUX_SESSION:-gemma-r5}"
+
+USE_TMUX=1
+FORWARDED_ARGS=()
+for arg in "$@"; do
+    if [[ "$arg" == "--no-tmux" ]]; then
+        USE_TMUX=0
+    else
+        FORWARDED_ARGS+=("$arg")
+    fi
+done
+
+if [[ "$USE_TMUX" == "1" && -z "${TMUX:-}" ]]; then
+    if ! command -v tmux >/dev/null 2>&1; then
+        echo "tmux not found --- installing ..."
+        SUDO=""
+        if [[ $EUID -ne 0 ]] && command -v sudo >/dev/null 2>&1; then
+            SUDO="sudo"
+        fi
+        # Try every supported package manager. Don't let `set -e` abort us
+        # mid-attempt --- we want to print a useful hint on failure.
+        install_ok=0
+        if command -v apt-get >/dev/null 2>&1; then
+            $SUDO apt-get update -qq && $SUDO apt-get install -y -qq tmux && install_ok=1 || true
+        elif command -v yum >/dev/null 2>&1; then
+            $SUDO yum install -y -q tmux && install_ok=1 || true
+        elif command -v dnf >/dev/null 2>&1; then
+            $SUDO dnf install -y -q tmux && install_ok=1 || true
+        elif command -v apk >/dev/null 2>&1; then
+            $SUDO apk add --no-cache tmux && install_ok=1 || true
+        elif command -v brew >/dev/null 2>&1; then
+            brew install tmux && install_ok=1 || true
+        else
+            echo "ERROR: no supported package manager found to install tmux."
+            echo "Install tmux manually, or re-run with --no-tmux."
+            exit 1
+        fi
+        if [[ "$install_ok" != "1" ]] || ! command -v tmux >/dev/null 2>&1; then
+            echo "ERROR: tmux install failed (network down? repo missing the package?)."
+            echo "Re-run with --no-tmux to proceed without a tmux wrapper:"
+            echo "  ./run_r5_multigpu.sh --no-tmux"
+            exit 1
+        fi
+        echo "tmux installed: $(tmux -V)"
+    fi
+
+    # If a session with this name already exists, just attach.
+    if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+        echo "Existing tmux session '$SESSION_NAME' found --- attaching."
+        echo "Detach: Ctrl+B then D.  Kill: tmux kill-session -t $SESSION_NAME"
+        exec tmux attach -t "$SESSION_NAME"
+    fi
+
+    # Build a robustly-quoted inner command so args with spaces survive.
+    # Guard against empty FORWARDED_ARGS: `printf '%q '` with no args
+    # emits a literal '' that argparse would reject as an unknown arg.
+    if [[ ${#FORWARDED_ARGS[@]} -eq 0 ]]; then
+        QUOTED_ARGS=""
+    else
+        QUOTED_ARGS=$(printf '%q ' "${FORWARDED_ARGS[@]}")
+    fi
+    QUOTED_DIR=$(printf '%q' "$SCRIPT_DIR")
+    INNER_CMD="cd $QUOTED_DIR && ./run_r5_multigpu.sh ${QUOTED_ARGS}--no-tmux; status=\$?; echo; echo \"=== run finished (exit=\$status). Type exit or Ctrl+D to close session. ===\"; exec bash"
+
+    echo "Launching tmux session '$SESSION_NAME' ..."
+    echo "  Detach (run keeps going): Ctrl+B then D"
+    echo "  Re-attach later:          tmux attach -t $SESSION_NAME"
+    echo "  Kill session (all shards): tmux kill-session -t $SESSION_NAME"
+    exec tmux new-session -s "$SESSION_NAME" "$INNER_CMD"
+fi
+
+# Past the wrapper: no meaningful flags remain for this script.
+set -- "${FORWARDED_ARGS[@]+"${FORWARDED_ARGS[@]}"}"
 
 # --- Shard definitions ---
 # 3-GPU default. For 2 GPUs, comment the 3-GPU block and uncomment the
@@ -76,16 +159,6 @@ export HF_TOKEN="${HF_TOKEN:-${HUGGING_FACE_HUB_TOKEN}}"
 PYTHON="${PYTHON:-python3}"
 mkdir -p "$LOG_DIR"
 
-# Friendly nudge if the user forgot the tmux wrap. On a typical round-5
-# runtime this will be multi-hour; an SSH disconnect without tmux kills
-# the whole run.
-if [[ -z "${TMUX:-}" ]]; then
-    echo "WARNING: not running inside tmux. An SSH disconnect will kill"
-    echo "         every shard. Consider:"
-    echo "           tmux new -s gemma-r5 './run_r5_multigpu.sh'"
-    echo
-fi
-
 # --- GPU visibility preflight ---
 if command -v nvidia-smi >/dev/null 2>&1; then
     VISIBLE_GPUS=$(nvidia-smi --query-gpu=index --format=csv,noheader | wc -l | tr -d ' ')
@@ -105,9 +178,12 @@ launch_shard() {
     local ckpt_dir="${PARTIAL_DIR_PREFIX}${gpu_id}"
     local log_file="$LOG_DIR/shard_gpu${gpu_id}.log"
 
-    echo "[gpu${gpu_id}] configs: ${configs[*]}"
-    echo "[gpu${gpu_id}] ckpt:    ${ckpt_dir}"
-    echo "[gpu${gpu_id}] log:     ${log_file}"
+    # Status goes to stderr so the final `echo $!` is the only thing on
+    # stdout --- otherwise $(launch_shard ...) captures the status lines
+    # too and the calling `wait $pid` chokes on a multi-line blob.
+    echo "[gpu${gpu_id}] configs: ${configs[*]}" >&2
+    echo "[gpu${gpu_id}] ckpt:    ${ckpt_dir}" >&2
+    echo "[gpu${gpu_id}] log:     ${log_file}" >&2
     CUDA_VISIBLE_DEVICES="$gpu_id" "$PYTHON" ple_sanity_check.py \
         "${COMMON_ARGS[@]}" \
         --configs "${configs[@]}" \
