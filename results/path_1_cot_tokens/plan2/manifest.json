@@ -1,0 +1,57 @@
+{
+  "plan": "path_1_cot_tokens/plan2",
+  "model_id": "google/gemma-4-E2B-it",
+  "exemplar_set": "wei-et-al-2022-hashformat",
+  "exemplar_hash": "a33e6d90c6844317",
+  "dtype": "bf16",
+  "n_total": 500,
+  "axis_a_cells": [
+    {
+      "cell": "A1_len128",
+      "max_new_tokens": 128
+    },
+    {
+      "cell": "A2_len256",
+      "max_new_tokens": 256
+    },
+    {
+      "cell": "A3_len512",
+      "max_new_tokens": 512
+    },
+    {
+      "cell": "A4_len1024",
+      "max_new_tokens": 1024
+    }
+  ],
+  "axis_b_cells": [
+    {
+      "cell": "B1_k1",
+      "k": 1,
+      "max_new_tokens": 512,
+      "temperature": 0.7,
+      "top_p": 0.95
+    },
+    {
+      "cell": "B2_k3",
+      "k": 3,
+      "max_new_tokens": 512,
+      "temperature": 0.7,
+      "top_p": 0.95
+    },
+    {
+      "cell": "B3_k5",
+      "k": 5,
+      "max_new_tokens": 512,
+      "temperature": 0.7,
+      "top_p": 0.95
+    },
+    {
+      "cell": "B4_k10",
+      "k": 10,
+      "max_new_tokens": 512,
+      "temperature": 0.7,
+      "top_p": 0.95
+    }
+  ],
+  "axis_b_base_seed": 0
+}
