@@ -40,6 +40,43 @@ cd "$SCRIPT_DIR"
 
 SESSION_NAME="${TMUX_SESSION:-gemma-recurrence}"
 
+# ---------- Experiment registry ----------
+# To add a new experiment script, add one entry to each of the four
+# parallel arrays below — do NOT sprinkle cases elsewhere in this file.
+# Entries must stay in lockstep (same index across arrays).
+#
+# Convention every entry point must satisfy:
+#   1. Accept --no-resume and resume by reading existing output if the
+#      script can run for >30 minutes. Short single-shot runs are exempt.
+#   2. Write exclusively under the declared result_root. The watcher
+#      rsyncs that dir; results written elsewhere will never reach the laptop.
+#   3. Exit 0 on success, non-zero on failure. run.sh drops .DONE / .FAILED
+#      markers at EXPERIMENT_RESULT_DIR automatically; scripts don't write them.
+#   4. Register here: key, script file, default args, result_root, result_depth.
+#        result_depth=flat       -> stage-5 commits depth-1 *.json only
+#        result_depth=recursive  -> stage-5 commits *.json + *.jsonl recursive
+#
+# We use parallel indexed arrays instead of `declare -A` so this file runs
+# on both macOS stock bash 3.2 (no assoc-array support) and pod bash 4+.
+EXPERIMENT_KEYS=(probe                path1                       path1-plan2)
+EXPERIMENT_SCRIPTS=(ple_sanity_check.py  path1_cot_gate.py           path1_length_and_sc.py)
+EXPERIMENT_DEFAULTS=("--mode ple-variants"  ""                        "")
+EXPERIMENT_ROOTS=(results             results/path_1_cot_tokens    results/path_1_cot_tokens/plan2)
+EXPERIMENT_DEPTHS=(flat               recursive                    recursive)
+
+# Return the index of $1 in EXPERIMENT_KEYS, or non-zero if not found.
+# Echoes the index on success.
+_registry_idx() {
+    local key="$1" i
+    for i in "${!EXPERIMENT_KEYS[@]}"; do
+        if [[ "${EXPERIMENT_KEYS[$i]}" == "$key" ]]; then
+            echo "$i"
+            return 0
+        fi
+    done
+    return 1
+}
+
 # ---------- 0. tmux wrapper ----------
 # Detect --no-tmux and --script (run.sh's own flags) and strip them from what
 # we forward to the python script.
@@ -54,7 +91,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --script)
             if [[ $# -lt 2 ]]; then
-                echo "ERROR: --script needs a value (probe | path1)."
+                echo "ERROR: --script needs a value (one of: ${EXPERIMENT_KEYS[*]})."
                 exit 2
             fi
             TARGET_SCRIPT="$2"
@@ -71,13 +108,10 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-case "$TARGET_SCRIPT" in
-    probe|path1|path1-plan2) ;;
-    *)
-        echo "ERROR: unknown --script '$TARGET_SCRIPT' (expected: probe, path1, path1-plan2)."
-        exit 2
-        ;;
-esac
+if ! _experiment_idx=$(_registry_idx "$TARGET_SCRIPT"); then
+    echo "ERROR: unknown --script '$TARGET_SCRIPT' (expected one of: ${EXPERIMENT_KEYS[*]})."
+    exit 2
+fi
 
 if [[ "$USE_TMUX" == "1" && -z "${TMUX:-}" ]]; then
     if ! command -v tmux >/dev/null 2>&1; then
@@ -198,23 +232,13 @@ fi
 # ---------- 4. Run the selected python script ----------
 # Defaults differ per entry point. If the user passed any args, use those
 # verbatim instead.
-case "$TARGET_SCRIPT" in
-    probe)
-        PY_SCRIPT="ple_sanity_check.py"
-        if [[ $# -eq 0 ]]; then
-            set -- --mode ple-variants
-        fi
-        ;;
-    path1)
-        PY_SCRIPT="path1_cot_gate.py"
-        # path1_cot_gate.py with no args runs all 4 cells sequentially on one GPU.
-        ;;
-    path1-plan2)
-        PY_SCRIPT="path1_length_and_sc.py"
-        # No args = full run: axis A (length sweep) + axis B (self-consistency) on n=500.
-        # Results land under results/path_1_cot_tokens/plan2/.
-        ;;
-esac
+PY_SCRIPT="${EXPERIMENT_SCRIPTS[$_experiment_idx]}"
+_default_args="${EXPERIMENT_DEFAULTS[$_experiment_idx]}"
+if [[ $# -eq 0 && -n "$_default_args" ]]; then
+    # shellcheck disable=SC2086  # deliberate word-split: defaults are simple flag tokens
+    set -- $_default_args
+fi
+unset _default_args
 
 RUN_ARGS=("$@")
 
@@ -264,41 +288,32 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 fi
 
 FILES_TO_ADD=()
-# What to stage depends on the entry point:
-#   probe -> results/*.json at depth 1 (the probe writes flat), plus legacy
-#            bare filenames at the repo root so old result JSONs don't get
-#            orphaned mid-migration.
-#   path1 -> results/path_1_cot_tokens/** (nested: plan1/results_gate.json
-#            plus plan1/cells/*.jsonl shards).
-case "$TARGET_SCRIPT" in
-    probe)
-        if [[ -d results ]]; then
-            # shellcheck disable=SC2207
-            while IFS= read -r f; do
-                FILES_TO_ADD+=("$f")
-            done < <(find results -maxdepth 1 -type f -name '*.json' 2>/dev/null)
-        fi
-        for f in results.json results_round2a.json results_round2a_addendum.json results_round2a_fixed.json results_round2b_importance.json results_round2b_location.json results_round2c_full_map.json results_round3a_pair_looping.json; do
-            [[ -f "$f" ]] && FILES_TO_ADD+=("$f")
-        done
-        ;;
-    path1)
-        if [[ -d results/path_1_cot_tokens ]]; then
-            # shellcheck disable=SC2207
-            while IFS= read -r f; do
-                FILES_TO_ADD+=("$f")
-            done < <(find results/path_1_cot_tokens -type f \( -name '*.json' -o -name '*.jsonl' \) 2>/dev/null)
-        fi
-        ;;
-    path1-plan2)
-        if [[ -d results/path_1_cot_tokens/plan2 ]]; then
-            # shellcheck disable=SC2207
-            while IFS= read -r f; do
-                FILES_TO_ADD+=("$f")
-            done < <(find results/path_1_cot_tokens/plan2 -type f \( -name '*.json' -o -name '*.jsonl' \) 2>/dev/null)
-        fi
-        ;;
-esac
+# Registry-driven: stage files under the declared result_root, using the
+# declared depth.  flat=depth-1 *.json only; recursive=*.json+*.jsonl.
+_result_root="${EXPERIMENT_ROOTS[$_experiment_idx]}"
+_result_depth="${EXPERIMENT_DEPTHS[$_experiment_idx]}"
+
+if [[ -d "$_result_root" ]]; then
+    # shellcheck disable=SC2207
+    if [[ "$_result_depth" == "flat" ]]; then
+        while IFS= read -r f; do
+            FILES_TO_ADD+=("$f")
+        done < <(find "$_result_root" -maxdepth 1 -type f -name '*.json' 2>/dev/null)
+    else
+        while IFS= read -r f; do
+            FILES_TO_ADD+=("$f")
+        done < <(find "$_result_root" -type f \( -name '*.json' -o -name '*.jsonl' \) 2>/dev/null)
+    fi
+fi
+
+# Legacy: pre-migration probe runs dropped JSONs at the repo root. Pick them
+# up so old result files don't get orphaned. Only relevant for 'probe'.
+if [[ "$TARGET_SCRIPT" == "probe" ]]; then
+    for f in results.json results_round2a.json results_round2a_addendum.json results_round2a_fixed.json results_round2b_importance.json results_round2b_location.json results_round2c_full_map.json results_round3a_pair_looping.json; do
+        [[ -f "$f" ]] && FILES_TO_ADD+=("$f")
+    done
+fi
+unset _result_root _result_depth
 
 if [[ ${#FILES_TO_ADD[@]} -eq 0 ]]; then
     echo "No result JSONs on disk --- nothing to commit."
