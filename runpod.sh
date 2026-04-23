@@ -340,6 +340,58 @@ cmd_launch() {
     "
 }
 
+cmd_tmux_alive() {
+    _load_state; _refresh_ssh
+    # Exit 0 if the tmux session exists AND its current pane is running
+    # something other than bash. Session with only a bash prompt means the
+    # python run finished (clean or via failure); the tail of run.sh drops
+    # to `exec bash` per its current wrapper.
+    local result
+    result=$(_ssh "
+        if ! tmux has-session -t 'gemma-recurrence' 2>/dev/null; then
+            echo 'no-session'; exit 0
+        fi
+        cmd=\$(tmux display-message -t 'gemma-recurrence' -p '#{pane_current_command}' 2>/dev/null)
+        echo \"cmd=\$cmd\"
+    ")
+    case "$result" in
+        *"no-session"*) return 1 ;;
+        *"cmd=bash"*)   return 1 ;;  # dropped to shell = run exited
+        *"cmd="*)       return 0 ;;  # anything non-bash = still running
+        *)              return 1 ;;
+    esac
+}
+
+cmd_marker() {
+    [[ $# -eq 1 ]] || die "marker needs <result-dir>"
+    local result_dir="$1"
+    _load_state; _refresh_ssh
+    [[ -n "$POD_REPO_DIR" ]] || die "no repo_dir in state; run bootstrap first"
+
+    local marker
+    marker=$(_ssh "
+        if [ -f '$POD_REPO_DIR/$result_dir/.DONE' ]; then
+            echo DONE
+        elif [ -f '$POD_REPO_DIR/$result_dir/.FAILED' ]; then
+            echo FAILED
+        else
+            echo NONE
+        fi
+    " | tr -d '[:space:]')
+
+    if [[ "$marker" == "DONE" || "$marker" == "FAILED" ]]; then
+        echo "$marker"
+        return 0
+    fi
+
+    # No marker. Is tmux still alive?
+    if cmd_tmux_alive 2>/dev/null; then
+        echo "RUNNING"
+    else
+        echo "CRASHED"
+    fi
+}
+
 cmd_logs() { _ssh "tail -n 200 -f /workspace/startup.log"; }
 
 cmd_down() {
