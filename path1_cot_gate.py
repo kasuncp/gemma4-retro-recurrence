@@ -39,6 +39,7 @@ import math
 import os
 import re
 import sys
+import time
 from copy import deepcopy
 from pathlib import Path
 
@@ -412,8 +413,10 @@ def run_cell(model, tokenizer, model_key, cond, problems, golds, start, end,
     print(f"[{model_key}:{cond}] {start}:{end} --- {len(done)} done, "
           f"{len(remaining)} to generate (batch_size={batch_size}) "
           f"--> {path.name}")
+    gen_secs = 0.0
     for chunk_start in range(0, len(remaining), batch_size):
         chunk = remaining[chunk_start:chunk_start + batch_size]
+        t0 = time.perf_counter()
         if batch_size == 1:
             (i, p, g), = chunk
             prompt = build_prompt(EXEMPLARS[cond], p["question"])
@@ -422,6 +425,7 @@ def run_cell(model, tokenizer, model_key, cond, problems, golds, start, end,
             prompts = [build_prompt(EXEMPLARS[cond], p["question"])
                        for _, p, _ in chunk]
             completions = _generate_batch(model, tokenizer, prompts, MAX_NEW[cond])
+        gen_secs += time.perf_counter() - t0
         for (i, p, g), compl in zip(chunk, completions):
             pred, hashed = extract(compl)
             append_jsonl(path, {
@@ -432,6 +436,12 @@ def run_cell(model, tokenizer, model_key, cond, problems, golds, start, end,
                 "hash_hit": int(hashed),
                 "completion": compl,
             })
+    if gen_secs > 0 and len(remaining) > 0:
+        # True throughput, not nvidia-smi util %. Compare this number across
+        # batch sizes --- it should rise roughly sub-linearly with batch_size.
+        print(f"[{model_key}:{cond}] {len(remaining)/gen_secs:.2f} problems/s "
+              f"over {gen_secs:.1f}s of generation "
+              f"(batch_size={batch_size}, max_new={MAX_NEW[cond]})")
     return path
 
 
