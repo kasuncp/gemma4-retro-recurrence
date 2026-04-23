@@ -290,6 +290,14 @@ case "$TARGET_SCRIPT" in
             done < <(find results/path_1_cot_tokens -type f \( -name '*.json' -o -name '*.jsonl' \) 2>/dev/null)
         fi
         ;;
+    path1-plan2)
+        if [[ -d results/path_1_cot_tokens/plan2 ]]; then
+            # shellcheck disable=SC2207
+            while IFS= read -r f; do
+                FILES_TO_ADD+=("$f")
+            done < <(find results/path_1_cot_tokens/plan2 -type f \( -name '*.json' -o -name '*.jsonl' \) 2>/dev/null)
+        fi
+        ;;
 esac
 
 if [[ ${#FILES_TO_ADD[@]} -eq 0 ]]; then
