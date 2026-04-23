@@ -1,0 +1,23 @@
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+============================================================
+torch:        2.4.1+cu124
+transformers: 5.6.0
+CUDA avail:   True
+GPU:          NVIDIA GeForce RTX 3090 (25.3 GB)
+capability:   sm_86
+HF_HOME:      /workspace/.cache/huggingface
+HF token set: True
+============================================================
+Checkpoint dir: results/round5_partial_gpu1  (fresh start)
+  GSM8K model: google/gemma-4-E2B-it
+  ARC   model: google/gemma-4-E2B
+  max_gen_tokens: 512
+Loading GSM8K (openai/gsm8k, config='main', split='test') ...
+  loaded 250 GSM8K problems.
+Loading ARC-Easy (allenai/ai2_arc, config='ARC-Easy', split='test') ...
+  loaded 200 ARC-Easy problems.
+
+================ Loading gsm8k model: google/gemma-4-E2B-it ================
+Loading weights:   0%|          | 0/1951 [00:00<?, ?it/s]Loading weights:  18%|█▊        | 359/1951 [00:00<00:00, 3587.12it/s]Loading weights:  37%|███▋      | 718/1951 [00:00<00:00, 3297.20it/s]Loading weights:  54%|█████▍    | 1050/1951 [00:01<00:01, 569.64it/s]Loading weights:  64%|██████▎   | 1243/1951 [00:01<00:01, 546.33it/s]Loading weights:  71%|███████   | 1379/1951 [00:01<00:00, 606.22it/s]Loading weights:  87%|████████▋ | 1704/1951 [00:02<00:00, 919.50it/s]Loading weights: 100%|██████████| 1951/1951 [00:02<00:00, 916.70it/s]
+[transformers] The following generation flags are not valid and may be ignored: ['top_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[transformers] Passing `generation_config` together with generation-related arguments=({'pad_token_id', 'stop_strings', 'max_new_tokens', 'use_cache'}) is deprecated and will be removed in future versions. Please pass either a `generation_config` object OR all generation parameters explicitly, but not both.

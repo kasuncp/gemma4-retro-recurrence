@@ -1,0 +1,25 @@
+============================================================
+torch:        2.4.1+cu124
+transformers: 5.6.0
+CUDA avail:   True
+GPU:          NVIDIA GeForce RTX 3090 (25.3 GB)
+capability:   sm_86
+HF_HOME:      /workspace/.cache/huggingface
+HF token set: True
+============================================================
+Checkpoint dir: results/round5_partial_gpu0  (fresh start)
+  GSM8K model: google/gemma-4-E2B-it
+  ARC   model: google/gemma-4-E2B
+  max_gen_tokens: 512
+Loading GSM8K (openai/gsm8k, config='main', split='test') ...
+Generating train split:   0%|          | 0/7473 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 7473/7473 [00:00<00:00, 185620.33 examples/s]
+Generating test split:   0%|          | 0/1319 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 1319/1319 [00:00<00:00, 64081.53 examples/s]
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+  loaded 250 GSM8K problems.
+Loading ARC-Easy (allenai/ai2_arc, config='ARC-Easy', split='test') ...
+  loaded 200 ARC-Easy problems.
+
+================ Loading gsm8k model: google/gemma-4-E2B-it ================
+Loading weights:   0%|          | 0/1951 [00:00<?, ?it/s]Loading weights:  17%|█▋        | 325/1951 [00:00<00:00, 3234.10it/s]Loading weights:  35%|███▌      | 685/1951 [00:00<00:00, 3442.14it/s]Loading weights:  53%|█████▎    | 1030/1951 [00:01<00:01, 610.24it/s]Loading weights:  63%|██████▎   | 1232/1951 [00:01<00:01, 608.19it/s]Loading weights:  71%|███████   | 1378/1951 [00:01<00:00, 649.54it/s]Loading weights:  87%|████████▋ | 1691/1951 [00:01<00:00, 955.80it/s]Loading weights: 100%|██████████| 1951/1951 [00:02<00:00, 967.10it/s]
+[transformers] The following generation flags are not valid and may be ignored: ['top_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[transformers] Passing `generation_config` together with generation-related arguments=({'max_new_tokens', 'stop_strings', 'use_cache', 'pad_token_id'}) is deprecated and will be removed in future versions. Please pass either a `generation_config` object OR all generation parameters explicitly, but not both.

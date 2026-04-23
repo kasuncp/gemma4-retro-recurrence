@@ -1,0 +1,7 @@
+{
+  "gsm8k_model_id": "google/gemma-4-E2B-it",
+  "arc_model_id": "google/gemma-4-E2B",
+  "dtype": "bf16",
+  "max_gen_tokens": 512,
+  "plan": "round5"
+}
