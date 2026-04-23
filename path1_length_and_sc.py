@@ -145,6 +145,19 @@ def parse_args():
     )
     p.add_argument("--dtype", choices=list(DTYPE_MAP), default="bf16")
     p.add_argument(
+        "--batch-size", type=int, default=1,
+        help="Axis-A greedy batch size. Default 1 is single-sequence, "
+             "bit-identical to plan 1 --- required for sanity check #2 "
+             "(A3 reproduces plan 1). Larger values amortize GPU idle "
+             "time: at bf16 on a 3090, batch=8 fits easily and typically "
+             "gives 3-5x throughput on A-axis cells. Batched outputs may "
+             "differ from batch=1 by a few tokens per problem due to FP "
+             "order-of-ops in attention matmul; if you need A3 reproduced, "
+             "run A3 separately with --batch-size 1. Axis-B sampling "
+             "ignores this flag (it already batches k chains via "
+             "num_return_sequences=k).",
+    )
+    p.add_argument(
         "--results-dir", default=RESULTS_SUBDIR,
         help="Directory for per-cell JSONL shards and final results_plan2.json.",
     )
@@ -176,6 +189,8 @@ def parse_args():
     args = p.parse_args()
     if args.n < 1:
         p.error(f"--n must be >= 1, got {args.n}.")
+    if args.batch_size < 1:
+        p.error(f"--batch-size must be >= 1, got {args.batch_size}.")
     if args.problems is None:
         args.problems = f"0:{args.n}"
     if args.cells is None:
@@ -306,6 +321,48 @@ def generate_greedy(model, tokenizer, prompt, max_new):
     return completion, n_gen, input_len
 
 
+def generate_greedy_batch(model, tokenizer, prompts, max_new):
+    """Batched equivalent of generate_greedy. Returns a list of
+    (completion, n_gen, input_len) per input prompt, in order.
+
+    Uses left-padding + attention_mask so padded tokens don't affect the
+    model's forward pass. Causal-LM generate() with left-padding is the
+    supported way to mix variable-length prompts in one batch.
+
+    Not bit-identical to generate_greedy on the same prompt: batched matmul
+    reorders floating-point ops, so a few tokens per problem may diverge.
+    This is why axis A batching is opt-in and A3 (the plan-1 reproduction
+    cell) should be run separately at batch=1 when the sanity check matters.
+    """
+    import torch
+    # Left-pad so generation continues from each prompt's true last token.
+    was_padding_side = tokenizer.padding_side
+    tokenizer.padding_side = "left"
+    try:
+        enc = tokenizer(
+            list(prompts), return_tensors="pt", padding=True,
+        ).to(model.device)
+    finally:
+        tokenizer.padding_side = was_padding_side
+    input_shape = enc["input_ids"].shape[1]  # padded length (shared across rows)
+    # True prompt token counts (non-pad, per row) for FLOPs attribution.
+    input_lens = enc["attention_mask"].sum(dim=1).tolist()
+    pad_id = tokenizer.pad_token_id or tokenizer.eos_token_id
+    with torch.no_grad():
+        out = model.generate(
+            **enc, generation_config=_greedy_gen_cfg(model),
+            max_new_tokens=max_new, pad_token_id=pad_id,
+        )
+    # Generated tokens start after the (padded) input block on every row.
+    gen_ids = out[:, input_shape:]
+    results = []
+    for row_gen, input_len in zip(gen_ids, input_lens):
+        completion = tokenizer.decode(row_gen, skip_special_tokens=True)
+        n_gen = _count_gen_tokens(row_gen, pad_id)
+        results.append((completion, n_gen, int(input_len)))
+    return results
+
+
 def sample_k_chains(model, tokenizer, prompt, k, max_new, idx):
     """Sample k chains in a single generate() call (num_return_sequences=k),
     seeded per-problem for resume-stable determinism (sanity check #3)."""
@@ -354,7 +411,7 @@ def majority_vote(preds):
 # -----------------------------------------------------------------------------
 
 def run_axis_a_cell(model, tokenizer, cell, max_new, problems, golds, start,
-                    end, results_dir, no_resume):
+                    end, results_dir, no_resume, batch_size=1):
     path = shard_jsonl(results_dir, cell, start, end)
     if no_resume and path.exists():
         path.unlink()
@@ -362,28 +419,60 @@ def run_axis_a_cell(model, tokenizer, cell, max_new, problems, golds, start,
     remaining = [(i, p, g) for i, (p, g) in enumerate(zip(problems, golds))
                  if (start + i) not in done]
     print(f"[{cell}] max_new={max_new}  {start}:{end}  "
-          f"{len(done)} done, {len(remaining)} to generate  -> {path.name}")
+          f"{len(done)} done, {len(remaining)} to generate  -> {path.name}  "
+          f"batch_size={batch_size}")
     gen_secs = 0.0
-    for i, prob, gold in remaining:
-        prompt = build_prompt(EXEMPLARS["cot"], prob["question"])
-        t0 = time.perf_counter()
-        completion, n_gen, prompt_len = generate_greedy(
-            model, tokenizer, prompt, max_new,
-        )
-        dt = time.perf_counter() - t0
-        gen_secs += dt
-        pred, hashed = extract(completion)
-        append_jsonl(path, {
-            "idx": start + i,
-            "gold": gold,
-            "pred": pred,
-            "correct": int(pred is not None and pred == gold),
-            "hash_hit": int(hashed),
-            "completion": completion,
-            "n_gen_tokens": n_gen,
-            "prompt_tokens": prompt_len,
-            "gen_secs": dt,
-        })
+    if batch_size <= 1:
+        # Single-sequence path: byte-identical to plan 1 (sanity check #2).
+        for i, prob, gold in remaining:
+            prompt = build_prompt(EXEMPLARS["cot"], prob["question"])
+            t0 = time.perf_counter()
+            completion, n_gen, prompt_len = generate_greedy(
+                model, tokenizer, prompt, max_new,
+            )
+            dt = time.perf_counter() - t0
+            gen_secs += dt
+            pred, hashed = extract(completion)
+            append_jsonl(path, {
+                "idx": start + i,
+                "gold": gold,
+                "pred": pred,
+                "correct": int(pred is not None and pred == gold),
+                "hash_hit": int(hashed),
+                "completion": completion,
+                "n_gen_tokens": n_gen,
+                "prompt_tokens": prompt_len,
+                "gen_secs": dt,
+            })
+    else:
+        # Batched path: amortize GPU idle time across problems. Per-row
+        # gen_secs is (batch wall time / batch size) --- coarse, but
+        # mean_wallclock_sec in metrics_for_cell averages over rows anyway.
+        for b in range(0, len(remaining), batch_size):
+            batch = remaining[b:b + batch_size]
+            prompts = [build_prompt(EXEMPLARS["cot"], prob["question"])
+                       for _, prob, _ in batch]
+            t0 = time.perf_counter()
+            per_row = generate_greedy_batch(
+                model, tokenizer, prompts, max_new,
+            )
+            dt = time.perf_counter() - t0
+            gen_secs += dt
+            per_row_dt = dt / len(batch)
+            for (i, _prob, gold), (completion, n_gen, prompt_len) in zip(
+                    batch, per_row):
+                pred, hashed = extract(completion)
+                append_jsonl(path, {
+                    "idx": start + i,
+                    "gold": gold,
+                    "pred": pred,
+                    "correct": int(pred is not None and pred == gold),
+                    "hash_hit": int(hashed),
+                    "completion": completion,
+                    "n_gen_tokens": n_gen,
+                    "prompt_tokens": prompt_len,
+                    "gen_secs": per_row_dt,
+                })
     if gen_secs > 0 and remaining:
         print(f"[{cell}] {len(remaining)/gen_secs:.2f} problems/s  "
               f"over {gen_secs:.1f}s")
@@ -968,6 +1057,7 @@ def main():
                     model, tokenizer, cell, dict(AXIS_A)[cell],
                     problems, golds, start, end,
                     args.results_dir, args.no_resume,
+                    batch_size=args.batch_size,
                 )
             elif cell in dict(AXIS_B):
                 run_axis_b_cell(
