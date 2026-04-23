@@ -14,7 +14,9 @@
 #   ./runpod.sh ssh                      # open an interactive shell
 #   ./runpod.sh status                   # show current pod info
 #   ./runpod.sh logs                     # tail /workspace/startup.log if present
-#   ./runpod.sh down                     # terminate (delete) the pod
+#   ./runpod.sh down [id]                # terminate the state-file pod, or a specific id
+#   ./runpod.sh list                     # list every pod owned by this API key
+#   ./runpod.sh reap                     # terminate EVERY pod owned by this API key
 #   ./runpod.sh cost                     # print cost/budget JSON (reads BUDGET_*_USD env)
 #   ./runpod.sh bootstrap <url> [ref]    # clone or pull the repo on the pod, copy local .env up
 #   ./runpod.sh launch "<flags>" <dir>   # start the experiment in a tmux session on the pod
@@ -127,6 +129,22 @@ cmd_up() {
     [[ -f "$SSH_KEY.pub" ]] || die "public key not found at $SSH_KEY.pub (generate with: ssh-keygen -t ed25519)"
     local pubkey; pubkey=$(cat "$SSH_KEY.pub")
 
+    # Arm a cleanup trap: if we die between pod creation and SSH-ready
+    # (timeout, Ctrl-C, network hiccup), terminate the pod so it doesn't
+    # become a billing orphan. Disarmed on the success path below.
+    local _pending_pod_id=""
+    _cleanup_orphan_on_fail() {
+        local rc=$?
+        if [[ $rc -ne 0 && -n "$_pending_pod_id" ]]; then
+            echo "cleanup: terminating orphan pod $_pending_pod_id..." >&2
+            api DELETE "/pods/$_pending_pod_id" >/dev/null 2>&1 \
+                || echo "warn: cleanup DELETE failed; run './runpod.sh reap' manually" >&2
+            rm -f "$STATE_FILE"
+        fi
+        trap - EXIT INT TERM
+    }
+    trap _cleanup_orphan_on_fail EXIT INT TERM
+
     # Build env object: merge POD_ENV_JSON with PUBLIC_KEY (required for SSH).
     local env_obj
     env_obj=$(jq -c --arg pk "$pubkey" '. + {PUBLIC_KEY: $pk}' <<<"$POD_ENV_JSON") \
@@ -179,6 +197,7 @@ cmd_up() {
     local resp; resp=$(api POST /pods "$body") || die "pod creation failed (common causes: no capacity for selected GPU/region, invalid network volume id)"
     local pod_id; pod_id=$(jq -r '.id' <<<"$resp")
     [[ "$pod_id" != "null" && -n "$pod_id" ]] || die "no pod id in response: $resp"
+    _pending_pod_id="$pod_id"   # arm cleanup trap now that a pod is billing
     local started_at; started_at=$(_unix_now)
     echo "$resp" | jq --argjson ts "$started_at" '{id, name, costPerHr, desiredStatus} + {started_at: $ts}' > "$STATE_FILE"
     echo "pod id: $pod_id — waiting for SSH..."
@@ -197,6 +216,8 @@ cmd_up() {
                 jq --arg h "$host" --arg p "$port" '. + {publicIp: $h, sshPort: ($p|tonumber)}' \
                     "$STATE_FILE" > "$STATE_FILE.tmp" && mv "$STATE_FILE.tmp" "$STATE_FILE"
                 echo "ready: ssh -p $port root@$host"
+                _pending_pod_id=""   # disarm: pod is healthy, state file is authoritative
+                trap - EXIT INT TERM
                 return 0
             fi
         fi
@@ -595,6 +616,19 @@ cmd_go() {
     # Refuse to stack. Explicit teardown is safer than silently orphaning.
     [[ ! -f "$STATE_FILE" ]] \
         || die "$STATE_FILE exists; a pod is already registered. './runpod.sh down' first (or delete the stale state file)."
+
+    # Also check the RunPod API itself. A local state file can be missing
+    # (deleted manually, lost between retries) while a pod is still billing
+    # — exactly the bug that created the first orphan. See './runpod.sh list'.
+    local existing_pods existing_count
+    existing_pods=$(api GET /pods) || die "failed to list existing pods via API"
+    existing_count=$(jq 'length' <<<"$existing_pods")
+    if [[ "$existing_count" -gt 0 ]]; then
+        echo "error: $existing_count pod(s) already running under this API key:" >&2
+        jq -r '.[] | "  \(.id)  \(.name)  \(.desiredStatus)  $\(.costPerHr)/hr  created=\(.createdAt)"' \
+            <<<"$existing_pods" >&2
+        die "refusing to create a new pod. Reap them first: './runpod.sh reap' (or terminate individually with './runpod.sh down <id>')."
+    fi
     if command -v tmux >/dev/null 2>&1 && tmux has-session -t rp-watch 2>/dev/null; then
         die "tmux session 'rp-watch' already running. 'tmux kill-session -t rp-watch' first."
     fi
@@ -630,9 +664,51 @@ cmd_go() {
 }
 
 cmd_down() {
-    _load_state
-    echo "terminating pod $POD_ID..."
-    api DELETE "/pods/$POD_ID" >/dev/null && echo "deleted" && rm -f "$STATE_FILE"
+    # With no args: terminate the pod in the state file and remove it.
+    # With an id arg: terminate that specific pod, leave state file alone
+    # (supports reaping orphans the state file doesn't know about).
+    local pod_id state_bound=0
+    if [[ $# -ge 1 && -n "$1" ]]; then
+        pod_id="$1"
+    else
+        _load_state
+        pod_id="$POD_ID"
+        state_bound=1
+    fi
+    echo "terminating pod $pod_id..."
+    api DELETE "/pods/$pod_id" >/dev/null && echo "deleted"
+    [[ "$state_bound" == "1" ]] && rm -f "$STATE_FILE"
+}
+
+cmd_list() {
+    local pods; pods=$(api GET /pods) || die "failed to list pods"
+    if [[ "$(jq 'length' <<<"$pods")" == "0" ]]; then
+        echo "no pods running under this API key"
+        return 0
+    fi
+    jq '[.[] | {id, name, desiredStatus, costPerHr, gpuCount, createdAt}]' <<<"$pods"
+}
+
+cmd_reap() {
+    local pods; pods=$(api GET /pods) || die "failed to list pods"
+    local ids; ids=$(jq -r '.[].id' <<<"$pods")
+    if [[ -z "$ids" ]]; then
+        echo "no pods to reap"
+        rm -f "$STATE_FILE"
+        return 0
+    fi
+    local n=0
+    for id in $ids; do
+        echo "terminating $id..."
+        if api DELETE "/pods/$id" >/dev/null; then
+            echo "  deleted"
+            n=$((n+1))
+        else
+            echo "  warn: DELETE failed for $id"
+        fi
+    done
+    rm -f "$STATE_FILE"
+    echo "reaped $n pod(s); state file cleared"
 }
 
 # ---------- dispatch ----------
@@ -649,6 +725,8 @@ if [[ -z "${RUNPOD_SHIM:-}" ]]; then
         status)     cmd_status "$@" ;;
         logs)       cmd_logs "$@" ;;
         down)       cmd_down "$@" ;;
+        list)       cmd_list "$@" ;;
+        reap)       cmd_reap "$@" ;;
         cost)       cmd_cost "$@" ;;
         bootstrap)  cmd_bootstrap "$@" ;;
         launch)     cmd_launch "$@" ;;
@@ -657,7 +735,7 @@ if [[ -z "${RUNPOD_SHIM:-}" ]]; then
         sync-down)  cmd_sync_down "$@" ;;
         watch)      cmd_watch "$@" ;;
         ""|help|-h|--help)
-            sed -n '2,25p' "$0"; exit 0 ;;
+            sed -n '2,27p' "$0"; exit 0 ;;
         *) die "unknown subcommand: $sub (try --help)" ;;
     esac
 fi
