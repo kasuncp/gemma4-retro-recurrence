@@ -14,6 +14,13 @@
 #   ./runpod.sh status                   # show current pod info
 #   ./runpod.sh logs                     # tail /workspace/startup.log if present
 #   ./runpod.sh down                     # terminate (delete) the pod
+#   ./runpod.sh cost                     # print cost/budget JSON (reads BUDGET_*_USD env)
+#   ./runpod.sh bootstrap <url> [ref]    # clone or pull the repo on the pod, copy local .env up
+#   ./runpod.sh launch "<flags>" <dir>   # start the experiment in a tmux session on the pod
+#   ./runpod.sh tmux-alive               # exit 0 if experiment tmux session is alive
+#   ./runpod.sh marker <dir>             # print DONE|FAILED|RUNNING|CRASHED
+#   ./runpod.sh sync-down <remote> <local>  # rsync results from pod to laptop
+#   ./runpod.sh watch                    # main loop: reads experiment.yaml; ticks until done
 #
 # Config (env vars with defaults — override inline or in a .env file you source):
 : "${RUNPOD_API_KEY:?set RUNPOD_API_KEY}"
@@ -527,17 +534,24 @@ cmd_down() {
 if [[ -z "${RUNPOD_SHIM:-}" ]]; then
     sub="${1:-}"; shift || true
     case "$sub" in
-        up)     cmd_up "$@" ;;
-        exec)   cmd_exec "$@" ;;
-        run)    cmd_run "$@" ;;
-        push)   cmd_push "$@" ;;
-        pull)   cmd_pull "$@" ;;
-        ssh)    cmd_ssh "$@" ;;
-        status) cmd_status "$@" ;;
-        logs)   cmd_logs "$@" ;;
-        down)   cmd_down "$@" ;;
+        up)         cmd_up "$@" ;;
+        exec)       cmd_exec "$@" ;;
+        run)        cmd_run "$@" ;;
+        push)       cmd_push "$@" ;;
+        pull)       cmd_pull "$@" ;;
+        ssh)        cmd_ssh "$@" ;;
+        status)     cmd_status "$@" ;;
+        logs)       cmd_logs "$@" ;;
+        down)       cmd_down "$@" ;;
+        cost)       cmd_cost "$@" ;;
+        bootstrap)  cmd_bootstrap "$@" ;;
+        launch)     cmd_launch "$@" ;;
+        tmux-alive) cmd_tmux_alive "$@" ;;
+        marker)     cmd_marker "$@" ;;
+        sync-down)  cmd_sync_down "$@" ;;
+        watch)      cmd_watch "$@" ;;
         ""|help|-h|--help)
-            sed -n '2,25p' "$0"; exit 0 ;;
+            sed -n '2,24p' "$0"; exit 0 ;;
         *) die "unknown subcommand: $sub (try --help)" ;;
     esac
 fi
