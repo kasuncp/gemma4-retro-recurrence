@@ -13,11 +13,14 @@
 #   ./run.sh --script path1 --batch-size 8       # Path 1: batch 8 prompts/call to lift GPU util
 #   ./run.sh --script path1 --summarize          # Path 1 CoT gate: aggregate shards
 #   ./run.sh --script path1 --cells it:cot       # Path 1 CoT gate: single cell
+#   ./run.sh --script path1-plan2                # Path 1 plan 2: length + self-consistency sweeps
+#   ./run.sh --script path1-plan2 --n 20 --cells A3 B3   # Path 1 plan 2: quick preview
 #   ./run.sh --no-tmux                           # run inline without a tmux wrapper
 #
 # --script selects the python entry point:
-#   probe  (default) -> ple_sanity_check.py   (Path 2 depth-recurrence probes)
-#   path1            -> path1_cot_gate.py     (Path 1 CoT gate, plan 1)
+#   probe  (default) -> ple_sanity_check.py     (Path 2 depth-recurrence probes)
+#   path1            -> path1_cot_gate.py       (Path 1 CoT gate, plan 1)
+#   path1-plan2      -> path1_length_and_sc.py  (Path 1 plan 2: length + self-consistency)
 #
 # By default the run is launched inside a detached-friendly tmux session named
 # "gemma-recurrence" so closing your SSH terminal will NOT kill the experiment.
@@ -69,9 +72,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "$TARGET_SCRIPT" in
-    probe|path1) ;;
+    probe|path1|path1-plan2) ;;
     *)
-        echo "ERROR: unknown --script '$TARGET_SCRIPT' (expected: probe, path1)."
+        echo "ERROR: unknown --script '$TARGET_SCRIPT' (expected: probe, path1, path1-plan2)."
         exit 2
         ;;
 esac
@@ -205,6 +208,11 @@ case "$TARGET_SCRIPT" in
     path1)
         PY_SCRIPT="path1_cot_gate.py"
         # path1_cot_gate.py with no args runs all 4 cells sequentially on one GPU.
+        ;;
+    path1-plan2)
+        PY_SCRIPT="path1_length_and_sc.py"
+        # No args = full run: axis A (length sweep) + axis B (self-consistency) on n=500.
+        # Results land under results/path_1_cot_tokens/plan2/.
         ;;
 esac
 
