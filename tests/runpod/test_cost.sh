@@ -16,17 +16,6 @@ _fail() { FAIL=$((FAIL+1)); echo "  FAIL: $1"; echo "    got: $2"; echo "    wan
 export RUNPOD_API_KEY="fake-key-for-tests"
 export RUNPOD_SHIM=1
 
-# Stub api() before sourcing.
-api() {
-    local path="$2"
-    case "$path" in
-        /pods/*) cat "$SCRIPT_DIR/fixtures/${POD_FIXTURE:-pod_normal}.json" ;;
-        /user)   cat "$SCRIPT_DIR/fixtures/${USER_FIXTURE:-user_normal}.json" ;;
-        *) echo "test stub: unexpected path $path" >&2; return 1 ;;
-    esac
-}
-export -f api
-
 source "$REPO_ROOT/runpod.sh"
 
 # Stub api(), state loader, and timing after source so they override sourced definitions.
