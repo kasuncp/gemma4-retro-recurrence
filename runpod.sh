@@ -36,7 +36,7 @@
 
 die() { echo "error: $*" >&2; exit 1; }
 need() { command -v "$1" >/dev/null || die "missing dependency: $1"; }
-need curl; need jq; need ssh; need scp
+need curl; need jq; need ssh; need scp; need rsync
 
 _need_yq() {
     command -v yq >/dev/null || die "missing dependency: yq — install with 'brew install yq' (macOS) or 'apt-get install yq' (Linux). Required for reading experiment.yaml."
@@ -390,6 +390,30 @@ cmd_marker() {
     else
         echo "CRASHED"
     fi
+}
+
+cmd_sync_down() {
+    [[ $# -eq 2 ]] || die "sync-down needs <remote-subdir> <local-dir>"
+    local remote_sub="$1" local_dir="$2"
+    _load_state; _refresh_ssh
+    [[ -n "$POD_REPO_DIR" ]] || die "no repo_dir in state; run bootstrap first"
+
+    mkdir -p "$local_dir"
+    # rsync's --stats provides a transferred-bytes count we can parse. -az keeps
+    # perms/mtimes and compresses over the wire. --partial lets resumable
+    # transfers survive a mid-pull disconnect.
+    local ssh_cmd="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $SSH_KEY -p $POD_PORT"
+    local src="root@$POD_HOST:$POD_REPO_DIR/$remote_sub/"
+    local stats
+    stats=$(rsync -az --partial --stats -e "$ssh_cmd" "$src" "$local_dir/" 2>&1) \
+        || die "rsync failed: $stats"
+
+    # Extract "Number of regular files transferred: N" — the first such line.
+    local transferred
+    transferred=$(awk -F': ' '/Number of regular files transferred/ {print $2; exit}' <<<"$stats")
+    local bytes
+    bytes=$(awk -F': ' '/Total transferred file size/ {print $2; exit}' <<<"$stats")
+    echo "sync-down: ${transferred:-0} files, ${bytes:-0 bytes} from $remote_sub"
 }
 
 cmd_logs() { _ssh "tail -n 200 -f /workspace/startup.log"; }
