@@ -166,6 +166,7 @@ _load_state() {
     POD_ID=$(jq -r '.id' "$STATE_FILE")
     POD_HOST=$(jq -r '.publicIp // empty' "$STATE_FILE")
     POD_PORT=$(jq -r '.sshPort // empty' "$STATE_FILE")
+    POD_STARTED_AT=$(jq -r '.started_at // empty' "$STATE_FILE")
     [[ -n "$POD_ID" ]] || die "malformed state file"
 }
 
@@ -221,6 +222,60 @@ cmd_status() {
     api GET "/pods/$POD_ID" | jq '{id, name, desiredStatus, costPerHr, adjustedCostPerHr, publicIp, portMappings, machine: .machine.dataCenterId}'
 }
 
+cmd_cost() {
+    _load_state
+    [[ -n "$POD_STARTED_AT" ]] || die "state file has no started_at; was the pod brought up with the current runpod.sh?"
+    local pod user
+    pod=$(api GET "/pods/$POD_ID") || die "pod GET failed"
+    user=$(api GET "/user") || die "user GET failed"
+
+    local cost_per_hr balance now elapsed_s
+    cost_per_hr=$(jq -r '.costPerHr // 0' <<<"$pod")
+    balance=$(jq -r '.clientBalance // 0' <<<"$user")
+    now=$(_unix_now)
+    elapsed_s=$(( now - POD_STARTED_AT ))
+
+    # bc has 2-decimal rounding issues; use awk with printf for consistent output.
+    local spent budget_remaining cap emergency hard soft
+    cap="${BUDGET_CAP_USD:-}"
+    emergency="${BUDGET_EMERGENCY_USD:-}"
+    spent=$(awk -v c="$cost_per_hr" -v s="$elapsed_s" 'BEGIN{printf "%.2f", c*(s/3600.0)}')
+
+    if [[ -n "$cap" ]]; then
+        budget_remaining=$(awk -v a="$cap" -v b="$spent" 'BEGIN{printf "%.2f", a-b}')
+        soft=$(awk -v s="$spent" -v c="$cap" 'BEGIN{print (s>c)?"true":"false"}')
+    else
+        budget_remaining="null"; soft="false"
+    fi
+    if [[ -n "$emergency" ]]; then
+        hard=$(awk -v b="$balance" -v e="$emergency" 'BEGIN{print (b<e)?"true":"false"}')
+    else
+        hard="false"
+    fi
+
+    jq -n \
+        --argjson cph "$cost_per_hr" \
+        --argjson spent "$spent" \
+        --argjson bal "$balance" \
+        --arg cap "${cap:-null}" \
+        --arg rem "$budget_remaining" \
+        --arg em "${emergency:-null}" \
+        --argjson hard "$hard" \
+        --argjson soft "$soft" \
+        --argjson elapsed "$elapsed_s" \
+        '{
+            costPerHr: $cph,
+            spentUsd: $spent,
+            accountBalance: $bal,
+            budgetCapUsd: ($cap|tonumber? // null),
+            budgetRemaining: ($rem|tonumber? // null),
+            emergencyUsd: ($em|tonumber? // null),
+            elapsedSeconds: $elapsed,
+            hardStopTriggered: $hard,
+            softWarnTriggered: $soft
+        }'
+}
+
 cmd_logs() { _ssh "tail -n 200 -f /workspace/startup.log"; }
 
 cmd_down() {
@@ -230,19 +285,20 @@ cmd_down() {
 }
 
 # ---------- dispatch ----------
-
-sub="${1:-}"; shift || true
-case "$sub" in
-    up)     cmd_up "$@" ;;
-    exec)   cmd_exec "$@" ;;
-    run)    cmd_run "$@" ;;
-    push)   cmd_push "$@" ;;
-    pull)   cmd_pull "$@" ;;
-    ssh)    cmd_ssh "$@" ;;
-    status) cmd_status "$@" ;;
-    logs)   cmd_logs "$@" ;;
-    down)   cmd_down "$@" ;;
-    ""|help|-h|--help)
-        sed -n '2,25p' "$0"; exit 0 ;;
-    *) die "unknown subcommand: $sub (try --help)" ;;
-esac
+if [[ -z "${RUNPOD_SHIM:-}" ]]; then
+    sub="${1:-}"; shift || true
+    case "$sub" in
+        up)     cmd_up "$@" ;;
+        exec)   cmd_exec "$@" ;;
+        run)    cmd_run "$@" ;;
+        push)   cmd_push "$@" ;;
+        pull)   cmd_pull "$@" ;;
+        ssh)    cmd_ssh "$@" ;;
+        status) cmd_status "$@" ;;
+        logs)   cmd_logs "$@" ;;
+        down)   cmd_down "$@" ;;
+        ""|help|-h|--help)
+            sed -n '2,25p' "$0"; exit 0 ;;
+        *) die "unknown subcommand: $sub (try --help)" ;;
+    esac
+fi

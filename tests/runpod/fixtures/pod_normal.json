@@ -1,0 +1,9 @@
+{
+  "id": "abc123",
+  "name": "probe-test",
+  "costPerHr": 0.39,
+  "desiredStatus": "RUNNING",
+  "publicIp": "1.2.3.4",
+  "portMappings": { "22": 40022 },
+  "machine": { "dataCenterId": "US-CA-1" }
+}
