@@ -168,6 +168,7 @@ _load_state() {
     POD_HOST=$(jq -r '.publicIp // empty' "$STATE_FILE")
     POD_PORT=$(jq -r '.sshPort // empty' "$STATE_FILE")
     POD_STARTED_AT=$(jq -r '.started_at // empty' "$STATE_FILE")
+    POD_REPO_DIR=$(jq -r '.repo_dir // empty' "$STATE_FILE")
     [[ -n "$POD_ID" ]] || die "malformed state file"
 }
 
@@ -275,6 +276,45 @@ cmd_cost() {
             hardStopTriggered: $hard,
             softWarnTriggered: $soft
         }'
+}
+
+cmd_bootstrap() {
+    [[ $# -ge 1 ]] || die "bootstrap needs <git-url> [ref]"
+    local url="$1" ref="${2:-main}"
+    _load_state; _refresh_ssh
+
+    # Derive repo dir name from the URL (strip .git).
+    local repo_name; repo_name=$(basename "$url" .git)
+    local repo_dir="/workspace/$repo_name"
+
+    echo "bootstrapping $url ($ref) -> $repo_dir"
+    _ssh "set -e
+        mkdir -p /workspace
+        if [ -d '$repo_dir/.git' ]; then
+            cd '$repo_dir'
+            git fetch --quiet origin
+            git reset --quiet --hard 'origin/$ref' 2>/dev/null || git reset --quiet --hard '$ref'
+        else
+            git clone --quiet '$url' '$repo_dir'
+            cd '$repo_dir'
+            git checkout --quiet '$ref' 2>/dev/null || true
+        fi
+        chmod +x run.sh runpod.sh 2>/dev/null || true
+        echo 'bootstrap ok: '\$(git -C '$repo_dir' rev-parse --short HEAD)
+    "
+
+    # Copy local .env up if it exists. Without it run.sh will abort on missing HF_TOKEN.
+    if [[ -f .env ]]; then
+        echo "uploading .env -> $repo_dir/.env"
+        scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            -i "$SSH_KEY" -P "$POD_PORT" .env "root@$POD_HOST:$repo_dir/.env"
+    else
+        echo "warn: local .env not found — run.sh will fail on the pod without HF_TOKEN"
+    fi
+
+    # Remember repo_dir so later subcommands know where to cd.
+    jq --arg rd "$repo_dir" '. + {repo_dir: $rd}' "$STATE_FILE" > "$STATE_FILE.tmp" \
+        && mv "$STATE_FILE.tmp" "$STATE_FILE"
 }
 
 cmd_logs() { _ssh "tail -n 200 -f /workspace/startup.log"; }
