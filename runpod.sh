@@ -1,0 +1,248 @@
+#!/usr/bin/env bash
+# runpod.sh — thin wrapper around RunPod REST API + SSH for spin-up / exec / tear-down.
+#
+# Requires: curl, jq, ssh, scp. An ssh keypair at $SSH_KEY (default ~/.ssh/id_ed25519).
+# Auth: export RUNPOD_API_KEY=... (get one from https://console.runpod.io/user/settings)
+#
+# Usage:
+#   ./runpod.sh up                       # create a pod, wait for SSH, save id to state file
+#   ./runpod.sh exec "cmd"               # run a single command on the current pod
+#   ./runpod.sh run script.sh            # upload and execute a local script
+#   ./runpod.sh push <local> <remote>    # scp into pod
+#   ./runpod.sh pull <remote> <local>    # scp out of pod
+#   ./runpod.sh ssh                      # open an interactive shell
+#   ./runpod.sh status                   # show current pod info
+#   ./runpod.sh logs                     # tail /workspace/startup.log if present
+#   ./runpod.sh down                     # terminate (delete) the pod
+#
+# Config (env vars with defaults — override inline or in a .env file you source):
+: "${RUNPOD_API_KEY:?set RUNPOD_API_KEY}"
+: "${POD_NAME:=probe-$(date +%Y%m%d-%H%M%S)}"
+: "${POD_IMAGE:=runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04}"
+: "${POD_GPU_TYPES:=NVIDIA GeForce RTX 4090}"   # comma-separated, tried in order
+: "${POD_GPU_COUNT:=1}"
+: "${POD_CLOUD_TYPE:=SECURE}"                    # SECURE | COMMUNITY
+: "${POD_CONTAINER_DISK_GB:=50}"
+: "${POD_VOLUME_GB:=50}"
+: "${POD_VOLUME_MOUNT:=/workspace}"
+: "${POD_NETWORK_VOLUME_ID:=}"                   # optional, for persistent workspace
+: "${POD_DATA_CENTERS:=}"                        # optional, comma-separated; empty = any
+: "${POD_PORTS:=22/tcp,8888/http}"               # 22/tcp is required for this script
+: "${POD_INTERRUPTIBLE:=false}"                  # true = spot pricing
+: "${POD_ENV_JSON:={\}}"                         # extra env as JSON object, e.g. '{"WANDB_API_KEY":"..."}'
+: "${SSH_KEY:=$HOME/.ssh/id_ed25519}"
+: "${STATE_FILE:=.runpod-state.json}"
+: "${API_BASE:=https://rest.runpod.io/v1}"
+
+die() { echo "error: $*" >&2; exit 1; }
+need() { command -v "$1" >/dev/null || die "missing dependency: $1"; }
+need curl; need jq; need ssh; need scp
+
+_need_yq() {
+    command -v yq >/dev/null || die "missing dependency: yq — install with 'brew install yq' (macOS) or 'apt-get install yq' (Linux). Required for reading experiment.yaml."
+}
+
+_unix_now() { date +%s; }
+
+# Read one yaml field from experiment.yaml. Usage: _read_config '.run.flags'
+# Returns empty string if the field is null/absent. Errors out if file missing.
+_read_config() {
+    local field="$1" file="${EXPERIMENT_CONFIG:-experiment.yaml}"
+    [[ -f "$file" ]] || die "config file not found: $file"
+    _need_yq
+    local v; v=$(yq -r "$field // \"\"" "$file" 2>/dev/null) || die "yq failed to parse $file (field $field)"
+    [[ "$v" == "null" ]] && v=""
+    echo "$v"
+}
+
+api() {
+    # api METHOD PATH [json-body]
+    local method="$1" path="$2" body="${3:-}"
+    local tmp; tmp=$(mktemp)
+    local http_code
+    if [[ -n "$body" ]]; then
+        http_code=$(curl -sS -o "$tmp" -w '%{http_code}' -X "$method" \
+            -H "Authorization: Bearer $RUNPOD_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$body" "$API_BASE$path")
+    else
+        http_code=$(curl -sS -o "$tmp" -w '%{http_code}' -X "$method" \
+            -H "Authorization: Bearer $RUNPOD_API_KEY" \
+            "$API_BASE$path")
+    fi
+    if [[ "$http_code" -ge 400 ]]; then
+        echo "HTTP $http_code from $method $path:" >&2
+        cat "$tmp" >&2; echo >&2
+        rm -f "$tmp"; return 1
+    fi
+    cat "$tmp"; rm -f "$tmp"
+}
+
+# ---------- subcommands ----------
+
+cmd_up() {
+    [[ -f "$SSH_KEY.pub" ]] || die "public key not found at $SSH_KEY.pub (generate with: ssh-keygen -t ed25519)"
+    local pubkey; pubkey=$(cat "$SSH_KEY.pub")
+
+    # Build env object: merge POD_ENV_JSON with PUBLIC_KEY (required for SSH).
+    local env_obj
+    env_obj=$(jq -c --arg pk "$pubkey" '. + {PUBLIC_KEY: $pk}' <<<"$POD_ENV_JSON") \
+        || die "POD_ENV_JSON is not valid JSON: $POD_ENV_JSON"
+
+    # Turn comma lists into JSON arrays.
+    local gpu_arr ports_arr dc_arr
+    gpu_arr=$(jq -R -c 'split(",") | map(gsub("^\\s+|\\s+$"; ""))' <<<"$POD_GPU_TYPES")
+    ports_arr=$(jq -R -c 'split(",") | map(gsub("^\\s+|\\s+$"; ""))' <<<"$POD_PORTS")
+    if [[ -n "$POD_DATA_CENTERS" ]]; then
+        dc_arr=$(jq -R -c 'split(",") | map(gsub("^\\s+|\\s+$"; ""))' <<<"$POD_DATA_CENTERS")
+    else
+        dc_arr="null"
+    fi
+
+    local body
+    body=$(jq -n \
+        --arg name "$POD_NAME" \
+        --arg image "$POD_IMAGE" \
+        --arg cloud "$POD_CLOUD_TYPE" \
+        --arg mount "$POD_VOLUME_MOUNT" \
+        --arg netvol "$POD_NETWORK_VOLUME_ID" \
+        --argjson gpuCount "$POD_GPU_COUNT" \
+        --argjson containerDisk "$POD_CONTAINER_DISK_GB" \
+        --argjson volumeGb "$POD_VOLUME_GB" \
+        --argjson interruptible "$POD_INTERRUPTIBLE" \
+        --argjson gpuTypes "$gpu_arr" \
+        --argjson ports "$ports_arr" \
+        --argjson dataCenters "$dc_arr" \
+        --argjson env "$env_obj" \
+        '{
+            name: $name,
+            imageName: $image,
+            cloudType: $cloud,
+            computeType: "GPU",
+            gpuCount: $gpuCount,
+            gpuTypeIds: $gpuTypes,
+            gpuTypePriority: "availability",
+            containerDiskInGb: $containerDisk,
+            volumeInGb: $volumeGb,
+            volumeMountPath: $mount,
+            ports: $ports,
+            interruptible: $interruptible,
+            env: $env
+        }
+        + (if $netvol != "" then {networkVolumeId: $netvol} else {} end)
+        + (if $dataCenters != null then {dataCenterIds: $dataCenters, dataCenterPriority: "availability"} else {} end)')
+
+    echo "creating pod: $POD_NAME ..."
+    local resp; resp=$(api POST /pods "$body") || die "pod creation failed (common causes: no capacity for selected GPU/region, invalid network volume id)"
+    local pod_id; pod_id=$(jq -r '.id' <<<"$resp")
+    [[ "$pod_id" != "null" && -n "$pod_id" ]] || die "no pod id in response: $resp"
+    echo "$resp" | jq '{id, name, costPerHr, desiredStatus}' > "$STATE_FILE"
+    echo "pod id: $pod_id — waiting for SSH..."
+
+    # Poll until port 22 is mapped + reachable.
+    local host port attempts=60
+    while (( attempts-- > 0 )); do
+        sleep 5
+        local info; info=$(api GET "/pods/$pod_id") || continue
+        host=$(jq -r '.publicIp // empty' <<<"$info")
+        port=$(jq -r '.portMappings["22"] // empty' <<<"$info")
+        if [[ -n "$host" && -n "$port" ]]; then
+            if ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                   -o ConnectTimeout=5 -o BatchMode=yes \
+                   -i "$SSH_KEY" -p "$port" "root@$host" true 2>/dev/null; then
+                jq --arg h "$host" --arg p "$port" '. + {publicIp: $h, sshPort: ($p|tonumber)}' \
+                    "$STATE_FILE" > "$STATE_FILE.tmp" && mv "$STATE_FILE.tmp" "$STATE_FILE"
+                echo "ready: ssh -p $port root@$host"
+                return 0
+            fi
+        fi
+        echo "  still waiting... (host=${host:-?} port=${port:-?})"
+    done
+    die "timed out waiting for SSH"
+}
+
+_load_state() {
+    [[ -f "$STATE_FILE" ]] || die "no state file ($STATE_FILE). Run 'up' first."
+    POD_ID=$(jq -r '.id' "$STATE_FILE")
+    POD_HOST=$(jq -r '.publicIp // empty' "$STATE_FILE")
+    POD_PORT=$(jq -r '.sshPort // empty' "$STATE_FILE")
+    [[ -n "$POD_ID" ]] || die "malformed state file"
+}
+
+_refresh_ssh() {
+    # Re-query the API if host/port missing (e.g., after stop/start).
+    if [[ -z "$POD_HOST" || -z "$POD_PORT" ]]; then
+        local info; info=$(api GET "/pods/$POD_ID")
+        POD_HOST=$(jq -r '.publicIp // empty' <<<"$info")
+        POD_PORT=$(jq -r '.portMappings["22"] // empty' <<<"$info")
+        [[ -n "$POD_HOST" && -n "$POD_PORT" ]] || die "pod has no SSH endpoint yet"
+    fi
+}
+
+_ssh() {
+    _load_state; _refresh_ssh
+    ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+        -i "$SSH_KEY" -p "$POD_PORT" "root@$POD_HOST" "$@"
+}
+
+cmd_exec() {
+    [[ $# -ge 1 ]] || die "exec needs a command string"
+    _ssh "$*"
+}
+
+cmd_run() {
+    [[ $# -ge 1 && -f "$1" ]] || die "run needs a local script path"
+    local script="$1"; shift
+    _load_state; _refresh_ssh
+    local remote="/tmp/$(basename "$script").$$"
+    scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+        -i "$SSH_KEY" -P "$POD_PORT" "$script" "root@$POD_HOST:$remote"
+    _ssh "chmod +x $remote && $remote $*"
+}
+
+cmd_push() {
+    [[ $# -eq 2 ]] || die "push needs <local> <remote>"
+    _load_state; _refresh_ssh
+    scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+        -i "$SSH_KEY" -P "$POD_PORT" "$1" "root@$POD_HOST:$2"
+}
+
+cmd_pull() {
+    [[ $# -eq 2 ]] || die "pull needs <remote> <local>"
+    _load_state; _refresh_ssh
+    scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+        -i "$SSH_KEY" -P "$POD_PORT" "root@$POD_HOST:$1" "$2"
+}
+
+cmd_ssh() { _ssh; }
+
+cmd_status() {
+    _load_state
+    api GET "/pods/$POD_ID" | jq '{id, name, desiredStatus, costPerHr, adjustedCostPerHr, publicIp, portMappings, machine: .machine.dataCenterId}'
+}
+
+cmd_logs() { _ssh "tail -n 200 -f /workspace/startup.log"; }
+
+cmd_down() {
+    _load_state
+    echo "terminating pod $POD_ID..."
+    api DELETE "/pods/$POD_ID" >/dev/null && echo "deleted" && rm -f "$STATE_FILE"
+}
+
+# ---------- dispatch ----------
+
+sub="${1:-}"; shift || true
+case "$sub" in
+    up)     cmd_up "$@" ;;
+    exec)   cmd_exec "$@" ;;
+    run)    cmd_run "$@" ;;
+    push)   cmd_push "$@" ;;
+    pull)   cmd_pull "$@" ;;
+    ssh)    cmd_ssh "$@" ;;
+    status) cmd_status "$@" ;;
+    logs)   cmd_logs "$@" ;;
+    down)   cmd_down "$@" ;;
+    ""|help|-h|--help)
+        sed -n '2,25p' "$0"; exit 0 ;;
+    *) die "unknown subcommand: $sub (try --help)" ;;
+esac

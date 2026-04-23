@@ -1,2 +1,6 @@
 __pycache__/
 .env
+experiment.yaml
+watch.log
+.runpod-state.json
+.runpod-state.json.bak
