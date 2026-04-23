@@ -416,6 +416,105 @@ cmd_sync_down() {
     echo "sync-down: ${transferred:-0} files, ${bytes:-0 bytes} from $remote_sub"
 }
 
+cmd_watch() {
+    # Load config.
+    local flags result_dir local_result_dir cap emergency max_hours tick
+    flags=$(_read_config '.run.flags')
+    result_dir=$(_read_config '.run.result_dir')
+    local_result_dir=$(_read_config '.run.local_result_dir')
+    [[ -z "$local_result_dir" ]] && local_result_dir="$result_dir"
+    cap=$(_read_config '.budget.cap_usd')
+    emergency=$(_read_config '.budget.emergency_usd')
+    max_hours=$(_read_config '.budget.max_hours')
+    tick=$(_read_config '.watch.tick_seconds')
+
+    [[ -n "$flags" && -n "$result_dir" ]] || die "experiment.yaml missing required fields (run.flags, run.result_dir)"
+    [[ -n "$cap" && -n "$emergency" && -n "$max_hours" && -n "$tick" ]] \
+        || die "experiment.yaml missing required budget.{cap_usd,emergency_usd,max_hours} or watch.tick_seconds"
+
+    export BUDGET_CAP_USD="$cap"
+    export BUDGET_EMERGENCY_USD="$emergency"
+
+    _load_state
+    local started_at="$POD_STARTED_AT"
+    local log="./watch.log"
+    local warned=0
+    local emergency_reason=""
+
+    _log() { local msg="$*"; local ts; ts=$(date '+%H:%M:%S'); echo "[$ts] $msg" | tee -a "$log"; }
+    _final_pull() {
+        local budget_s="$1"
+        timeout "$budget_s" "$0" sync-down "$result_dir" "$local_result_dir" 2>&1 | tee -a "$log" || \
+            _log "WARN: final sync-down exceeded ${budget_s}s budget or failed"
+    }
+
+    _log "watch start: flags=[$flags] result_dir=$result_dir cap=\$$cap emergency=\$$emergency max_hours=$max_hours tick=${tick}s"
+
+    while true; do
+        # 1. cost + threshold checks.
+        local cost_json
+        cost_json=$("$0" cost 2>&1) || { _log "cost call failed; sleeping"; sleep "$tick"; continue; }
+        local spent bal hard soft
+        spent=$(jq -r '.spentUsd' <<<"$cost_json")
+        bal=$(jq -r '.accountBalance' <<<"$cost_json")
+        hard=$(jq -r '.hardStopTriggered' <<<"$cost_json")
+        soft=$(jq -r '.softWarnTriggered' <<<"$cost_json")
+
+        if [[ "$hard" == "true" ]]; then
+            emergency_reason="account balance (\$$bal) below emergency threshold (\$$emergency)"
+            break
+        fi
+
+        local wall_hours
+        wall_hours=$(awk -v n="$(_unix_now)" -v s="$started_at" 'BEGIN{printf "%.2f", (n-s)/3600.0}')
+        if awk -v w="$wall_hours" -v m="$max_hours" 'BEGIN{exit !(w>m)}'; then
+            emergency_reason="wall time ${wall_hours}h exceeded max_hours ${max_hours}h"
+            break
+        fi
+
+        if [[ "$soft" == "true" && "$warned" == "0" ]]; then
+            _log "BUDGET WARN: spent=\$$spent exceeds cap=\$$cap; continuing"
+            warned=1
+        fi
+
+        # 2. sync-down.
+        "$0" sync-down "$result_dir" "$local_result_dir" 2>&1 | tee -a "$log"
+
+        # 3. marker check.
+        local marker
+        marker=$("$0" marker "$result_dir" 2>/dev/null | tr -d '[:space:]')
+        _log "spent=\$$spent bal=\$$bal wall=${wall_hours}h marker=$marker"
+
+        case "$marker" in
+            DONE|FAILED)
+                _log "terminal: $marker — final pull + teardown"
+                _final_pull 120
+                "$0" down 2>&1 | tee -a "$log"
+                _log "CLEAN exit (marker=$marker)"
+                return 0
+                ;;
+            CRASHED)
+                _log "CRASHED — tmux died with no marker; pulling and leaving pod UP for inspection"
+                _final_pull 120
+                _log "pod still up; run: ./runpod.sh ssh  |  ./runpod.sh logs  |  T2 triage prompt"
+                return 3
+                ;;
+            RUNNING) ;;
+            *) _log "WARN: unexpected marker output: [$marker]" ;;
+        esac
+
+        sleep "$tick"
+    done
+
+    # Reached only via emergency break.
+    _log "EMERGENCY: $emergency_reason"
+    _final_pull 60
+    "$0" down 2>&1 | tee -a "$log"
+    _log "EMERGENCY exit (reason: $emergency_reason)"
+    printf '\a'  # terminal bell
+    return 2
+}
+
 cmd_logs() { _ssh "tail -n 200 -f /workspace/startup.log"; }
 
 cmd_down() {
