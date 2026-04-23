@@ -9,6 +9,11 @@ sweep + self-consistency) is worth writing.
 Default --- one GPU, runs all four cells sequentially:
     python path1_cot_gate.py
 
+Quick preview before committing to the full 500-example run (auto-routes to a
+separate results dir so real-run shards are never overwritten):
+    python path1_cot_gate.py --n 20
+    python path1_cot_gate.py --n 20 --summarize
+
 Two-GPU split by model:
     CUDA_VISIBLE_DEVICES=0 python path1_cot_gate.py --cells it:direct it:cot
     CUDA_VISIBLE_DEVICES=1 python path1_cot_gate.py --cells base:direct base:cot
@@ -98,10 +103,30 @@ def parse_args():
         help="Cells to run. Default: all four. Example: --cells it:direct it:cot",
     )
     p.add_argument(
-        "--problems", default=f"0:{DEFAULT_N}",
-        help="Problem range as START:END (half-open), over the GSM8K test split. "
-             f"Default 0:{DEFAULT_N}. Use to shard a single cell across GPUs "
-             "(e.g. 0:250 and 250:500).",
+        "--problems", default=None,
+        help="Problem range as START:END (half-open), over the first N GSM8K "
+             "test problems (N controlled by --n). Default 0:N. Use to shard a "
+             "single cell across GPUs (e.g. 0:250 and 250:500 at n=500).",
+    )
+    p.add_argument(
+        "--n", type=int, default=DEFAULT_N,
+        help=f"Number of GSM8K test problems to evaluate across all cells. "
+             f"Default {DEFAULT_N}. Use a smaller value (e.g. --n 20) for a "
+             f"quick direction-check before committing to the full run. When "
+             f"set below {DEFAULT_N} and --results-dir is not overridden, "
+             f"results auto-route to {RESULTS_SUBDIR}_preview_n<N>/ so full-run "
+             f"shards are never overwritten. The verdict thresholds still "
+             f"apply, but CIs will be wide --- treat preview verdicts as "
+             f"directional only.",
+    )
+    p.add_argument(
+        "--batch-size", type=int, default=1,
+        help="Prompts per model.generate() call. Default 1 (sequential) to "
+             "preserve backwards-compatible byte-for-byte determinism. On a "
+             "single modern GPU (e.g. 4090), batch_size 4--8 typically lifts "
+             "GPU utilization substantially with greedy decoding. Batched "
+             "greedy should match batch=1 outputs exactly, but FP "
+             "non-associativity can cause rare tied-logit flips.",
     )
     p.add_argument("--dtype", choices=list(DTYPE_MAP), default="bf16")
     p.add_argument(
@@ -124,17 +149,28 @@ def parse_args():
              "invocation is going to run, and overwrite them from scratch. "
              "Rows belonging to OTHER (cell, shard) pairs are left untouched.",
     )
-    return p.parse_args()
+    args = p.parse_args()
+    if args.n < 1:
+        p.error(f"--n must be >= 1, got {args.n}.")
+    if args.batch_size < 1:
+        p.error(f"--batch-size must be >= 1, got {args.batch_size}.")
+    if args.problems is None:
+        args.problems = f"0:{args.n}"
+    # Auto-route preview runs to a dedicated subdir so full-run shards aren't
+    # overwritten. Only fires when the user didn't override --results-dir.
+    if args.n != DEFAULT_N and args.results_dir == RESULTS_SUBDIR:
+        args.results_dir = f"{RESULTS_SUBDIR}_preview_n{args.n}"
+    return args
 
 
-def parse_range(spec):
+def parse_range(spec, upper):
     m = re.fullmatch(r"\s*(\d+)\s*:\s*(\d+)\s*", spec)
     if not m:
         raise ValueError(f"--problems must be START:END, got {spec!r}")
     start, end = int(m.group(1)), int(m.group(2))
-    if not (0 <= start < end <= DEFAULT_N):
+    if not (0 <= start < end <= upper):
         raise ValueError(
-            f"--problems range {start}:{end} out of bounds [0, {DEFAULT_N}]"
+            f"--problems range {start}:{end} out of bounds [0, {upper}]"
         )
     return start, end
 
@@ -178,7 +214,7 @@ def manifest(args):
         "dtype": args.dtype,
         "models": MODELS,
         "max_new": MAX_NEW,
-        "n_total": DEFAULT_N,
+        "n_total": args.n,
         "plan": "path_1_cot_tokens/plan1",
     }
 
@@ -254,20 +290,24 @@ def record_commit(results_dir, model_key, model, tokenizer):
     p.write_text(json.dumps(data, indent=2))
 
 
-def _generate(model, tokenizer, prompt, max_new):
-    import torch
-    enc = tokenizer(prompt, return_tensors="pt").to(model.device)
-    input_len = enc["input_ids"].shape[1]
-    pad_id = tokenizer.pad_token_id or tokenizer.eos_token_id
+def _greedy_gen_cfg(model):
     gen_cfg = deepcopy(model.generation_config)
     gen_cfg.do_sample = False
     gen_cfg.top_p = None
     gen_cfg.top_k = None
     gen_cfg.temperature = None
+    return gen_cfg
+
+
+def _generate(model, tokenizer, prompt, max_new):
+    import torch
+    enc = tokenizer(prompt, return_tensors="pt").to(model.device)
+    input_len = enc["input_ids"].shape[1]
+    pad_id = tokenizer.pad_token_id or tokenizer.eos_token_id
     with torch.no_grad():
         out = model.generate(
             **enc,
-            generation_config=gen_cfg,
+            generation_config=_greedy_gen_cfg(model),
             max_new_tokens=max_new,
             pad_token_id=pad_id,
         )
@@ -275,11 +315,44 @@ def _generate(model, tokenizer, prompt, max_new):
     return tokenizer.decode(gen_ids, skip_special_tokens=True)
 
 
-def load_problems(start, end):
+def _generate_batch(model, tokenizer, prompts, max_new):
+    """Generate completions for a batch of prompts in a single model.generate()
+    call. Uses left-padding so every row's last real token is at position -1
+    and `out[:, input_len:]` isolates the generated tokens. Tokenizer state is
+    saved and restored so batched calls don't leak padding_side changes to
+    other code paths (e.g. the per-prompt smoke check)."""
+    import torch
+    if tokenizer.pad_token_id is None:
+        # Gemma tokenizers often lack a pad token; reuse EOS for padding.
+        tokenizer.pad_token = tokenizer.eos_token
+    prev_side = tokenizer.padding_side
+    tokenizer.padding_side = "left"
+    try:
+        enc = tokenizer(prompts, return_tensors="pt", padding=True).to(model.device)
+    finally:
+        tokenizer.padding_side = prev_side
+    input_len = enc["input_ids"].shape[1]
+    pad_id = tokenizer.pad_token_id
+    with torch.no_grad():
+        out = model.generate(
+            **enc,
+            generation_config=_greedy_gen_cfg(model),
+            max_new_tokens=max_new,
+            pad_token_id=pad_id,
+        )
+    gen_ids = out[:, input_len:]
+    return tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
+
+
+def load_problems(start, end, total):
     from datasets import load_dataset
     gsm = load_dataset("gsm8k", "main", split="test")
-    all_problems = gsm.select(range(DEFAULT_N))
-    # Verify ground-truth parser sanity on ALL 500 (plan sanity check #2).
+    if total > len(gsm):
+        print(f"ERROR: --n {total} exceeds GSM8K test split size {len(gsm)}.")
+        sys.exit(1)
+    all_problems = gsm.select(range(total))
+    # Verify ground-truth parser sanity on ALL N problems we'll draw from
+    # (plan sanity check #2).
     golds = []
     for row in all_problems:
         m = GOLD_RE.search(row["answer"])
@@ -329,7 +402,7 @@ def run_smoke(model, tokenizer, cell_assignments, problems, golds, start):
 
 
 def run_cell(model, tokenizer, model_key, cond, problems, golds, start, end,
-             results_dir, no_resume):
+             results_dir, no_resume, batch_size):
     path = shard_jsonl(results_dir, model_key, cond, start, end)
     if no_resume and path.exists():
         path.unlink()
@@ -337,19 +410,28 @@ def run_cell(model, tokenizer, model_key, cond, problems, golds, start, end,
     remaining = [(i, p, g) for i, (p, g) in enumerate(zip(problems, golds))
                  if (start + i) not in done]
     print(f"[{model_key}:{cond}] {start}:{end} --- {len(done)} done, "
-          f"{len(remaining)} to generate --> {path.name}")
-    for i, p, g in remaining:
-        prompt = build_prompt(EXEMPLARS[cond], p["question"])
-        compl = _generate(model, tokenizer, prompt, MAX_NEW[cond])
-        pred, hashed = extract(compl)
-        append_jsonl(path, {
-            "idx": start + i,
-            "gold": g,
-            "pred": pred,
-            "correct": int(pred is not None and pred == g),
-            "hash_hit": int(hashed),
-            "completion": compl,
-        })
+          f"{len(remaining)} to generate (batch_size={batch_size}) "
+          f"--> {path.name}")
+    for chunk_start in range(0, len(remaining), batch_size):
+        chunk = remaining[chunk_start:chunk_start + batch_size]
+        if batch_size == 1:
+            (i, p, g), = chunk
+            prompt = build_prompt(EXEMPLARS[cond], p["question"])
+            completions = [_generate(model, tokenizer, prompt, MAX_NEW[cond])]
+        else:
+            prompts = [build_prompt(EXEMPLARS[cond], p["question"])
+                       for _, p, _ in chunk]
+            completions = _generate_batch(model, tokenizer, prompts, MAX_NEW[cond])
+        for (i, p, g), compl in zip(chunk, completions):
+            pred, hashed = extract(compl)
+            append_jsonl(path, {
+                "idx": start + i,
+                "gold": g,
+                "pred": pred,
+                "correct": int(pred is not None and pred == g),
+                "hash_hit": int(hashed),
+                "completion": compl,
+            })
     return path
 
 
@@ -437,12 +519,12 @@ def summarize(results_dir, args):
     out.write_text(json.dumps(gate, indent=2))
     print(f"wrote {out}")
 
-    plot_path = make_plot(root, results, verdict, verdict_reason)
+    plot_path = make_plot(root, results, verdict, verdict_reason, n_target)
     if plot_path is not None:
         print(f"wrote {plot_path}")
 
 
-def make_plot(root, results, verdict, verdict_reason):
+def make_plot(root, results, verdict, verdict_reason, n_total):
     """Grouped bar chart: 4 cells, accuracy with Wilson 95% CI error bars,
     hash-hit rate annotated above each bar, verdict stamped in the corner.
     Skipped with a warning if any IT cell is missing or matplotlib isn't
@@ -500,7 +582,7 @@ def make_plot(root, results, verdict, verdict_reason):
     ax.set_ylabel("GSM8K exact-match accuracy")
     ax.set_ylim(0, max(0.6, max(r["ci95"][1] for r in results.values()) + 0.1))
     ax.set_title(
-        "Path 1 plan 1 gate --- 8-shot direct vs CoT on GSM8K (n=500)\n"
+        f"Path 1 plan 1 gate --- 8-shot direct vs CoT on GSM8K (n={n_total})\n"
         f"VERDICT: {verdict}",
         fontsize=10,
     )
@@ -549,10 +631,14 @@ def main():
         return
 
     print_env()
-    start, end = parse_range(args.problems)
+    start, end = parse_range(args.problems, args.n)
     check_manifest(args.results_dir, args)
     print(f"cells: {args.cells}")
-    print(f"problems: [{start}, {end})   exemplar_hash={exemplar_hash()}")
+    print(f"problems: [{start}, {end}) of n={args.n}   "
+          f"batch_size={args.batch_size}   exemplar_hash={exemplar_hash()}")
+    if args.n != DEFAULT_N:
+        print(f"PREVIEW MODE (n={args.n} < {DEFAULT_N}): routing to "
+              f"{args.results_dir}/")
 
     # Group cells by model so each model loads exactly once per process.
     by_model = {}
@@ -560,7 +646,7 @@ def main():
         mk, cond = spec.split(":")
         by_model.setdefault(mk, []).append((mk, cond))
 
-    problems, golds = load_problems(start, end)
+    problems, golds = load_problems(start, end, args.n)
 
     import torch
     dtype = DTYPE_MAP[args.dtype]
@@ -575,14 +661,17 @@ def main():
                 run_smoke(model, tokenizer, cell_assignments, problems, golds, start)
             for mk, cond in cell_assignments:
                 run_cell(model, tokenizer, mk, cond, problems, golds,
-                         start, end, args.results_dir, args.no_resume)
+                         start, end, args.results_dir, args.no_resume,
+                         args.batch_size)
         finally:
             del model
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-    print(f"\nDone. Run `python path1_cot_gate.py --summarize` once all cells "
-          f"are populated to produce results_gate.json and the verdict.")
+    preview_suffix = f" --n {args.n}" if args.n != DEFAULT_N else ""
+    print(f"\nDone. Run `python path1_cot_gate.py --summarize{preview_suffix}` "
+          f"once all cells are populated to produce results_gate.json and "
+          f"the verdict.")
 
 
 if __name__ == "__main__":

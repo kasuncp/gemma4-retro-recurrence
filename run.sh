@@ -9,6 +9,8 @@
 #   ./run.sh --mode reasoning-eval-r5            # probe, round 5 (latest)
 #   ./run.sh --target-layer 22 ...               # probe: any flags pass through
 #   ./run.sh --script path1                      # Path 1 CoT gate (all 4 cells, sequential)
+#   ./run.sh --script path1 --n 20               # Path 1: quick 20-example preview (separate results dir)
+#   ./run.sh --script path1 --batch-size 8       # Path 1: batch 8 prompts/call to lift GPU util
 #   ./run.sh --script path1 --summarize          # Path 1 CoT gate: aggregate shards
 #   ./run.sh --script path1 --cells it:cot       # Path 1 CoT gate: single cell
 #   ./run.sh --no-tmux                           # run inline without a tmux wrapper
