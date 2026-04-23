@@ -1,0 +1,37 @@
+# Path 1, plan 2: length sweep (axis A) + self-consistency (axis B), n=500.
+# Canonical config of record — checked in so historical runs are reproducible.
+#
+# Usage:
+#   ./runpod.sh go experiments/path1-plan2.yaml
+#
+# To tweak a parameter for a one-off run without changing the committed
+# record, copy this file to ./experiment.yaml (gitignored) and edit there,
+# then run `./runpod.sh go` with no argument.
+
+run:
+  # --batch-size 8 brings axis-A throughput on a 3090 up ~5x vs batch=1.
+  # Axis B already batches its k chains internally and ignores this flag.
+  flags: "--script path1-plan2 --batch-size 8"
+  result_dir: "results/path_1_cot_tokens/plan2"
+  # local_result_dir defaults to result_dir if omitted.
+
+pod:
+  gpu_types: "NVIDIA GeForce RTX 3090"
+  gpu_count: 1
+  cloud_type: SECURE
+  container_disk_gb: 20
+  volume_gb: 30
+
+git:
+  url: "https://github.com/kasuncp/gemma4-retro-recurrence.git"
+  # Pin to a branch during active development; pin to a SHA to freeze
+  # the exact code a run used.
+  ref: "path_1_plan_2"
+
+budget:
+  cap_usd: 8           # soft warn when spend exceeds this
+  emergency_usd: 0.50  # hard teardown when account balance drops below this
+  max_hours: 12        # hard teardown on wall time
+
+watch:
+  tick_seconds: 300    # 5 minutes

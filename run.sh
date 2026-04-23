@@ -16,6 +16,7 @@
 #   ./run.sh --script path1-plan2                # Path 1 plan 2: length + self-consistency sweeps
 #   ./run.sh --script path1-plan2 --n 20 --cells A3 B3   # Path 1 plan 2: quick preview
 #   ./run.sh --no-tmux                           # run inline without a tmux wrapper
+#   ./run.sh --dry-run --script path1            # offline smoke: prints dispatch summary, no deps/python/git
 #
 # --script selects the python entry point:
 #   probe  (default) -> ple_sanity_check.py     (Path 2 depth-recurrence probes)
@@ -81,11 +82,20 @@ _registry_idx() {
 # Detect --no-tmux and --script (run.sh's own flags) and strip them from what
 # we forward to the python script.
 USE_TMUX=1
+DRY_RUN=0
 TARGET_SCRIPT="probe"
 FORWARDED_ARGS=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --no-tmux)
+            USE_TMUX=0
+            shift
+            ;;
+        --dry-run)
+            # Offline smoke-test mode: skip deps install, skip Python, skip
+            # stage 5 (git commit/push). Prints a dispatch summary that tests
+            # can assert on. Implies --no-tmux. See tests/run/test_dry_run.sh.
+            DRY_RUN=1
             USE_TMUX=0
             shift
             ;;
@@ -179,6 +189,31 @@ fi
 
 # Once we're past the wrapper, only the python-script args remain.
 set -- "${FORWARDED_ARGS[@]+"${FORWARDED_ARGS[@]}"}"
+
+# ---------- Dry-run short-circuit ----------
+# Emit a dispatch summary and exit. Useful for offline smoke testing that
+# registry lookups + default args + result roots resolve correctly without
+# needing HF_TOKEN, python deps, or a GPU.  See tests/run/test_dry_run.sh.
+if [[ "$DRY_RUN" == "1" ]]; then
+    _dry_script="${EXPERIMENT_SCRIPTS[$_experiment_idx]}"
+    _dry_defaults="${EXPERIMENT_DEFAULTS[$_experiment_idx]}"
+    _dry_root="${EXPERIMENT_ROOTS[$_experiment_idx]}"
+    _dry_depth="${EXPERIMENT_DEPTHS[$_experiment_idx]}"
+    _dry_effective_args=("$@")
+    if [[ ${#_dry_effective_args[@]} -eq 0 && -n "$_dry_defaults" ]]; then
+        # shellcheck disable=SC2086
+        set -- $_dry_defaults
+        _dry_effective_args=("$@")
+    fi
+    echo "dry-run: target_script=$TARGET_SCRIPT"
+    echo "dry-run: py_script=$_dry_script"
+    echo "dry-run: default_args=$_dry_defaults"
+    echo "dry-run: result_root=$_dry_root"
+    echo "dry-run: result_depth=$_dry_depth"
+    echo "dry-run: effective_args=${_dry_effective_args[*]+${_dry_effective_args[*]}}"
+    echo "dry-run: ok"
+    exit 0
+fi
 
 # ---------- 1. Load .env ----------
 if [[ ! -f .env ]]; then

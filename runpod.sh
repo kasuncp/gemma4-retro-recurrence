@@ -5,7 +5,7 @@
 # Auth: export RUNPOD_API_KEY=... (get one from https://console.runpod.io/user/settings)
 #
 # Usage:
-#   ./runpod.sh go                       # one-shot: up + bootstrap + launch + detached watcher (all from experiment.yaml)
+#   ./runpod.sh go [config.yaml]         # one-shot: up + bootstrap + launch + detached watcher (default: experiment.yaml)
 #   ./runpod.sh up                       # create a pod, wait for SSH, save id to state file
 #   ./runpod.sh exec "cmd"               # run a single command on the current pod
 #   ./runpod.sh run script.sh            # upload and execute a local script
@@ -23,7 +23,7 @@
 #   ./runpod.sh tmux-alive               # exit 0 if experiment tmux session is alive
 #   ./runpod.sh marker <dir>             # print DONE|FAILED|RUNNING|CRASHED
 #   ./runpod.sh sync-down <remote> <local>  # rsync results from pod to laptop
-#   ./runpod.sh watch                    # main loop: reads experiment.yaml; ticks until done
+#   ./runpod.sh watch [config.yaml]      # main loop: reads the config; ticks until done (default: experiment.yaml)
 #
 # Config (env vars with defaults — override inline or in a .env file you source):
 # Auto-source a sibling .env so `./runpod.sh go` works as a single command
@@ -502,6 +502,12 @@ cmd_sync_down() {
 }
 
 cmd_watch() {
+    # Accept an optional config path; default to ./experiment.yaml. Exported
+    # so _read_config (and any shelled sub-invocations) pick it up.
+    local config="${1:-${EXPERIMENT_CONFIG:-experiment.yaml}}"
+    [[ -f "$config" ]] || die "config file not found: $config"
+    export EXPERIMENT_CONFIG="$config"
+
     # Load config.
     local flags result_dir local_result_dir cap emergency max_hours tick
     flags=$(_read_config '.run.flags')
@@ -604,7 +610,13 @@ cmd_logs() { _ssh "tail -n 200 -f /workspace/startup.log"; }
 
 cmd_go() {
     # Single-command orchestration: up + bootstrap + launch + detached
-    # watcher. All parameters come from experiment.yaml; no args.
+    # watcher. All parameters come from the config file (default
+    # experiment.yaml; pass a path to use a versioned experiments/*.yaml).
+    local config="${1:-${EXPERIMENT_CONFIG:-experiment.yaml}}"
+    [[ -f "$config" ]] || die "config file not found: $config"
+    export EXPERIMENT_CONFIG="$config"
+    echo "go: using config $config"
+
     local url ref flags result_dir
     url=$(_read_config '.git.url')
     ref=$(_read_config '.git.ref')
@@ -642,17 +654,19 @@ cmd_go() {
 
     # Detach the watcher. Prefer tmux; fall back to the pre-installed macOS
     # screen. The detached session inherits this shell's env + CWD, so the
-    # watch loop finds experiment.yaml and .runpod-state.json in the same
-    # directory the user invoked us from.
+    # watch loop finds the config and .runpod-state.json in the same
+    # directory the user invoked us from. We also pass the config path
+    # explicitly so ps/logs make it obvious which config a watcher uses.
     local self; self="$(cd "$(dirname "$0")" && pwd -P)/$(basename "$0")"
+    local qcfg; qcfg=$(printf '%q' "$config")
     if command -v tmux >/dev/null 2>&1; then
-        tmux new-session -d -s rp-watch "$self watch"
+        tmux new-session -d -s rp-watch "$self watch $qcfg"
         printf '\nGO complete. Watcher detached in tmux session rp-watch.\n'
         printf '  attach:  tmux attach -t rp-watch\n'
         printf '  tail:    tail -f ./watch.log\n'
         printf '  stop:    ./runpod.sh down  &&  tmux kill-session -t rp-watch\n'
     elif command -v screen >/dev/null 2>&1; then
-        screen -dmS rp-watch bash -c "exec $(printf '%q' "$self") watch"
+        screen -dmS rp-watch bash -c "exec $(printf '%q' "$self") watch $qcfg"
         printf '\nGO complete. Watcher detached in screen session rp-watch.\n'
         printf '  attach:  screen -r rp-watch\n'
         printf '  tail:    tail -f ./watch.log\n'
