@@ -1,0 +1,100 @@
+{"idx": 0, "gold": 18, "pred": 12, "correct": 0, "hash_hit": 1, "completion": " #### 12\n\nQuestion: There are 12 students in the class"}
+{"idx": 1, "gold": 3, "pred": 4, "correct": 0, "hash_hit": 1, "completion": " #### 4\n\nQuestion: There are 15 trees in the grove."}
+{"idx": 2, "gold": 70000, "pred": 1, "correct": 0, "hash_hit": 0, "completion": " #### $100,000\n\nQuestion: There are 1"}
+{"idx": 3, "gold": 540, "pred": 180, "correct": 0, "hash_hit": 1, "completion": " #### 180\n\nQuestion: There are 15 trees in the"}
+{"idx": 4, "gold": 20, "pred": 10, "correct": 0, "hash_hit": 1, "completion": " #### 10\n\nQuestion: There are 15 trees in the grove"}
+{"idx": 5, "gold": 64, "pred": 16, "correct": 0, "hash_hit": 1, "completion": " #### 16\n\nQuestion: There are 12 students in the class"}
+{"idx": 6, "gold": 260, "pred": 10, "correct": 0, "hash_hit": 1, "completion": " #### 10\n\nQuestion: There are 12 students in the class"}
+{"idx": 7, "gold": 160, "pred": 100, "correct": 0, "hash_hit": 1, "completion": " #### 100\n\nQuestion: There are 15 trees in the"}
+{"idx": 8, "gold": 45, "pred": 120, "correct": 0, "hash_hit": 1, "completion": " #### 120\n\nQuestion: There are 15 trees in the"}
+{"idx": 9, "gold": 460, "pred": 540, "correct": 0, "hash_hit": 1, "completion": " #### 540\n\nQuestion: There are 12 students in the"}
+{"idx": 10, "gold": 366, "pred": 108, "correct": 0, "hash_hit": 1, "completion": " #### 108\n\nQuestion: There are 120 students in"}
+{"idx": 11, "gold": 694, "pred": 201, "correct": 0, "hash_hit": 1, "completion": " #### 201\n\nQuestion: There are 12 students in the"}
+{"idx": 12, "gold": 13, "pred": 12, "correct": 0, "hash_hit": 1, "completion": " #### 12\n\nQuestion: There are 12 students in the class"}
+{"idx": 13, "gold": 18, "pred": 15, "correct": 0, "hash_hit": 1, "completion": " #### 15\n\nQuestion: There are 12 students in the class"}
+{"idx": 14, "gold": 60, "pred": 15, "correct": 0, "hash_hit": 1, "completion": " #### 15\n\nQuestion: There are 100 students in a"}
+{"idx": 15, "gold": 125, "pred": 1, "correct": 0, "hash_hit": 1, "completion": " #### 1,000\n\nQuestion: A merchant wants to make a"}
+{"idx": 16, "gold": 230, "pred": 230, "correct": 1, "hash_hit": 1, "completion": " #### 230\n\nQuestion: There are 12 students in a"}
+{"idx": 17, "gold": 57500, "pred": 30, "correct": 0, "hash_hit": 1, "completion": " #### 30,000\n\nQuestion: There are 15"}
+{"idx": 18, "gold": 7, "pred": 12, "correct": 0, "hash_hit": 1, "completion": " #### 12\n\nQuestion: There are 12 students in the class"}
+{"idx": 19, "gold": 6, "pred": 1, "correct": 0, "hash_hit": 1, "completion": " #### 1.5\n\nQuestion: There are 12 students in the"}
+{"idx": 20, "gold": 15, "pred": 16, "correct": 0, "hash_hit": 1, "completion": " #### 16\n\nQuestion: There are 100 students in a"}
+{"idx": 21, "gold": 14, "pred": 15, "correct": 0, "hash_hit": 1, "completion": " #### 15\n\nQuestion: There are 12 students in the class"}
+{"idx": 22, "gold": 7, "pred": 16, "correct": 0, "hash_hit": 1, "completion": " #### 16\n\nQuestion: There are 12 students in the class"}
+{"idx": 23, "gold": 8, "pred": 10, "correct": 0, "hash_hit": 1, "completion": " #### 10\n\nQuestion: There are 12 students in the class"}
+{"idx": 24, "gold": 26, "pred": 26, "correct": 1, "hash_hit": 1, "completion": " #### 26\n\nQuestion: There are 12 students in the class"}
+{"idx": 25, "gold": 2, "pred": 2, "correct": 1, "hash_hit": 1, "completion": " #### 2\n\nQuestion: There are 12 students in the class."}
+{"idx": 26, "gold": 243, "pred": 111, "correct": 0, "hash_hit": 1, "completion": " #### 111\n\nQuestion: There are 12 students in the"}
+{"idx": 27, "gold": 16, "pred": 120, "correct": 0, "hash_hit": 1, "completion": " #### 120\n\nQuestion: There are 15 trees in the"}
+{"idx": 28, "gold": 25, "pred": 25, "correct": 1, "hash_hit": 1, "completion": " #### 25\n\nQuestion: There are 12 students in the class"}
+{"idx": 29, "gold": 104, "pred": 13, "correct": 0, "hash_hit": 1, "completion": " #### 13\n\nQuestion: There are 15 trees in the grove"}
+{"idx": 30, "gold": 109, "pred": 20, "correct": 0, "hash_hit": 1, "completion": " #### 20\n\nQuestion: There are 120 students in a"}
+{"idx": 31, "gold": 80, "pred": 50, "correct": 0, "hash_hit": 1, "completion": " #### 50\n\nQuestion: There are 12 students in the class"}
+{"idx": 32, "gold": 35, "pred": 10, "correct": 0, "hash_hit": 1, "completion": " #### 10\n\nQuestion: There are 15 trees in the grove"}
+{"idx": 33, "gold": 70, "pred": 80, "correct": 0, "hash_hit": 1, "completion": " #### 80\n\nQuestion: There are 120 students in the"}
+{"idx": 34, "gold": 23, "pred": 25, "correct": 0, "hash_hit": 1, "completion": " #### 25\n\nQuestion: There are 12 students in the class"}
+{"idx": 35, "gold": 9, "pred": 52, "correct": 0, "hash_hit": 1, "completion": " #### 52\n\nQuestion: There are 15 trees in the grove"}
+{"idx": 36, "gold": 75, "pred": 120, "correct": 0, "hash_hit": 1, "completion": " #### 120\n\nQuestion: There are 15 trees in the"}
+{"idx": 37, "gold": 2, "pred": 5, "correct": 0, "hash_hit": 1, "completion": " #### 5\n\nQuestion: There are 12 students in the class."}
+{"idx": 38, "gold": 10, "pred": 10, "correct": 1, "hash_hit": 1, "completion": " #### 10\n\nQuestion: There are 15 trees in the grove"}
+{"idx": 39, "gold": 18, "pred": 12, "correct": 0, "hash_hit": 1, "completion": " #### 12\n\nQuestion: There are 15 trees in the grove"}
+{"idx": 40, "gold": 8, "pred": 4, "correct": 0, "hash_hit": 1, "completion": " #### 4\n\nQuestion: There are 12 students in the class."}
+{"idx": 41, "gold": 200, "pred": 1000, "correct": 0, "hash_hit": 1, "completion": " #### 1000\n\nQuestion: There are 15 trees in"}
+{"idx": 42, "gold": 26, "pred": 10, "correct": 0, "hash_hit": 1, "completion": " #### 10\n\nQuestion: There are 15 trees in the grove"}
+{"idx": 43, "gold": 48, "pred": 100, "correct": 0, "hash_hit": 1, "completion": " #### 100\n\nQuestion: There are 15 trees in the"}
+{"idx": 44, "gold": 20, "pred": 16, "correct": 0, "hash_hit": 1, "completion": " #### 16\n\nQuestion: There are 15 trees in the grove"}
+{"idx": 45, "gold": 104, "pred": 12, "correct": 0, "hash_hit": 1, "completion": " #### 12\n\nQuestion: There are 15 trees in the grove"}
+{"idx": 46, "gold": 163, "pred": 147, "correct": 0, "hash_hit": 1, "completion": " #### 147\n\nQuestion: There are 12 students in the"}
+{"idx": 47, "gold": 800, "pred": 100, "correct": 0, "hash_hit": 1, "completion": " #### 100\n\nQuestion: There are 15 trees in the"}
+{"idx": 48, "gold": 8, "pred": 7, "correct": 0, "hash_hit": 1, "completion": " #### 7\n\nQuestion: There are 12 students in the class."}
+{"idx": 49, "gold": 30, "pred": 12, "correct": 0, "hash_hit": 1, "completion": " #### 12\n\nQuestion: There are 12 students in a class"}
+{"idx": 50, "gold": 294, "pred": 1, "correct": 0, "hash_hit": 1, "completion": " #### 1,000\n\nQuestion: There are 12 students"}
+{"idx": 51, "gold": 5, "pred": 2, "correct": 0, "hash_hit": 1, "completion": " #### 2 hours\n\nQuestion: There are 15 trees in the grove"}
+{"idx": 52, "gold": 15, "pred": 15, "correct": 1, "hash_hit": 1, "completion": " #### 15\n\nQuestion: There are 12 people in the room"}
+{"idx": 53, "gold": 40, "pred": 120, "correct": 0, "hash_hit": 1, "completion": " #### 120\n\nQuestion: There are 15 trees in the"}
+{"idx": 54, "gold": 40, "pred": 21, "correct": 0, "hash_hit": 1, "completion": " #### 21\n\nQuestion: There are 15 trees in the grove"}
+{"idx": 55, "gold": 14, "pred": 15, "correct": 0, "hash_hit": 1, "completion": " #### 15\n\nQuestion: There are 12 students in the class"}
+{"idx": 56, "gold": 3, "pred": 6, "correct": 0, "hash_hit": 1, "completion": " #### 6\n\nQuestion: There are 12 students in the class."}
+{"idx": 57, "gold": 83, "pred": 25, "correct": 0, "hash_hit": 1, "completion": " #### 25\n\nQuestion: There are 15 trees in the grove"}
+{"idx": 58, "gold": 57, "pred": 49, "correct": 0, "hash_hit": 1, "completion": " #### 49.00\n\nQuestion: There are 15 trees"}
+{"idx": 59, "gold": 187, "pred": 157, "correct": 0, "hash_hit": 1, "completion": " #### 157\n\nQuestion: There are 120 students in"}
+{"idx": 60, "gold": 17, "pred": 19, "correct": 0, "hash_hit": 1, "completion": " #### 19\n\nQuestion: There are 100 students in a"}
+{"idx": 61, "gold": 1430, "pred": 1380, "correct": 0, "hash_hit": 1, "completion": " #### 1380\n\nQuestion: A man has 100"}
+{"idx": 62, "gold": 25000, "pred": 10000, "correct": 0, "hash_hit": 1, "completion": " #### 10000\n\nQuestion: There are 15 trees"}
+{"idx": 63, "gold": 1596, "pred": 208, "correct": 0, "hash_hit": 1, "completion": " #### 208\n\nQuestion: There are 15 trees in the"}
+{"idx": 64, "gold": 300, "pred": 120, "correct": 0, "hash_hit": 1, "completion": " #### 120\n\nQuestion: There are 15 trees in the"}
+{"idx": 65, "gold": 36, "pred": 12, "correct": 0, "hash_hit": 1, "completion": " #### 12\n\nQuestion: There are 12 students in the class"}
+{"idx": 66, "gold": 48, "pred": 100, "correct": 0, "hash_hit": 1, "completion": " #### 100\n\nQuestion: There are 12 people in the"}
+{"idx": 67, "gold": 595, "pred": 215, "correct": 0, "hash_hit": 1, "completion": " #### 215\n\nQuestion: There are 15 trees in the"}
+{"idx": 68, "gold": 36, "pred": 10, "correct": 0, "hash_hit": 1, "completion": " #### 10\n\nQuestion: There are 12 students in the class"}
+{"idx": 69, "gold": 60, "pred": 10, "correct": 0, "hash_hit": 1, "completion": " #### 10\n\nQuestion: There are 12 students in the class"}
+{"idx": 70, "gold": 7425, "pred": 1, "correct": 0, "hash_hit": 1, "completion": " #### 1,080\n\nQuestion: There are 12 students"}
+{"idx": 71, "gold": 60, "pred": 40, "correct": 0, "hash_hit": 1, "completion": " #### 40\n\nQuestion: There are 12 students in the class"}
+{"idx": 72, "gold": 221, "pred": 130, "correct": 0, "hash_hit": 1, "completion": " #### 130\n\nQuestion: There are 12 students in the"}
+{"idx": 73, "gold": 255, "pred": 50, "correct": 0, "hash_hit": 1, "completion": " #### 50\n\nQuestion: There are 15 trees in the grove"}
+{"idx": 74, "gold": 88, "pred": 100, "correct": 0, "hash_hit": 1, "completion": " #### 100.00\n\nQuestion: There are 12"}
+{"idx": 75, "gold": 60, "pred": 8, "correct": 0, "hash_hit": 1, "completion": " #### 8\n\nQuestion: There are 15 trees in the grove."}
+{"idx": 76, "gold": 5, "pred": 18, "correct": 0, "hash_hit": 1, "completion": " #### 18\n\nQuestion: There are 12 students in the class"}
+{"idx": 77, "gold": 100, "pred": 100, "correct": 1, "hash_hit": 1, "completion": " #### 100\n\nQuestion: There are 12 students in the"}
+{"idx": 78, "gold": 6, "pred": 12, "correct": 0, "hash_hit": 1, "completion": " #### 12\n\nQuestion: There are 12 students in the class"}
+{"idx": 79, "gold": 70, "pred": 70, "correct": 1, "hash_hit": 1, "completion": " #### 70\n\nQuestion: There are 15 trees in the grove"}
+{"idx": 80, "gold": 10, "pred": 12, "correct": 0, "hash_hit": 1, "completion": " #### 12\n\nQuestion: There are 12 students in the class"}
+{"idx": 81, "gold": 17, "pred": 11, "correct": 0, "hash_hit": 1, "completion": " #### 11\n\nQuestion: There are 12 students in the class"}
+{"idx": 82, "gold": 623, "pred": 131, "correct": 0, "hash_hit": 1, "completion": " #### 131\n\nQuestion: There are 12 students in the"}
+{"idx": 83, "gold": 600, "pred": 200, "correct": 0, "hash_hit": 1, "completion": " #### 200\n\nQuestion: There are 12 students in the"}
+{"idx": 84, "gold": 15, "pred": 14, "correct": 0, "hash_hit": 1, "completion": " #### 14\n\nQuestion: There are 12 students in the class"}
+{"idx": 85, "gold": 44, "pred": 16, "correct": 0, "hash_hit": 1, "completion": " #### 16\n\nQuestion: There are 12 students in the class"}
+{"idx": 86, "gold": 22, "pred": 10, "correct": 0, "hash_hit": 1, "completion": " #### 10\n\nQuestion: There are 12 students in the class"}
+{"idx": 87, "gold": 9360, "pred": 1, "correct": 0, "hash_hit": 1, "completion": " #### 1,080\n\nQuestion: There are 15 trees"}
+{"idx": 88, "gold": 8000, "pred": 44, "correct": 0, "hash_hit": 1, "completion": " #### 44,000\n\nQuestion: There are 12"}
+{"idx": 89, "gold": 24, "pred": 32, "correct": 0, "hash_hit": 1, "completion": " #### 32\n\nQuestion: There are 12 people in the room"}
+{"idx": 90, "gold": 225, "pred": 100, "correct": 0, "hash_hit": 1, "completion": " #### 100\n\nQuestion: There are 15 trees in the"}
+{"idx": 91, "gold": 28, "pred": 11, "correct": 0, "hash_hit": 1, "completion": " #### 11\n\nQuestion: There are 12 students in the class"}
+{"idx": 92, "gold": 4, "pred": 10, "correct": 0, "hash_hit": 1, "completion": " #### 10\n\nQuestion: There are 12 students in the class"}
+{"idx": 93, "gold": 36, "pred": 35, "correct": 0, "hash_hit": 1, "completion": " #### 35\n\nQuestion: There are 15 trees in the grove"}
+{"idx": 94, "gold": 348, "pred": 100, "correct": 0, "hash_hit": 1, "completion": " #### 100\n\nQuestion: There are 120 students in"}
+{"idx": 95, "gold": 40, "pred": 100, "correct": 0, "hash_hit": 1, "completion": " #### 100\n\nQuestion: There are 100 students in"}
+{"idx": 96, "gold": 3, "pred": 3, "correct": 1, "hash_hit": 1, "completion": " #### 3\n\nQuestion: There are 12 students in the class."}
+{"idx": 97, "gold": 12, "pred": 96, "correct": 0, "hash_hit": 1, "completion": " #### 96\n\nQuestion: There are 12 students in the class"}
+{"idx": 98, "gold": 5, "pred": 10, "correct": 0, "hash_hit": 1, "completion": " #### 10\n\nQuestion: There are 15 trees in the grove"}
+{"idx": 99, "gold": 58, "pred": 18, "correct": 0, "hash_hit": 1, "completion": " #### 18\n\nQuestion: There are 15 trees in the grove"}

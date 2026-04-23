@@ -1,0 +1,81 @@
+{
+  "config": {
+    "exemplar_set": "wei-et-al-2022-hashformat",
+    "exemplar_hash": "a33e6d90c6844317",
+    "dtype": "bf16",
+    "models": {
+      "it": "google/gemma-4-E2B-it",
+      "base": "google/gemma-4-E2B"
+    },
+    "max_new": {
+      "direct": 16,
+      "cot": 512
+    },
+    "n_total": 100,
+    "plan": "path_1_cot_tokens/plan1",
+    "exemplar_set_description": "Wei et al. 2022 GSM8K 8-shot CoT questions and reasoning, with the terminal \"The answer is X.\" replaced by \"#### X\" to unify the answer format across direct and cot cells.",
+    "versions": {
+      "torch": "2.4.1+cu124",
+      "transformers": "5.6.1",
+      "datasets": "4.8.4"
+    },
+    "commits": {
+      "it": {
+        "model_id": "google/gemma-4-E2B-it",
+        "model_commit": "b4a601102c3d45e2b7b50e2057a6d5ec8ed4adcf",
+        "tokenizer_commit": null
+      },
+      "base": {
+        "model_id": "google/gemma-4-E2B",
+        "model_commit": "9d53598892698e981fc42f78b0f8c005cecd63ca",
+        "tokenizer_commit": null
+      }
+    }
+  },
+  "cells": {
+    "it:direct": {
+      "accuracy": 0.01,
+      "ci95": [
+        0.0017673865655472645,
+        0.0544875247609346
+      ],
+      "correct": 1,
+      "n": 100,
+      "hash_hit_rate": 0.99
+    },
+    "it:cot": {
+      "accuracy": 0.31,
+      "ci95": [
+        0.22779563206132378,
+        0.40626239477955695
+      ],
+      "correct": 31,
+      "n": 100,
+      "hash_hit_rate": 0.82
+    },
+    "base:direct": {
+      "accuracy": 0.09,
+      "ci95": [
+        0.04807199516388488,
+        0.16226374696643667
+      ],
+      "correct": 9,
+      "n": 100,
+      "hash_hit_rate": 0.99
+    },
+    "base:cot": {
+      "accuracy": 0.22,
+      "ci95": [
+        0.15001174503655804,
+        0.3107053471500031
+      ],
+      "correct": 22,
+      "n": 100,
+      "hash_hit_rate": 0.89
+    }
+  },
+  "verdict": {
+    "label": "GREEN",
+    "reason": "lift=0.300 >= 0.10 and CIs non-overlapping; plan2 greenlit."
+  }
+}

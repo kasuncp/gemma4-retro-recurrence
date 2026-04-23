@@ -1,0 +1,12 @@
+{
+  "it": {
+    "model_id": "google/gemma-4-E2B-it",
+    "model_commit": "b4a601102c3d45e2b7b50e2057a6d5ec8ed4adcf",
+    "tokenizer_commit": null
+  },
+  "base": {
+    "model_id": "google/gemma-4-E2B",
+    "model_commit": "9d53598892698e981fc42f78b0f8c005cecd63ca",
+    "tokenizer_commit": null
+  }
+}

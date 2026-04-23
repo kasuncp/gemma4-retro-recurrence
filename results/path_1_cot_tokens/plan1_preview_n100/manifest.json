@@ -1,0 +1,15 @@
+{
+  "exemplar_set": "wei-et-al-2022-hashformat",
+  "exemplar_hash": "a33e6d90c6844317",
+  "dtype": "bf16",
+  "models": {
+    "it": "google/gemma-4-E2B-it",
+    "base": "google/gemma-4-E2B"
+  },
+  "max_new": {
+    "direct": 16,
+    "cot": 512
+  },
+  "n_total": 100,
+  "plan": "path_1_cot_tokens/plan1"
+}
