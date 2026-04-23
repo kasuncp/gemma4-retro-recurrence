@@ -36,7 +36,10 @@
 : "${POD_DATA_CENTERS:=}"                        # optional, comma-separated; empty = any
 : "${POD_PORTS:=22/tcp,8888/http}"               # 22/tcp is required for this script
 : "${POD_INTERRUPTIBLE:=false}"                  # true = spot pricing
-: "${POD_ENV_JSON:={\}}"                         # extra env as JSON object, e.g. '{"WANDB_API_KEY":"..."}'
+# Can't use `:={}}` — bash reads the default up to the first `}`, stripping
+# the trailing `}` off any braced literal. Default unconditionally below.
+: "${POD_ENV_JSON:=}"
+[[ -z "$POD_ENV_JSON" ]] && POD_ENV_JSON='{}'  # extra env as JSON object, e.g. '{"WANDB_API_KEY":"..."}'
 : "${SSH_KEY:=$HOME/.ssh/id_ed25519}"
 : "${STATE_FILE:=.runpod-state.json}"
 : "${API_BASE:=https://rest.runpod.io/v1}"
@@ -80,6 +83,31 @@ api() {
     if [[ "$http_code" -ge 400 ]]; then
         echo "HTTP $http_code from $method $path:" >&2
         cat "$tmp" >&2; echo >&2
+        rm -f "$tmp"; return 1
+    fi
+    cat "$tmp"; rm -f "$tmp"
+}
+
+# GraphQL fallback for endpoints not exposed by REST v1 (e.g. account balance).
+# Usage: _graphql '<query string>'
+_graphql() {
+    local query="$1"
+    local body; body=$(jq -cn --arg q "$query" '{query: $q}')
+    local tmp; tmp=$(mktemp)
+    local http_code
+    http_code=$(curl -sS -o "$tmp" -w '%{http_code}' -X POST \
+        -H "Authorization: Bearer $RUNPOD_API_KEY" \
+        -H "Content-Type: application/json" \
+        -d "$body" \
+        "https://api.runpod.io/graphql")
+    if [[ "$http_code" -ge 400 ]]; then
+        echo "HTTP $http_code from GraphQL:" >&2
+        cat "$tmp" >&2; echo >&2
+        rm -f "$tmp"; return 1
+    fi
+    if jq -e '.errors' >/dev/null 2>&1 <"$tmp"; then
+        echo "GraphQL errors:" >&2
+        jq '.errors' "$tmp" >&2
         rm -f "$tmp"; return 1
     fi
     cat "$tmp"; rm -f "$tmp"
@@ -236,11 +264,12 @@ cmd_cost() {
     [[ -n "$POD_STARTED_AT" ]] || die "state file has no started_at; was the pod brought up with the current runpod.sh?"
     local pod user
     pod=$(api GET "/pods/$POD_ID") || die "pod GET failed"
-    user=$(api GET "/user") || die "user GET failed"
+    # /v1/user doesn't exist on the REST API; use GraphQL myself{clientBalance}.
+    user=$(_graphql 'query { myself { clientBalance } }') || die "user GraphQL query failed"
 
     local cost_per_hr balance now elapsed_s
     cost_per_hr=$(jq -r '.costPerHr // 0' <<<"$pod")
-    balance=$(jq -r '.clientBalance // 0' <<<"$user")
+    balance=$(jq -r '.data.myself.clientBalance // 0' <<<"$user")
     now=$(_unix_now)
     elapsed_s=$(( now - POD_STARTED_AT ))
 
@@ -297,6 +326,17 @@ cmd_bootstrap() {
     echo "bootstrapping $url ($ref) -> $repo_dir"
     _ssh "set -e
         mkdir -p /workspace
+        # runpod/pytorch images don't ship tmux or rsync; cmd_launch needs
+        # tmux and cmd_sync_down needs rsync. Install once per pod.
+        missing=''
+        for pkg in tmux rsync; do
+            command -v \$pkg >/dev/null 2>&1 || missing=\"\$missing \$pkg\"
+        done
+        if [ -n \"\${missing# }\" ]; then
+            echo \"installing:\$missing\"
+            DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \$missing >/dev/null
+        fi
         if [ -d '$repo_dir/.git' ]; then
             cd '$repo_dir'
             git fetch --quiet origin
@@ -349,22 +389,31 @@ cmd_launch() {
 
 cmd_tmux_alive() {
     _load_state; _refresh_ssh
-    # Exit 0 if the tmux session exists AND its current pane is running
-    # something other than bash. Session with only a bash prompt means the
-    # python run finished (clean or via failure); the tail of run.sh drops
-    # to `exec bash` per its current wrapper.
+    # Alive = tmux session exists AND the pane's bash has a child process.
+    # An idle bash prompt has no children; any running subprocess (python,
+    # pt_main_thread, etc.) means the experiment is still going. Previously
+    # we checked #{pane_current_command}, but that stays 'bash' even while
+    # bash's children do real work, so every tick falsely reported CRASHED.
     local result
     result=$(_ssh "
         if ! tmux has-session -t 'gemma-recurrence' 2>/dev/null; then
             echo 'no-session'; exit 0
         fi
-        cmd=\$(tmux display-message -t 'gemma-recurrence' -p '#{pane_current_command}' 2>/dev/null)
-        echo \"cmd=\$cmd\"
+        pane_pid=\$(tmux display-message -t 'gemma-recurrence' -p '#{pane_pid}' 2>/dev/null)
+        if [ -z \"\$pane_pid\" ]; then
+            echo 'no-pid'; exit 0
+        fi
+        if pgrep -P \"\$pane_pid\" >/dev/null 2>&1; then
+            echo 'running'
+        else
+            echo 'idle'
+        fi
     ")
     case "$result" in
         *"no-session"*) return 1 ;;
-        *"cmd=bash"*)   return 1 ;;  # dropped to shell = run exited
-        *"cmd="*)       return 0 ;;  # anything non-bash = still running
+        *"no-pid"*)     return 1 ;;
+        *"idle"*)       return 1 ;;  # bash prompt with no children = run exited
+        *"running"*)    return 0 ;;  # any child = still running
         *)              return 1 ;;
     esac
 }
