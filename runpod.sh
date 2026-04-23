@@ -317,6 +317,29 @@ cmd_bootstrap() {
         && mv "$STATE_FILE.tmp" "$STATE_FILE"
 }
 
+cmd_launch() {
+    [[ $# -eq 2 ]] || die "launch needs <run.sh-flags> <result-dir>"
+    local flags="$1" result_dir="$2"
+    _load_state; _refresh_ssh
+    [[ -n "$POD_REPO_DIR" ]] || die "no repo_dir in state; run bootstrap first"
+
+    local session="gemma-recurrence"
+    local launch_cmd
+    # Quote flags + result_dir defensively. printf %q handles embedded spaces.
+    launch_cmd=$(printf 'cd %q && EXPERIMENT_RESULT_DIR=%q ./run.sh %s' \
+        "$POD_REPO_DIR" "$result_dir" "$flags")
+
+    _ssh "set -e
+        if tmux has-session -t '$session' 2>/dev/null; then
+            echo 'launch: session already running, no-op'
+            exit 0
+        fi
+        mkdir -p '$POD_REPO_DIR/$result_dir'
+        tmux new-session -d -s '$session' \"$launch_cmd\"
+        echo 'launch: session started'
+    "
+}
+
 cmd_logs() { _ssh "tail -n 200 -f /workspace/startup.log"; }
 
 cmd_down() {

@@ -217,6 +217,22 @@ set +e
 RUN_STATUS=$?
 set -e
 
+# ---------- 4a. Write completion marker for the agent ----------
+# EXPERIMENT_RESULT_DIR is exported by `runpod.sh launch` when the run is
+# agent-driven. If it's set, drop .DONE/.FAILED so runpod.sh watch can detect
+# the terminal state. If the dir doesn't exist (python crashed early), create
+# it so the marker write succeeds.
+if [[ -n "${EXPERIMENT_RESULT_DIR:-}" ]]; then
+    mkdir -p "$EXPERIMENT_RESULT_DIR"
+    if [[ $RUN_STATUS -eq 0 ]]; then
+        touch "$EXPERIMENT_RESULT_DIR/.DONE"
+        echo "marker: wrote $EXPERIMENT_RESULT_DIR/.DONE"
+    else
+        touch "$EXPERIMENT_RESULT_DIR/.FAILED"
+        echo "marker: wrote $EXPERIMENT_RESULT_DIR/.FAILED"
+    fi
+fi
+
 if [[ $RUN_STATUS -ne 0 ]]; then
     echo
     echo "=== Python exited with status $RUN_STATUS --- skipping git push. ==="
