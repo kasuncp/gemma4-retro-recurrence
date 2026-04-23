@@ -136,7 +136,8 @@ cmd_up() {
     local resp; resp=$(api POST /pods "$body") || die "pod creation failed (common causes: no capacity for selected GPU/region, invalid network volume id)"
     local pod_id; pod_id=$(jq -r '.id' <<<"$resp")
     [[ "$pod_id" != "null" && -n "$pod_id" ]] || die "no pod id in response: $resp"
-    echo "$resp" | jq '{id, name, costPerHr, desiredStatus}' > "$STATE_FILE"
+    local started_at; started_at=$(_unix_now)
+    echo "$resp" | jq --argjson ts "$started_at" '{id, name, costPerHr, desiredStatus} + {started_at: $ts}' > "$STATE_FILE"
     echo "pod id: $pod_id — waiting for SSH..."
 
     # Poll until port 22 is mapped + reachable.
