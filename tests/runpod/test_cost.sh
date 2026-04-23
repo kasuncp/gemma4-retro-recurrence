@@ -28,6 +28,17 @@ api() {
     esac
 }
 export -f api
+# cmd_cost reads the account balance via _graphql (myself.clientBalance), not
+# via REST /user — the /user arm above is dormant but kept in case a future
+# REST endpoint needs stubbing. The _graphql stub wraps the existing flat
+# user fixture in the GraphQL response envelope so fixtures stay readable.
+_graphql() {
+    local fixture="$SCRIPT_DIR/fixtures/${USER_FIXTURE:-user_normal}.json"
+    [[ -f "$fixture" ]] || { echo "test stub: fixture $fixture missing" >&2; return 1; }
+    local bal; bal=$(jq -r '.clientBalance' "$fixture")
+    jq -cn --argjson bal "$bal" '{data: {myself: {clientBalance: $bal}}}'
+}
+export -f _graphql
 _load_state() { POD_ID="abc123"; POD_HOST="1.2.3.4"; POD_PORT="40022"; POD_STARTED_AT="${POD_STARTED_AT:-1000000000}"; }
 _unix_now() { echo "${FAKE_NOW:-1000003600}"; }  # default: 1 hour after start
 export -f _load_state
