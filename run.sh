@@ -1,12 +1,21 @@
 #!/usr/bin/env bash
-# One-shot runner for the PLE x recurrence probes on RunPod.
+# One-shot runner for the PLE x recurrence probes and the Path 1 CoT gate on
+# RunPod.
 #
 # Usage:
-#   ./run.sh                          # round 2a, wrapped in tmux (default)
-#   ./run.sh --mode original          # round 1 sanity check
-#   ./run.sh --mode ple-variants      # round 2a (explicit)
-#   ./run.sh --target-layer 22 ...    # any flags pass through to the python script
-#   ./run.sh --no-tmux                # run inline without a tmux wrapper
+#   ./run.sh                                     # probe, round 2a, wrapped in tmux (default)
+#   ./run.sh --mode original                     # probe, round 1 sanity check
+#   ./run.sh --mode ple-variants                 # probe, round 2a (explicit)
+#   ./run.sh --mode reasoning-eval-r5            # probe, round 5 (latest)
+#   ./run.sh --target-layer 22 ...               # probe: any flags pass through
+#   ./run.sh --script path1                      # Path 1 CoT gate (all 4 cells, sequential)
+#   ./run.sh --script path1 --summarize          # Path 1 CoT gate: aggregate shards
+#   ./run.sh --script path1 --cells it:cot       # Path 1 CoT gate: single cell
+#   ./run.sh --no-tmux                           # run inline without a tmux wrapper
+#
+# --script selects the python entry point:
+#   probe  (default) -> ple_sanity_check.py   (Path 2 depth-recurrence probes)
+#   path1            -> path1_cot_gate.py     (Path 1 CoT gate, plan 1)
 #
 # By default the run is launched inside a detached-friendly tmux session named
 # "gemma-recurrence" so closing your SSH terminal will NOT kill the experiment.
@@ -17,7 +26,7 @@
 #   1. Source .env (creates a stub if missing).
 #   2. Validate HF_TOKEN.
 #   3. Install/upgrade transformers, datasets, accelerate.
-#   4. Run ple_sanity_check.py with whatever args you passed (default: --mode ple-variants).
+#   4. Run the selected python script with whatever args you passed.
 
 set -euo pipefail
 
@@ -27,16 +36,43 @@ cd "$SCRIPT_DIR"
 SESSION_NAME="${TMUX_SESSION:-gemma-recurrence}"
 
 # ---------- 0. tmux wrapper ----------
-# Detect --no-tmux in args and strip it from what we forward to the python script.
+# Detect --no-tmux and --script (run.sh's own flags) and strip them from what
+# we forward to the python script.
 USE_TMUX=1
+TARGET_SCRIPT="probe"
 FORWARDED_ARGS=()
-for arg in "$@"; do
-    if [[ "$arg" == "--no-tmux" ]]; then
-        USE_TMUX=0
-    else
-        FORWARDED_ARGS+=("$arg")
-    fi
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --no-tmux)
+            USE_TMUX=0
+            shift
+            ;;
+        --script)
+            if [[ $# -lt 2 ]]; then
+                echo "ERROR: --script needs a value (probe | path1)."
+                exit 2
+            fi
+            TARGET_SCRIPT="$2"
+            shift 2
+            ;;
+        --script=*)
+            TARGET_SCRIPT="${1#*=}"
+            shift
+            ;;
+        *)
+            FORWARDED_ARGS+=("$1")
+            shift
+            ;;
+    esac
 done
+
+case "$TARGET_SCRIPT" in
+    probe|path1) ;;
+    *)
+        echo "ERROR: unknown --script '$TARGET_SCRIPT' (expected: probe, path1)."
+        exit 2
+        ;;
+esac
 
 if [[ "$USE_TMUX" == "1" && -z "${TMUX:-}" ]]; then
     if ! command -v tmux >/dev/null 2>&1; then
@@ -92,7 +128,8 @@ if [[ "$USE_TMUX" == "1" && -z "${TMUX:-}" ]]; then
         QUOTED_ARGS=$(printf '%q ' "${FORWARDED_ARGS[@]}")
     fi
     QUOTED_DIR=$(printf '%q' "$SCRIPT_DIR")
-    INNER_CMD="cd $QUOTED_DIR && ./run.sh ${QUOTED_ARGS}--no-tmux; status=\$?; echo; echo \"=== run finished (exit=\$status). Type exit or Ctrl+D to close session. ===\"; exec bash"
+    QUOTED_SCRIPT=$(printf '%q' "$TARGET_SCRIPT")
+    INNER_CMD="cd $QUOTED_DIR && ./run.sh --script $QUOTED_SCRIPT ${QUOTED_ARGS}--no-tmux; status=\$?; echo; echo \"=== run finished (exit=\$status). Type exit or Ctrl+D to close session. ===\"; exec bash"
 
     echo "Launching tmux session '$SESSION_NAME' ..."
     echo "  Detach (run keeps going): Ctrl+B then D"
@@ -153,18 +190,28 @@ else
     echo "Deps already installed (delete $INSTALL_MARKER or set FORCE_INSTALL=1 to reinstall)."
 fi
 
-# ---------- 4. Run probe ----------
-# Default to round 2a; if the user passed any args, use those verbatim instead.
-if [[ $# -eq 0 ]]; then
-    set -- --mode ple-variants
-fi
+# ---------- 4. Run the selected python script ----------
+# Defaults differ per entry point. If the user passed any args, use those
+# verbatim instead.
+case "$TARGET_SCRIPT" in
+    probe)
+        PY_SCRIPT="ple_sanity_check.py"
+        if [[ $# -eq 0 ]]; then
+            set -- --mode ple-variants
+        fi
+        ;;
+    path1)
+        PY_SCRIPT="path1_cot_gate.py"
+        # path1_cot_gate.py with no args runs all 4 cells sequentially on one GPU.
+        ;;
+esac
 
 RUN_ARGS=("$@")
 
 echo
-echo "=== Running: $PYTHON ple_sanity_check.py ${RUN_ARGS[*]} ==="
+echo "=== Running: $PYTHON $PY_SCRIPT ${RUN_ARGS[*]} ==="
 set +e
-"$PYTHON" ple_sanity_check.py "${RUN_ARGS[@]}"
+"$PYTHON" "$PY_SCRIPT" "${RUN_ARGS[@]}"
 RUN_STATUS=$?
 set -e
 
@@ -191,19 +238,33 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 fi
 
 FILES_TO_ADD=()
-# New-style: everything under results/. The python script always writes
-# there now (flag --output-json can override). Legacy bare filenames are
-# still staged if they're present at the repo root, so existing result
-# JSONs don't get orphaned mid-migration.
-if [[ -d results ]]; then
-    # shellcheck disable=SC2207
-    while IFS= read -r f; do
-        FILES_TO_ADD+=("$f")
-    done < <(find results -maxdepth 1 -type f -name '*.json' 2>/dev/null)
-fi
-for f in results.json results_round2a.json results_round2a_addendum.json results_round2a_fixed.json results_round2b_importance.json results_round2b_location.json results_round2c_full_map.json results_round3a_pair_looping.json; do
-    [[ -f "$f" ]] && FILES_TO_ADD+=("$f")
-done
+# What to stage depends on the entry point:
+#   probe -> results/*.json at depth 1 (the probe writes flat), plus legacy
+#            bare filenames at the repo root so old result JSONs don't get
+#            orphaned mid-migration.
+#   path1 -> results/path_1_cot_tokens/** (nested: plan1/results_gate.json
+#            plus plan1/cells/*.jsonl shards).
+case "$TARGET_SCRIPT" in
+    probe)
+        if [[ -d results ]]; then
+            # shellcheck disable=SC2207
+            while IFS= read -r f; do
+                FILES_TO_ADD+=("$f")
+            done < <(find results -maxdepth 1 -type f -name '*.json' 2>/dev/null)
+        fi
+        for f in results.json results_round2a.json results_round2a_addendum.json results_round2a_fixed.json results_round2b_importance.json results_round2b_location.json results_round2c_full_map.json results_round3a_pair_looping.json; do
+            [[ -f "$f" ]] && FILES_TO_ADD+=("$f")
+        done
+        ;;
+    path1)
+        if [[ -d results/path_1_cot_tokens ]]; then
+            # shellcheck disable=SC2207
+            while IFS= read -r f; do
+                FILES_TO_ADD+=("$f")
+            done < <(find results/path_1_cot_tokens -type f \( -name '*.json' -o -name '*.jsonl' \) 2>/dev/null)
+        fi
+        ;;
+esac
 
 if [[ ${#FILES_TO_ADD[@]} -eq 0 ]]; then
     echo "No result JSONs on disk --- nothing to commit."
@@ -219,7 +280,7 @@ fi
 
 TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 HOSTNAME_SHORT=$(hostname -s 2>/dev/null || hostname || echo "unknown-host")
-COMMIT_MSG="results: ${RUN_ARGS[*]:-default} @ ${TIMESTAMP} (${HOSTNAME_SHORT})"
+COMMIT_MSG="results(${TARGET_SCRIPT}): ${RUN_ARGS[*]:-default} @ ${TIMESTAMP} (${HOSTNAME_SHORT})"
 git commit -m "$COMMIT_MSG"
 
 echo "Pushing to origin ..."
