@@ -5,6 +5,7 @@
 # Auth: export RUNPOD_API_KEY=... (get one from https://console.runpod.io/user/settings)
 #
 # Usage:
+#   ./runpod.sh go                       # one-shot: up + bootstrap + launch + detached watcher (all from experiment.yaml)
 #   ./runpod.sh up                       # create a pod, wait for SSH, save id to state file
 #   ./runpod.sh exec "cmd"               # run a single command on the current pod
 #   ./runpod.sh run script.sh            # upload and execute a local script
@@ -23,7 +24,14 @@
 #   ./runpod.sh watch                    # main loop: reads experiment.yaml; ticks until done
 #
 # Config (env vars with defaults — override inline or in a .env file you source):
-: "${RUNPOD_API_KEY:?set RUNPOD_API_KEY}"
+# Auto-source a sibling .env so `./runpod.sh go` works as a single command
+# without requiring the caller to `source .env` first.
+_rp_script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+if [[ -f "$_rp_script_dir/.env" ]]; then
+    set -a; . "$_rp_script_dir/.env"; set +a
+fi
+unset _rp_script_dir
+: "${RUNPOD_API_KEY:?set RUNPOD_API_KEY (directly or in sibling .env)}"
 : "${POD_NAME:=probe-$(date +%Y%m%d-%H%M%S)}"
 : "${POD_IMAGE:=runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04}"
 : "${POD_GPU_TYPES:=NVIDIA GeForce RTX 4090}"   # comma-separated, tried in order
@@ -573,6 +581,54 @@ cmd_watch() {
 
 cmd_logs() { _ssh "tail -n 200 -f /workspace/startup.log"; }
 
+cmd_go() {
+    # Single-command orchestration: up + bootstrap + launch + detached
+    # watcher. All parameters come from experiment.yaml; no args.
+    local url ref flags result_dir
+    url=$(_read_config '.git.url')
+    ref=$(_read_config '.git.ref')
+    flags=$(_read_config '.run.flags')
+    result_dir=$(_read_config '.run.result_dir')
+    [[ -n "$url" && -n "$ref" && -n "$flags" && -n "$result_dir" ]] \
+        || die "experiment.yaml missing required fields (git.url, git.ref, run.flags, run.result_dir)"
+
+    # Refuse to stack. Explicit teardown is safer than silently orphaning.
+    [[ ! -f "$STATE_FILE" ]] \
+        || die "$STATE_FILE exists; a pod is already registered. './runpod.sh down' first (or delete the stale state file)."
+    if command -v tmux >/dev/null 2>&1 && tmux has-session -t rp-watch 2>/dev/null; then
+        die "tmux session 'rp-watch' already running. 'tmux kill-session -t rp-watch' first."
+    fi
+    if command -v screen >/dev/null 2>&1 && screen -ls 2>/dev/null | grep -q '\.rp-watch[[:space:]]'; then
+        die "screen session 'rp-watch' already running. 'screen -S rp-watch -X quit' first."
+    fi
+
+    "$0" up
+    "$0" bootstrap "$url" "$ref"
+    "$0" launch "$flags" "$result_dir"
+
+    # Detach the watcher. Prefer tmux; fall back to the pre-installed macOS
+    # screen. The detached session inherits this shell's env + CWD, so the
+    # watch loop finds experiment.yaml and .runpod-state.json in the same
+    # directory the user invoked us from.
+    local self; self="$(cd "$(dirname "$0")" && pwd -P)/$(basename "$0")"
+    if command -v tmux >/dev/null 2>&1; then
+        tmux new-session -d -s rp-watch "$self watch"
+        printf '\nGO complete. Watcher detached in tmux session rp-watch.\n'
+        printf '  attach:  tmux attach -t rp-watch\n'
+        printf '  tail:    tail -f ./watch.log\n'
+        printf '  stop:    ./runpod.sh down  &&  tmux kill-session -t rp-watch\n'
+    elif command -v screen >/dev/null 2>&1; then
+        screen -dmS rp-watch bash -c "exec $(printf '%q' "$self") watch"
+        printf '\nGO complete. Watcher detached in screen session rp-watch.\n'
+        printf '  attach:  screen -r rp-watch\n'
+        printf '  tail:    tail -f ./watch.log\n'
+        printf '  stop:    ./runpod.sh down  &&  screen -S rp-watch -X quit\n'
+    else
+        echo "WARN: launch complete but no tmux or screen installed;"
+        echo "      run './runpod.sh watch' in another shell yourself."
+    fi
+}
+
 cmd_down() {
     _load_state
     echo "terminating pod $POD_ID..."
@@ -583,6 +639,7 @@ cmd_down() {
 if [[ -z "${RUNPOD_SHIM:-}" ]]; then
     sub="${1:-}"; shift || true
     case "$sub" in
+        go)         cmd_go "$@" ;;
         up)         cmd_up "$@" ;;
         exec)       cmd_exec "$@" ;;
         run)        cmd_run "$@" ;;
@@ -600,7 +657,7 @@ if [[ -z "${RUNPOD_SHIM:-}" ]]; then
         sync-down)  cmd_sync_down "$@" ;;
         watch)      cmd_watch "$@" ;;
         ""|help|-h|--help)
-            sed -n '2,24p' "$0"; exit 0 ;;
+            sed -n '2,25p' "$0"; exit 0 ;;
         *) die "unknown subcommand: $sub (try --help)" ;;
     esac
 fi

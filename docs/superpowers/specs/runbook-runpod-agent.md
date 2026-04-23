@@ -10,25 +10,23 @@
 ## Starting a run
 
 1. Edit `experiment.yaml` — set `run.flags`, `run.result_dir`, `budget.*`.
-2. Launch (use a Claude session for validation):
+2. Launch. One command does everything (up + bootstrap + launch + detached watcher, all parameters from `experiment.yaml`; `.env` is auto-sourced):
+
+   ```
+   ./runpod.sh go
+   ```
+
+   The watcher runs in a detached tmux session (falls back to `screen` if tmux isn't installed). Attach with `tmux attach -t rp-watch` (Ctrl+B D to detach) or `screen -r rp-watch`. Live log: `tail -f ./watch.log`.
+
+3. Optional — validate with a Claude session instead of reading the numbers yourself:
 
    ```
    claude -p "Read ./experiment.yaml. Validate required fields and bounds. Then run:
-     ./runpod.sh up
-     ./runpod.sh bootstrap <url> <ref>   (values from experiment.yaml)
-     ./runpod.sh launch '<run.flags>' '<run.result_dir>'
+     ./runpod.sh go
    On success print: pod id, ssh cmd, costPerHr, hours of runway to budget.cap_usd
    (soft warn), hours to account-balance hitting emergency_usd (hard stop), and
-   whether max_hours will fire first. Do NOT start the watch loop."
+   whether max_hours will fire first."
    ```
-
-3. Start the watch loop in local tmux:
-
-   ```
-   tmux new -s rp-watch './runpod.sh watch'
-   ```
-
-   Detach: Ctrl+B D. Re-attach: `tmux attach -t rp-watch`. Log: `./watch.log`.
 
 ## On exit
 
