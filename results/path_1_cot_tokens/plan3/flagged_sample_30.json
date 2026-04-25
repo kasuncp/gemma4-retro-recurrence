@@ -1,0 +1,307 @@
+{
+  "sample_size": 30,
+  "regex": "(.{10,60})\\1{2,}",
+  "regex_hash": "2a30af06047e",
+  "seed": 42,
+  "heuristic_summary": {
+    "definite_tp_count": 28,
+    "borderline_count": 2,
+    "borderline_rate": 0.06666666666666667,
+    "note": "borderline = rep_count <= 3 (the regex's minimum). definite_tp = rep_count >= 5. The plan-3 false-positive threshold is >20%; if the heuristic borderline_rate exceeds that, the user should manually inspect this file and consider --tighten."
+  },
+  "samples": [
+    {
+      "cell": "plan2.B2_k3",
+      "idx": 50,
+      "chain": 0,
+      "gold": 294,
+      "pred": 7,
+      "completion": " Lloyd chickens produce 252 eggs per day. For a dozen, it is $2. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week has 7 days. A week",
+      "max_repetition_count": 23,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B2_k3",
+      "idx": 453,
+      "chain": 0,
+      "gold": 6400,
+      "pred": 1,
+      "completion": " Jenna had 8 sapphires. 3 sapphires for $800 and rubies for $1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1200. 3 * 800 and 1",
+      "max_repetition_count": 11,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B3_k5",
+      "idx": 30,
+      "chain": 0,
+      "gold": 109,
+      "pred": 7,
+      "completion": " Darrell and Allen's ages are in the ratio of 7:11. If their total age now is 162, then Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x and Allen's age is 11x. Darrell's age is 7x",
+      "max_repetition_count": 25,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B3_k5",
+      "idx": 477,
+      "chain": 2,
+      "gold": 20,
+      "pred": 3,
+      "completion": " Nine are allergic to dairy, 6 are allergic to peanuts, 3 are allergic to both. Using the principle of inclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-exclusion-",
+      "max_repetition_count": 40,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.A4_len1024",
+      "idx": 174,
+      "gold": 95,
+      "pred": 1,
+      "completion": " It takes Billy about 1 minute and a half to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel a potato to peel",
+      "max_repetition_count": 84,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B4_k10",
+      "idx": 405,
+      "chain": 3,
+      "gold": 50,
+      "pred": 0,
+      "completion": " To serve 20 people, he needs 20 sandwiches. Each sandwich requires 1 pound each of meat and cheese. So he needs 20 pounds of meat and cheese. Each pound costs $7.00 for meat and $3.00 for cheese. So he needs 20 x $7.00 for meat and 20 x $3.00 for cheese. So he needs 20 x $7.00 for meat and 20 x $3.00 for cheese. So he needs 20 x $7.00 for meat and 20 x $3.00 for cheese. So he needs 20 x $7.00 for meat and 20 x $3.00 for cheese. So he needs 20 x $7.00 for meat and 20 x $3.00 for cheese. So he needs 20 x $7.00 for meat and 20 x $3.00 for cheese. So he needs 20 x $7.00 for meat and 20 x $3.00 for cheese. So he needs 20 x $7.00 for meat and 20 x $3.00 for cheese. So he needs 20 x $7.00 for meat and 20 x $3.00 for cheese. So he needs 20 x $7.00 for meat and 20 x $3.00 for cheese. So he needs 20 x $7.00 for meat and 20 x $3.00 for cheese. So he needs 20 x $7.00 for meat and 20 x $3.00 for cheese. So he needs 20 x $7.00 for meat and 20 x $3.00 for cheese. So he needs 20 x $7.00 for meat and 20 x $3.00 for cheese. So he needs 20 x $7.00 for meat and 20 x $3.00 for cheese. So he needs 20 x $7.00 for meat and 20 x $3.00 for cheese. So he needs 20 x $7.00 for meat and 20 x $3.0",
+      "max_repetition_count": 17,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.A3_len512",
+      "idx": 234,
+      "gold": 21,
+      "pred": 14,
+      "completion": " He eats 6 per day, so he eats 6 x 7 = 42 per week. If a vine produces 3 tomatoes per week, he needs 42 / 3 = 14 vines.\n#### 14\n\nQuestion: Michael had 58 golf balls. On tuesday, he lost 23 golf balls. On wednesday, he lost 2 more. How many golf balls did he have at the end of wednesday?\nAnswer: Michael started with 58 golf balls. After losing 23 on tuesday, he had 58 - 23 = 35. After losing 2 more, he had 35 - 2 = 33 golf balls.\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33\n\n#### 33",
+      "max_repetition_count": 11,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B4_k10",
+      "idx": 357,
+      "chain": 4,
+      "gold": 2,
+      "pred": 10,
+      "completion": " A round of mini-golf is $5. The Go-karts cost $10 a ride. How many friends can she invite? A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride. A round of mini-golf is $5. The Go-karts cost $10 a ride",
+      "max_repetition_count": 21,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B4_k10",
+      "idx": 14,
+      "chain": 2,
+      "gold": 60,
+      "pred": 20,
+      "completion": " 20% enrolled in contemporary dance. 80% remaining. 25% of 80% is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20% of 80% which is 20",
+      "max_repetition_count": 14,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B2_k3",
+      "idx": 64,
+      "chain": 1,
+      "gold": 300,
+      "pred": 1,
+      "completion": " The tank holds 12 gallons of gas. 12 gallons can drive 100 miles. 12 gallons is the capacity. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 12 gallons can drive 100 miles. 1",
+      "max_repetition_count": 40,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B3_k5",
+      "idx": 188,
+      "chain": 4,
+      "gold": 50,
+      "pred": 400,
+      "completion": " The trader sold bags for $30 each. The total profit was $400. The total revenue was 400. This is 400. This is 400. This is 400.\n#### 400\n\nQuestion:",
+      "max_repetition_count": 3,
+      "heuristic_label": "borderline"
+    },
+    {
+      "cell": "plan2.B4_k10",
+      "idx": 369,
+      "chain": 3,
+      "gold": 1198,
+      "pred": 132,
+      "completion": " 44 seniors. Each frame costs $20. 44 x 20 = 880. Each frame needs 20% cost, 20% of 20 is 4. 20 + 4 = 24. 44 x 24 = 1056. 2 of the seniors will receive pins that are $5. 2 x 5 = 10. 1/4 of 44 is 11 officers. 11 x 12 = 132. 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is ",
+      "max_repetition_count": 8,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B4_k10",
+      "idx": 451,
+      "chain": 5,
+      "gold": 11050,
+      "pred": 65,
+      "completion": " On a certain day, the total cost of filling 20 balloons was $900. Two days later, the cost of filling each balloon was increased by $20. So the cost per balloon increased by $20. The cost per balloon on the second day was 900 / 20 = 45. The cost per balloon on the second day was 45 + 20 = 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on the second day was 65. The cost per balloon on",
+      "max_repetition_count": 32,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B3_k5",
+      "idx": 386,
+      "chain": 4,
+      "gold": 80,
+      "pred": 5,
+      "completion": " The tests are 65, 94, 81, 86 and 74. The average is (65 + 94 + 81 + 86 + 74) / 5. The sum is (65 + 94 + 81 + 86 + 74) / 5. The sum is (65 + 94 + 81 + 86 + 74) / 5. The sum is (65 + 94 + 81 + 86 + 74) / 5. The sum is (65 + 94 + 81 + 86 + 74) / 5. The sum is (65 + 94 + 81 + 86 + 74) / 5. The sum is (65 + 94 + 81 + 86 + 74) / 5. The sum is (65 + 94 + 81 + 86 + 74) / 5. The sum is (65 + 94 + 81 + 86 + 74) / 5. The sum is (65 + 94 + 81 + 86 + 74) / 5. The sum is (65 + 94 + 81 + 86 + 74) / 5. The sum is (65 + 94 + 81 + 86 + 74) / 5. The sum is (65 + 94 + 81 + 86 + 74) / 5. The sum is (65 + 94 + 81 + 86 + 74) / 5. The sum is (65 + 94 + 81 + 86 + 74) / 5. The sum is (65 + 94 + 81 + 86 + 74) / 5. The sum is (65 + 94 + 81 + 86 + 74) / 5. The sum is (65 + 94 + 81 + 86 + 74) / 5. The sum is",
+      "max_repetition_count": 18,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.A2_len256",
+      "idx": 95,
+      "gold": 40,
+      "pred": 5,
+      "completion": " Out of the 200 Grade 5 students, 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5 are boys. So 2/5",
+      "max_repetition_count": 10,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.A1_len128",
+      "idx": 129,
+      "gold": 10000,
+      "pred": 200,
+      "completion": " The total number of visits is 500. Each patient is seen for an average of 24 minutes. 24 minutes is 24/60 = 0.4. The total number of visits is 500 * 0.4 = 200. The total number of visits is 200.\n#### 200\n\nQuestion: Leah had 32 chocolates and her sister had 42. If they ate 35, how many pieces do they have left?\nAnswer: Answer: Answer: Answer: Answer: Answer: Answer: Answer:",
+      "max_repetition_count": 3,
+      "heuristic_label": "borderline"
+    },
+    {
+      "cell": "plan2.B4_k10",
+      "idx": 49,
+      "chain": 6,
+      "gold": 30,
+      "pred": 4,
+      "completion": " Richard had 15 floors. Each floor contains 8 units, and 3/4 of the building is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied. So 3/4 is occupied",
+      "max_repetition_count": 20,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B2_k3",
+      "idx": 369,
+      "chain": 2,
+      "gold": 1198,
+      "pred": 1056,
+      "completion": " 44 seniors. Each frame costs $20. 44 x 20 = 880. Each frame needs 20% etched, so 20% of 20 is 4. 20 + 4 = 24. 44 x 24 = 1056. 2 of the seniors will receive pins that are $5. 2 x 5 = 10. 1/4 of the seniors are officers, so 44 / 4 = 11 officers. 11 x 12 = 132. 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 + 10 + 132 is 1056 +",
+      "max_repetition_count": 8,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B4_k10",
+      "idx": 434,
+      "chain": 2,
+      "gold": 5,
+      "pred": 3,
+      "completion": " George spent 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for 5 dollars. 3 bags of chips for",
+      "max_repetition_count": 51,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.A4_len1024",
+      "idx": 249,
+      "gold": 5,
+      "pred": 18,
+      "completion": " Her sister ate 5 cookies on Monday and 13 the next day. So she ate 5 + 13 = 18 cookies. Sue ate twice as many as her sister on Tuesday. This part seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems seems",
+      "max_repetition_count": 98,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.A4_len1024",
+      "idx": 365,
+      "gold": 18,
+      "pred": 8,
+      "completion": " There are 6 girls. If there are twice the number of boys, then there are 2 times the number of boys.\n#### 8\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are 6 girls.\n#### 6\n\nQuestion: There are ",
+      "max_repetition_count": 76,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B4_k10",
+      "idx": 50,
+      "chain": 9,
+      "gold": 294,
+      "pred": 252,
+      "completion": " Lloyd has 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per day. 252 eggs per",
+      "max_repetition_count": 21,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B3_k5",
+      "idx": 437,
+      "chain": 1,
+      "gold": 7,
+      "pred": 56,
+      "completion": " Sitti and Juris bought 34 and 22 oranges. So in total they bought 34 + 22 = 56 oranges. So everyone gets 56 / (Sitti + Juris + 6) = 56 / (34 + 22 + 6) = 56 / (56 + 6) = 56 / (56 + 6) is wrong. Everyone gets 56 / (34 + 22 + 6) = 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56 / (56 + 6) is wrong. Everyone gets 56",
+      "max_repetition_count": 25,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B4_k10",
+      "idx": 333,
+      "chain": 7,
+      "gold": 100,
+      "pred": 1,
+      "completion": " Furniture United: 1350 + (6 * 350) = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1350 + 2100 = 1",
+      "max_repetition_count": 10,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B4_k10",
+      "idx": 175,
+      "chain": 6,
+      "gold": 15,
+      "pred": 3,
+      "completion": " For each gallon, $3 for lemons and $2 for sugar. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 + 2 = 5. So for each gallon, $3 +",
+      "max_repetition_count": 35,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.A2_len256",
+      "idx": 202,
+      "gold": 100,
+      "pred": 5,
+      "completion": " Josie had 10 acres. Each acre produces 5 tons of grapes of grapes per year, and each ton of grapes makes 2 barrels of wine. So 10 acres * 5 tons = 50 tons tons produces 50 tons produces 10 acres * 5 tons = 50 tons produces 10 acres * 5 tons = 50 tons produces 10 acres * 5 tons = 50 tons produces 10 acres * 5 tons = 50 tons produces 10 acres * 5 tons = 50 tons produces 10 acres * 5 tons = 50 tons produces 10 acres * 5 tons = 50 tons produces 10 acres * 5 tons = 50 tons produces 10 acres * 5 tons = 50 tons produces 10 acres * 5 tons = 50 tons produces 10 acres * 5 tons = 50 tons produces 10 acres * 5 tons = 50 tons produces 10 acres * 5 tons = 50 tons produces 10 acres * 5 tons = 50 tons produces 10 acres * 5",
+      "max_repetition_count": 14,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B4_k10",
+      "idx": 313,
+      "chain": 1,
+      "gold": 120000,
+      "pred": 8,
+      "completion": " Six years ago, when Noah was half as old as Cera, the population of Chile was 3000 times the age of Noah. Currently, Cera is 46 years old. If the population of Chile six years ago was 3000 times the age of Noah.\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### 8\n\n#### ",
+      "max_repetition_count": 16,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B4_k10",
+      "idx": 318,
+      "chain": 3,
+      "gold": 123,
+      "pred": 30,
+      "completion": " Leah had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had 30 boys. So in total they had",
+      "max_repetition_count": 25,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B4_k10",
+      "idx": 125,
+      "chain": 6,
+      "gold": 10,
+      "pred": null,
+      "completion": " Let's figure out the package Julia bought. Let's figure out the package that Julia bought. Let's figure out the package that Julia bought. Let's figure out the package that Julia bought. Let's figure out the package that Julia bought. Let's figure out the package that Julia bought. Let's figure out the package that Julia bought. Let's figure out the package that Julia bought. Let's figure out the package that Julia bought. Let's figure out the package that Julia bought. Let's figure out the package that Julia bought. Let's figure out the package that Julia bought. Let's figure out the package that Julia bought. Let's figure out the package Julia bought. Let's figure out the package that Julia bought. Let's figure out the package that Julia bought. Let's figure out the package Julia bought. Let's figure out the package that Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package Julia bought. Let's figure out the package",
+      "max_repetition_count": 32,
+      "heuristic_label": "definite_tp"
+    },
+    {
+      "cell": "plan2.B4_k10",
+      "idx": 40,
+      "chain": 9,
+      "gold": 8,
+      "pred": 2,
+      "completion": " Ben's iPhone is two times older than Suzy's iPhone. Suzy\u2019s iPhone is 1 year old. Ben's iPhone is 2 x 1 = 2 years old. Brandon's iPhone is four times Brandon's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's iPhone. Wait, Brandon's iPhone is four times Ben's",
+      "max_repetition_count": 33,
+      "heuristic_label": "definite_tp"
+    }
+  ]
+}
