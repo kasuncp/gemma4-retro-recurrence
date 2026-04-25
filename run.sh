@@ -15,6 +15,8 @@
 #   ./run.sh --script path1 --cells it:cot       # Path 1 CoT gate: single cell
 #   ./run.sh --script path1-plan2                # Path 1 plan 2: length + self-consistency sweeps
 #   ./run.sh --script path1-plan2 --n 20 --cells A3 B3   # Path 1 plan 2: quick preview
+#   ./run.sh --script path1-plan4                # Path 1 plan 4: ARC-Easy cross-benchmark validity
+#   ./run.sh --script path1-plan4 --summarize    # Path 1 plan 4: aggregate shards + outcome label
 #   ./run.sh --no-tmux                           # run inline without a tmux wrapper
 #   ./run.sh --dry-run --script path1            # offline smoke: prints dispatch summary, no deps/python/git
 #
@@ -22,6 +24,7 @@
 #   probe  (default) -> ple_sanity_check.py     (Path 2 depth-recurrence probes)
 #   path1            -> path1_cot_gate.py       (Path 1 CoT gate, plan 1)
 #   path1-plan2      -> path1_length_and_sc.py  (Path 1 plan 2: length + self-consistency)
+#   path1-plan4      -> path1_arc_easy.py       (Path 1 plan 4: ARC-Easy cross-benchmark validity)
 #
 # By default the run is launched inside a detached-friendly tmux session named
 # "gemma-recurrence" so closing your SSH terminal will NOT kill the experiment.
@@ -59,11 +62,11 @@ SESSION_NAME="${TMUX_SESSION:-gemma-recurrence}"
 #
 # We use parallel indexed arrays instead of `declare -A` so this file runs
 # on both macOS stock bash 3.2 (no assoc-array support) and pod bash 4+.
-EXPERIMENT_KEYS=(probe                path1                       path1-plan2)
-EXPERIMENT_SCRIPTS=(ple_sanity_check.py  path1_cot_gate.py           path1_length_and_sc.py)
-EXPERIMENT_DEFAULTS=("--mode ple-variants"  ""                        "")
-EXPERIMENT_ROOTS=(results             results/path_1_cot_tokens    results/path_1_cot_tokens/plan2)
-EXPERIMENT_DEPTHS=(flat               recursive                    recursive)
+EXPERIMENT_KEYS=(probe                path1                       path1-plan2                       path1-plan4)
+EXPERIMENT_SCRIPTS=(ple_sanity_check.py  path1_cot_gate.py           path1_length_and_sc.py           path1_arc_easy.py)
+EXPERIMENT_DEFAULTS=("--mode ple-variants"  ""                        ""                                "")
+EXPERIMENT_ROOTS=(results             results/path_1_cot_tokens    results/path_1_cot_tokens/plan2  results/path_1_cot_tokens/plan4)
+EXPERIMENT_DEPTHS=(flat               recursive                    recursive                        recursive)
 
 # Return the index of $1 in EXPERIMENT_KEYS, or non-zero if not found.
 # Echoes the index on success.

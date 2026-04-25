@@ -23,6 +23,7 @@ EXPECTED=(
     "probe|ple_sanity_check.py|--mode ple-variants|results|flat"
     "path1|path1_cot_gate.py||results/path_1_cot_tokens|recursive"
     "path1-plan2|path1_length_and_sc.py||results/path_1_cot_tokens/plan2|recursive"
+    "path1-plan4|path1_arc_easy.py||results/path_1_cot_tokens/plan4|recursive"
 )
 
 # Extract one `dry-run: <field>=<value>` line from run.sh's output.
