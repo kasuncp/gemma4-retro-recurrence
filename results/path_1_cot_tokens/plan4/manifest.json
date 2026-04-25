@@ -1,0 +1,56 @@
+{
+  "plan": "path_1_cot_tokens/plan4",
+  "model_id": "google/gemma-4-E2B-it",
+  "exemplar_set": "arc-easy-train-head8-handcrafted-cot",
+  "exemplar_hash": "633e12e57bd8cd19",
+  "exemplar_ids": [
+    "Mercury_7220990",
+    "MCAS_2007_8_5189",
+    "Mercury_SC_401169",
+    "MCAS_2004_8_27",
+    "NYSEDREGENTS_2006_8_10",
+    "Mercury_7013388",
+    "Mercury_7179953",
+    "Mercury_7205118"
+  ],
+  "dtype": "bf16",
+  "n_total": 500,
+  "cells": [
+    {
+      "cell": "A3_arc",
+      "condition": "cot",
+      "decode": "greedy",
+      "max_new_tokens": 512,
+      "k": 1
+    },
+    {
+      "cell": "B3_arc",
+      "condition": "cot",
+      "decode": "sampled",
+      "max_new_tokens": 512,
+      "k": 5,
+      "temperature": 0.7,
+      "top_p": 0.95
+    },
+    {
+      "cell": "direct_arc",
+      "condition": "direct",
+      "decode": "greedy",
+      "max_new_tokens": 16,
+      "k": 1
+    }
+  ],
+  "axis_b_base_seed": 0,
+  "primary_answer_regex": "[Tt]he answer is\\s*\\(?([A-E])\\)?",
+  "fallback_answer_regex": "\\b([A-E])\\b",
+  "gold_stats": {
+    "n_loaded": 500,
+    "n_remapped_numeric": 21,
+    "n_3_choice": 2,
+    "n_dropped_bad_gold": 0,
+    "n_choices_histogram": {
+      "4": 498,
+      "3": 2
+    }
+  }
+}
