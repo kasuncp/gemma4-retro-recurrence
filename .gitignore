@@ -5,3 +5,6 @@ watch.log
 watch.out
 .runpod-state.json
 .runpod-state.json.bak
+
+**/.DS_Store
+results/.DS_Store
