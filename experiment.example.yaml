@@ -1,9 +1,9 @@
 # Copy to experiment.yaml (gitignored) and edit for your run.
 run:
-  flags: "--script path1 --n 500 --batch-size 8"
-  result_dir: "results/path_1_cot_tokens/plan1"
+  flags: "--script path1-plan5 --batch-size 8"
+  result_dir: "results/path_1_cot_tokens/plan5"
   # local_result_dir defaults to result_dir if omitted.
-  # local_result_dir: "results/path_1_cot_tokens/plan1"
+  # local_result_dir: "results/path_1_cot_tokens/plan5"
 
 pod:
   gpu_types: "NVIDIA GeForce RTX 4090"

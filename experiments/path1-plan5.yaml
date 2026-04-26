@@ -1,0 +1,44 @@
+# Path 1, plan 5: 0-shot vs 8-shot CoT on GSM8K, n=500. Two new IT-CoT cells
+# (C1: zero-shot + "Let's think step by step." prefix; C2: plain zero-shot)
+# compared against the A3_len512 reference shard from plan 2.
+#
+# Plan 2's A3_len512__0000_0500.jsonl must be present on the pod under
+# results/path_1_cot_tokens/plan2/cells/ for the paired McNemar comparisons
+# in --summarize. The git ref pinned below should already include it; the
+# bootstrap step does a fresh checkout, so committed plan-2 shards travel up
+# automatically.
+#
+# Usage:
+#   ./runpod.sh go experiments/path1-plan5.yaml
+#
+# To tweak a parameter for a one-off run without changing the committed
+# record, copy this file to ./experiment.yaml (gitignored) and edit there,
+# then run `./runpod.sh go` with no argument.
+
+run:
+  # --batch-size 8 brings throughput on a 3090 up ~5x vs batch=1. Both cells
+  # are batchable greedy decode --- no axis-B sampling here.
+  flags: "--script path1-plan5 --batch-size 8"
+  result_dir: "results/path_1_cot_tokens/plan5"
+  # local_result_dir defaults to result_dir if omitted.
+
+pod:
+  gpu_types: "NVIDIA GeForce RTX 3090"
+  gpu_count: 1
+  cloud_type: SECURE
+  container_disk_gb: 20
+  volume_gb: 30
+
+git:
+  url: "https://github.com/kasuncp/gemma4-retro-recurrence.git"
+  # Pin to a branch during active development; pin to a SHA to freeze
+  # the exact code a run used.
+  ref: "path_1_plan_5"
+
+budget:
+  cap_usd: 1           # plan 5 is small (~1.5 GPU-hr at 3090)
+  emergency_usd: 0.50  # hard teardown when account balance drops below this
+  max_hours: 6         # hard teardown on wall time
+
+watch:
+  tick_seconds: 180    # 3 minutes (small run, sync more often)
