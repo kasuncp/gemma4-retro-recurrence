@@ -1,0 +1,28 @@
+{
+  "plan": "path_1_cot_tokens/plan5",
+  "model_id": "google/gemma-4-E2B-it",
+  "model_key": "it",
+  "dtype": "bf16",
+  "n_total": 500,
+  "cells": [
+    {
+      "cell": "C1_zeroshot_simple",
+      "user_template": "{question}\n\nLet's think step by step.",
+      "decode": "greedy",
+      "max_new_tokens": 512,
+      "k": 1
+    },
+    {
+      "cell": "C2_zeroshot_plain",
+      "user_template": "{question}",
+      "decode": "greedy",
+      "max_new_tokens": 512,
+      "k": 1
+    }
+  ],
+  "uses_chat_template": true,
+  "answer_primary_regex": "####\\s*(-?\\d+)",
+  "answer_fallback_regex": "(-?\\d+)",
+  "a3_ref_dir": "results/path_1_cot_tokens/plan2",
+  "a3_ref_cell": "A3_len512"
+}

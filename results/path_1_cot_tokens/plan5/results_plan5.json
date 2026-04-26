@@ -1,0 +1,143 @@
+{
+  "config": {
+    "plan": "path_1_cot_tokens/plan5",
+    "model_id": "google/gemma-4-E2B-it",
+    "model_key": "it",
+    "dtype": "bf16",
+    "n_total": 500,
+    "cells": [
+      {
+        "cell": "C1_zeroshot_simple",
+        "user_template": "{question}\n\nLet's think step by step.",
+        "decode": "greedy",
+        "max_new_tokens": 512,
+        "k": 1
+      },
+      {
+        "cell": "C2_zeroshot_plain",
+        "user_template": "{question}",
+        "decode": "greedy",
+        "max_new_tokens": 512,
+        "k": 1
+      }
+    ],
+    "uses_chat_template": true,
+    "answer_primary_regex": "####\\s*(-?\\d+)",
+    "answer_fallback_regex": "(-?\\d+)",
+    "a3_ref_dir": "results/path_1_cot_tokens/plan2",
+    "a3_ref_cell": "A3_len512",
+    "outcome_thresholds": {
+      "near": 0.03,
+      "win": 0.05,
+      "prefix": 0.05
+    },
+    "hash_hit_floor": 0.3,
+    "fallback_hit_floor": 0.8,
+    "flops_formula": "ff = 2*N_active*(prompt+completion); attn = N_layers*N_heads*head_dim*(prompt*completion + completion^2/2); total = ff + 4*attn",
+    "flops_constants": {
+      "N_active": 2300000000.0,
+      "N_layers": 35,
+      "N_heads": 8,
+      "head_dim": 256
+    },
+    "a3_ref": {
+      "dir": "results/path_1_cot_tokens/plan2",
+      "cell": "A3_len512",
+      "shard_files": [
+        "A3_len512__0000_0500.jsonl"
+      ]
+    }
+  },
+  "cells": {
+    "C1_zeroshot_simple": {
+      "n": 500,
+      "correct": 335,
+      "accuracy": 0.67,
+      "ci95": [
+        0.627624826873818,
+        0.709782802825675
+      ],
+      "hash_hit_rate": 0.0,
+      "fallback_hit_rate": 1.0,
+      "strict_fallback_hit_rate": 1.0,
+      "no_extract_rate": 0.0,
+      "mean_gen_tokens": 327.802,
+      "mean_prompt_tokens": 78.062,
+      "mean_flops_per_problem": 1891669343293.44,
+      "mean_wallclock_sec": 3.6586639512106776
+    },
+    "C2_zeroshot_plain": {
+      "n": 500,
+      "correct": 358,
+      "accuracy": 0.716,
+      "ci95": [
+        0.6749432769152115,
+        0.7537628878794382
+      ],
+      "hash_hit_rate": 0.0,
+      "fallback_hit_rate": 1.0,
+      "strict_fallback_hit_rate": 1.0,
+      "no_extract_rate": 0.0,
+      "mean_gen_tokens": 275.748,
+      "mean_prompt_tokens": 69.062,
+      "mean_flops_per_problem": 1604357821189.12,
+      "mean_wallclock_sec": 3.327022329315543
+    },
+    "A3_len512": {
+      "n": 500,
+      "correct": 150,
+      "accuracy": 0.3,
+      "ci95": [
+        0.26148125649400616,
+        0.3415685909183552
+      ],
+      "hash_hit_rate": 0.812,
+      "fallback_hit_rate": 0.994,
+      "strict_fallback_hit_rate": 0.182,
+      "no_extract_rate": 0.006,
+      "mean_gen_tokens": 403.422,
+      "mean_prompt_tokens": 746.902,
+      "mean_flops_per_problem": 5404739884759.04,
+      "mean_wallclock_sec": 3.1905991068817676
+    }
+  },
+  "paired_comparisons": {
+    "C1_vs_A3": {
+      "name_x": "C1_zeroshot_simple",
+      "name_y": "A3_len512",
+      "overlap": 500,
+      "only_x": 217,
+      "only_y": 32,
+      "both": 118,
+      "neither": 133,
+      "p_value": 5.850348969749714e-35,
+      "skipped": false
+    },
+    "C2_vs_A3": {
+      "name_x": "C2_zeroshot_plain",
+      "name_y": "A3_len512",
+      "overlap": 500,
+      "only_x": 234,
+      "only_y": 26,
+      "both": 124,
+      "neither": 116,
+      "p_value": 5.08180593969063e-43,
+      "skipped": false
+    },
+    "C1_vs_C2": {
+      "name_x": "C1_zeroshot_simple",
+      "name_y": "C2_zeroshot_plain",
+      "overlap": 500,
+      "only_x": 11,
+      "only_y": 34,
+      "both": 324,
+      "neither": 131,
+      "p_value": 0.0008240823595997548,
+      "skipped": false
+    }
+  },
+  "outcome": {
+    "label": "B",
+    "reason": "C1 (0.670) - A3 (0.300) = +0.370 >= +0.05 with non-overlapping CIs. The 30% plateau is partly artificial; Path 1's representative should switch to C1's prompt format. Plan 2's length+SC sweep should be re-run on C1 (~8 hours)."
+  }
+}
