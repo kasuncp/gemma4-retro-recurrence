@@ -1,0 +1,360 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - paragraph [ref=e4]: Towards Local-First Mobile AI Assistance · Part 2
+    - 'heading "Plans 2–5: figures & tables" [level=1] [ref=e5]'
+    - paragraph [ref=e6]: Static figures and result tables for the Part 2 blog post. Gemma 4 E2B-it, bfloat16, single 3090. n = 500 GSM8K problems unless stated. Wilson 95% confidence intervals throughout.
+  - generic [ref=e7]:
+    - paragraph [ref=e8]: Figure 1 · Plan 2
+    - heading "The plateau." [level=2] [ref=e9]
+    - paragraph [ref=e10]: Eight cells along two independent axes — generation length and self-consistency vote count — all land within a 2.6-point band on GSM8K. Inside the 8-shot Wei et al. prompt, more inference compute does not buy more accuracy.
+    - img "Plan 2 plateau" [ref=e11]:
+      - generic [ref=e12]:
+        - generic [ref=e15]: 2.6-point band
+        - generic [ref=e16]:
+          - generic [ref=e19]: 20%
+          - generic [ref=e21]: 25%
+          - generic [ref=e23]: 30%
+          - generic [ref=e25]: 35%
+          - generic [ref=e27]: 40%
+        - generic [ref=e28]: Accuracy on GSM8K (n = 500)
+        - generic [ref=e29]: Length axis (greedy decode)
+        - generic [ref=e30]: Self-consistency (T = 0.7)
+        - generic [ref=e31]:
+          - generic [ref=e32]: A1 — 128 tok
+          - generic [ref=e33]: A2 — 256 tok
+          - generic [ref=e34]: A3 — 512 tok
+          - generic [ref=e35]: A4 — 1024 tok
+          - generic [ref=e36]: B1 — k=1
+          - generic [ref=e37]: B2 — k=3
+          - generic [ref=e38]: B3 — k=5
+          - generic [ref=e39]: B4 — k=10
+          - generic [ref=e48]: 29.8%
+          - generic [ref=e49]: 30.0%
+          - generic [ref=e50]: 30.0%
+          - generic [ref=e51]: 30.0%
+          - generic [ref=e52]: 30.8%
+          - generic [ref=e53]: 31.8%
+          - generic [ref=e54]: 29.6%
+          - generic [ref=e55]: 32.2%
+    - table [ref=e57]:
+      - rowgroup [ref=e58]:
+        - row "Cell Decode Tokens k Accuracy 95% CI" [ref=e59]:
+          - columnheader "Cell" [ref=e60]
+          - columnheader "Decode" [ref=e61]
+          - columnheader "Tokens" [ref=e62]
+          - columnheader "k" [ref=e63]
+          - columnheader "Accuracy" [ref=e64]
+          - columnheader "95% CI" [ref=e65]
+      - rowgroup [ref=e66]:
+        - row "A1 greedy 128 1 29.8% (25.9, 34.0)" [ref=e67]:
+          - cell "A1" [ref=e68]
+          - cell "greedy" [ref=e69]
+          - cell "128" [ref=e70]
+          - cell "1" [ref=e71]
+          - cell "29.8%" [ref=e72]
+          - cell "(25.9, 34.0)" [ref=e73]
+        - row "A2 greedy 256 1 30.0% (26.1, 34.2)" [ref=e74]:
+          - cell "A2" [ref=e75]
+          - cell "greedy" [ref=e76]
+          - cell "256" [ref=e77]
+          - cell "1" [ref=e78]
+          - cell "30.0%" [ref=e79]
+          - cell "(26.1, 34.2)" [ref=e80]
+        - row "A3 (reference) greedy 512 1 30.0% (26.1, 34.2)" [ref=e81]:
+          - cell "A3 (reference)" [ref=e82]
+          - cell "greedy" [ref=e83]
+          - cell "512" [ref=e84]
+          - cell "1" [ref=e85]
+          - cell "30.0%" [ref=e86]
+          - cell "(26.1, 34.2)" [ref=e87]
+        - row "A4 greedy 1024 1 30.0% (26.1, 34.2)" [ref=e88]:
+          - cell "A4" [ref=e89]
+          - cell "greedy" [ref=e90]
+          - cell "1024" [ref=e91]
+          - cell "1" [ref=e92]
+          - cell "30.0%" [ref=e93]
+          - cell "(26.1, 34.2)" [ref=e94]
+        - row "B1 sampled 512 1 30.8% (26.9, 35.0)" [ref=e95]:
+          - cell "B1" [ref=e96]
+          - cell "sampled" [ref=e97]
+          - cell "512" [ref=e98]
+          - cell "1" [ref=e99]
+          - cell "30.8%" [ref=e100]
+          - cell "(26.9, 35.0)" [ref=e101]
+        - row "B2 sampled 512 3 31.8% (27.8, 36.0)" [ref=e102]:
+          - cell "B2" [ref=e103]
+          - cell "sampled" [ref=e104]
+          - cell "512" [ref=e105]
+          - cell "3" [ref=e106]
+          - cell "31.8%" [ref=e107]
+          - cell "(27.8, 36.0)" [ref=e108]
+        - row "B3 sampled 512 5 29.6% (25.7, 33.8)" [ref=e109]:
+          - cell "B3" [ref=e110]
+          - cell "sampled" [ref=e111]
+          - cell "512" [ref=e112]
+          - cell "5" [ref=e113]
+          - cell "29.6%" [ref=e114]
+          - cell "(25.7, 33.8)" [ref=e115]
+        - row "B4 sampled 512 10 32.2% (28.2, 36.4)" [ref=e116]:
+          - cell "B4" [ref=e117]
+          - cell "sampled" [ref=e118]
+          - cell "512" [ref=e119]
+          - cell "10" [ref=e120]
+          - cell "32.2%" [ref=e121]
+          - cell "(28.2, 36.4)" [ref=e122]
+    - paragraph [ref=e123]:
+      - strong [ref=e124]: n = 500
+      - text: GSM8K test problems per cell. Sampling cells use temperature 0.7, top-p 0.95, majority vote on parsed integer answer. Dashed line marks the A3 reference; shaded band marks the 2.6-point range covering all eight cells.
+  - generic [ref=e125]:
+    - paragraph [ref=e126]: Figure 2 · Plan 3
+    - heading "Failure-mode forensics." [level=2] [ref=e127]
+    - paragraph [ref=e128]: Outcome breakdown across Plan 1's IT-CoT cell, Plan 2's length sweep, and per-chain stats from Plan 2's self-consistency cells. The repetition-loop rate hovers near 10% regardless of generation length or sampling temperature — real, but bounded.
+    - img "Plan 3 failure modes" [ref=e129]:
+      - generic [ref=e130]:
+        - generic [ref=e132]:
+          - generic [ref=e135]: 0%
+          - generic [ref=e137]: 20%
+          - generic [ref=e139]: 40%
+          - generic [ref=e141]: 60%
+          - generic [ref=e143]: 80%
+          - generic [ref=e145]: 100%
+        - generic [ref=e146]: Share of completions / chains
+        - generic [ref=e147]:
+          - generic [ref=e148]: Plan 1 IT-CoT
+          - generic [ref=e149]: A3 — greedy 512
+          - generic [ref=e150]: B1 chain (k=1)
+          - generic [ref=e151]: B3 chain (k=5)
+          - generic [ref=e152]: B4 chain (k=10)
+        - generic [ref=e153]:
+          - generic [ref=e154]: n = 100
+          - generic [ref=e155]: n = 500
+          - generic [ref=e156]: n = 500
+          - generic [ref=e157]: n = 2,500
+          - generic [ref=e158]: n = 5,000
+        - generic [ref=e174]: rep 14.0%
+        - generic [ref=e175]: rep 10.2%
+        - generic [ref=e176]: rep 9.2%
+        - generic [ref=e177]: rep 8.8%
+        - generic [ref=e178]: rep 9.5%
+        - generic [ref=e179]: 31.0%
+        - generic [ref=e180]: 30.0%
+        - generic [ref=e181]: 30.8%
+        - generic [ref=e182]: 27.9%
+        - generic [ref=e183]: 29.0%
+      - generic [ref=e184]:
+        - generic [ref=e187]: Correct
+        - generic [ref=e190]: Wrong (any kind)
+        - generic [ref=e193]: Repetition loop
+    - table [ref=e195]:
+      - rowgroup [ref=e196]:
+        - row "Cell n Correct Terminated wrong Repetition loop Truncated" [ref=e197]:
+          - columnheader "Cell" [ref=e198]
+          - columnheader "n" [ref=e199]
+          - columnheader "Correct" [ref=e200]
+          - columnheader "Terminated wrong" [ref=e201]
+          - columnheader "Repetition loop" [ref=e202]
+          - columnheader "Truncated" [ref=e203]
+      - rowgroup [ref=e204]:
+        - row "Plan 1 IT-CoT 100 31.0% 55.0% 14.0% 0.0%" [ref=e205]:
+          - cell "Plan 1 IT-CoT" [ref=e206]
+          - cell "100" [ref=e207]
+          - cell "31.0%" [ref=e208]
+          - cell "55.0%" [ref=e209]
+          - cell "14.0%" [ref=e210]
+          - cell "0.0%" [ref=e211]
+        - row "A3 — greedy 512 500 30.0% 59.4% 10.2% 0.4%" [ref=e212]:
+          - cell "A3 — greedy 512" [ref=e213]
+          - cell "500" [ref=e214]
+          - cell "30.0%" [ref=e215]
+          - cell "59.4%" [ref=e216]
+          - cell "10.2%" [ref=e217]
+          - cell "0.4%" [ref=e218]
+        - row "B1 chain (k=1) 500 30.8% 59.8% 9.2% 0.2%" [ref=e219]:
+          - cell "B1 chain (k=1)" [ref=e220]
+          - cell "500" [ref=e221]
+          - cell "30.8%" [ref=e222]
+          - cell "59.8%" [ref=e223]
+          - cell "9.2%" [ref=e224]
+          - cell "0.2%" [ref=e225]
+        - row "B3 chain (k=5) 2,500 27.9% 63.0% 8.8% 0.3%" [ref=e226]:
+          - cell "B3 chain (k=5)" [ref=e227]
+          - cell "2,500" [ref=e228]
+          - cell "27.9%" [ref=e229]
+          - cell "63.0%" [ref=e230]
+          - cell "8.8%" [ref=e231]
+          - cell "0.3%" [ref=e232]
+        - row "B4 chain (k=10) 5,000 29.0% 61.2% 9.5% 0.3%" [ref=e233]:
+          - cell "B4 chain (k=10)" [ref=e234]
+          - cell "5,000" [ref=e235]
+          - cell "29.0%" [ref=e236]
+          - cell "61.2%" [ref=e237]
+          - cell "9.5%" [ref=e238]
+          - cell "0.3%" [ref=e239]
+    - paragraph [ref=e240]:
+      - text: Repetition detected by regex
+      - code [ref=e241]: "(.{10,60})\\1{2,}"
+      - text: "; manual inspection of a 30-completion sample bounded the false-positive rate at ~7%. Counterfactual on A3: lenient adjusted accuracy (rep-loops dropped from denominator) ="
+      - strong [ref=e242]: 33.4%
+      - text: ; A3-imputed upper-bound =
+      - strong [ref=e243]: 30.0%
+      - text: .
+  - generic [ref=e244]:
+    - paragraph [ref=e245]: Figure 3 · Plan 4
+    - heading "GSM8K vs ARC-Easy." [level=2] [ref=e246]
+    - paragraph [ref=e247]: The plateau pattern survives the cross-benchmark check — but ARC-Easy is saturated and direct prompting matches chain-of-thought, eliminating the gap that defined Path 1 on GSM8K.
+    - img "Plan 4 cross-benchmark" [ref=e248]:
+      - generic [ref=e249]:
+        - generic [ref=e250]: GSM8K
+        - generic [ref=e251]: Multi-step arithmetic · numeric answer
+        - generic [ref=e252]:
+          - generic [ref=e255]: 0%
+          - generic [ref=e257]: 20%
+          - generic [ref=e259]: 40%
+          - generic [ref=e261]: 60%
+          - generic [ref=e263]: 80%
+          - generic [ref=e265]: 100%
+        - generic [ref=e266]: Direct (8-shot)
+        - generic [ref=e267]: CoT (8-shot greedy)
+        - generic [ref=e268]: CoT + SC, k = 10
+        - generic [ref=e272]: 1.0%
+        - generic [ref=e273]: 30.0%
+        - generic [ref=e274]: 32.2%
+      - generic [ref=e275]:
+        - generic [ref=e276]: ARC-Easy
+        - generic [ref=e277]: 4-way multiple choice · saturated benchmark
+        - generic [ref=e278]:
+          - generic [ref=e281]: 0%
+          - generic [ref=e283]: 20%
+          - generic [ref=e285]: 40%
+          - generic [ref=e287]: 60%
+          - generic [ref=e289]: 80%
+          - generic [ref=e291]: 100%
+        - generic [ref=e292]: Direct (8-shot)
+        - generic [ref=e293]: CoT (8-shot greedy)
+        - generic [ref=e294]: CoT + SC, k = 5
+        - generic [ref=e298]: 83.2%
+        - generic [ref=e299]: 82.8%
+        - generic [ref=e300]: 85.0%
+      - generic [ref=e301]: On GSM8K the direct→CoT gap is 29 points. On ARC-Easy the gap is gone — the benchmark is saturated for this model.
+    - table [ref=e303]:
+      - rowgroup [ref=e304]:
+        - row "Benchmark Cell n Accuracy 95% CI Mean gen tokens" [ref=e305]:
+          - columnheader "Benchmark" [ref=e306]
+          - columnheader "Cell" [ref=e307]
+          - columnheader "n" [ref=e308]
+          - columnheader "Accuracy" [ref=e309]
+          - columnheader "95% CI" [ref=e310]
+          - columnheader "Mean gen tokens" [ref=e311]
+      - rowgroup [ref=e312]:
+        - row "GSM8K Direct (8-shot) 100 1.0% (0.0, 5.4) ~14" [ref=e313]:
+          - cell "GSM8K" [ref=e314]
+          - cell "Direct (8-shot)" [ref=e315]
+          - cell "100" [ref=e316]
+          - cell "1.0%" [ref=e317]
+          - cell "(0.0, 5.4)" [ref=e318]
+          - cell "~14" [ref=e319]
+        - row "GSM8K CoT (8-shot, greedy) 500 30.0% (26.1, 34.2) 403" [ref=e320]:
+          - cell "GSM8K" [ref=e321]
+          - cell "CoT (8-shot, greedy)" [ref=e322]
+          - cell "500" [ref=e323]
+          - cell "30.0%" [ref=e324]
+          - cell "(26.1, 34.2)" [ref=e325]
+          - cell "403" [ref=e326]
+        - row "GSM8K CoT + SC, k=10 500 32.2% (28.2, 36.4) 404 × 10" [ref=e327]:
+          - cell "GSM8K" [ref=e328]
+          - cell "CoT + SC, k=10" [ref=e329]
+          - cell "500" [ref=e330]
+          - cell "32.2%" [ref=e331]
+          - cell "(28.2, 36.4)" [ref=e332]
+          - cell "404 × 10" [ref=e333]
+        - row "ARC-Easy Direct (8-shot) 500 83.2% (79.7, 86.2) 11" [ref=e334]:
+          - cell "ARC-Easy" [ref=e335]
+          - cell "Direct (8-shot)" [ref=e336]
+          - cell "500" [ref=e337]
+          - cell "83.2%" [ref=e338]
+          - cell "(79.7, 86.2)" [ref=e339]
+          - cell "11" [ref=e340]
+        - row "ARC-Easy CoT (8-shot, greedy) 500 82.8% (79.2, 85.8) 488" [ref=e341]:
+          - cell "ARC-Easy" [ref=e342]
+          - cell "CoT (8-shot, greedy)" [ref=e343]
+          - cell "500" [ref=e344]
+          - cell "82.8%" [ref=e345]
+          - cell "(79.2, 85.8)" [ref=e346]
+          - cell "488" [ref=e347]
+        - row "ARC-Easy CoT + SC, k=5 500 85.0% (81.6, 87.9) 488 × 5" [ref=e348]:
+          - cell "ARC-Easy" [ref=e349]
+          - cell "CoT + SC, k=5" [ref=e350]
+          - cell "500" [ref=e351]
+          - cell "85.0%" [ref=e352]
+          - cell "(81.6, 87.9)" [ref=e353]
+          - cell "488 × 5" [ref=e354]
+    - paragraph [ref=e355]:
+      - text: GSM8K direct number from Plan 1 (n = 100, IT model with 8-shot direct exemplars). ARC-Easy uses 8-shot exemplars drawn from the train split with handcrafted CoT rationales; answer extracted by
+      - code [ref=e356]: "\"The answer is ([A-D])\""
+      - text: with last-letter fallback.
+  - generic [ref=e357]:
+    - paragraph [ref=e358]: Figure 4 · Plan 5 · Hero
+    - heading "The inversion." [level=2] [ref=e359]
+    - paragraph [ref=e360]:
+      - text: Switching from 8-shot Wei et al. exemplars to a zero-shot prompt under the IT model's chat template adds
+      - strong [ref=e361]: +41.6 percentage points
+      - text: on the same 500 problems, using less compute per problem. The 30% plateau was a prompt-format artifact, not a reasoning ceiling.
+    - img "Plan 5 inversion" [ref=e362]:
+      - generic [ref=e363]:
+        - generic [ref=e365]:
+          - generic [ref=e368]: 0%
+          - generic [ref=e370]: 20%
+          - generic [ref=e372]: 40%
+          - generic [ref=e374]: 60%
+          - generic [ref=e376]: 80%
+        - generic [ref=e377]: Accuracy on GSM8K (n = 500)
+        - generic [ref=e381]: A3 — 8-shot CoT (Wei et al.)
+        - generic [ref=e382]: C1 — 0-shot "Let's think step by step."
+        - generic [ref=e383]: C2 — 0-shot plain (chat template)
+        - generic [ref=e384]: 30.0%
+        - generic [ref=e385]: 67.0%
+        - generic [ref=e386]: 71.6%
+        - generic [ref=e387]: +41.6 pp
+        - generic [ref=e388]: same model
+        - generic [ref=e389]: less compute
+    - table [ref=e391]:
+      - rowgroup [ref=e392]:
+        - row "Cell Prompt Accuracy 95% CI Mean prompt tokens Mean gen tokens" [ref=e393]:
+          - columnheader "Cell" [ref=e394]
+          - columnheader "Prompt" [ref=e395]
+          - columnheader "Accuracy" [ref=e396]
+          - columnheader "95% CI" [ref=e397]
+          - columnheader "Mean prompt tokens" [ref=e398]
+          - columnheader "Mean gen tokens" [ref=e399]
+      - rowgroup [ref=e400]:
+        - row "A3 (reference) 8-shot CoT (Wei et al.) 30.0% (26.1, 34.2) 747 403" [ref=e401]:
+          - cell "A3 (reference)" [ref=e402]
+          - cell "8-shot CoT (Wei et al.)" [ref=e403]
+          - cell "30.0%" [ref=e404]
+          - cell "(26.1, 34.2)" [ref=e405]
+          - cell "747" [ref=e406]
+          - cell "403" [ref=e407]
+        - row "C1 0-shot \"Let's think step by step.\" 67.0% (62.8, 71.0) 78 328" [ref=e408]:
+          - cell "C1" [ref=e409]
+          - cell "0-shot \"Let's think step by step.\"" [ref=e410]
+          - cell "67.0%" [ref=e411]
+          - cell "(62.8, 71.0)" [ref=e412]
+          - cell "78" [ref=e413]
+          - cell "328" [ref=e414]
+        - row "C2 0-shot plain (chat template) 71.6% (67.5, 75.4) 69 276" [ref=e415]:
+          - cell "C2" [ref=e416]
+          - cell "0-shot plain (chat template)" [ref=e417]
+          - cell "71.6%" [ref=e418]
+          - cell "(67.5, 75.4)" [ref=e419]
+          - cell "69" [ref=e420]
+          - cell "276" [ref=e421]
+    - paragraph [ref=e422]:
+      - text: Paired McNemar tests on the same 500 problems —
+      - strong [ref=e423]: C1 vs A3
+      - text: ": p = 5.85 × 10⁻³⁵."
+      - strong [ref=e424]: C2 vs A3
+      - text: ": p = 5.08 × 10⁻⁴³."
+      - strong [ref=e425]: C1 vs C2
+      - text: ": p = 8.24 × 10⁻⁴ (C2 > C1). Both zero-shot cells use"
+      - code [ref=e426]: tokenizer.apply_chat_template
+      - text: ; A3 uses the raw 8-shot text prompt from Plan 1.

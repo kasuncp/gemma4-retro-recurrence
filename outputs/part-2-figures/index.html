@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Path 1 — Plans 2–5 figures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600&display=swap" rel="stylesheet">
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  :root {
+    --cream: #f8f8f0;          /* page bg, warm off-white */
+    --cream-soft: #f2efe2;     /* slightly warmer panel */
+    --ink: #1a1a1a;            /* primary text */
+    --ink-2: #2a2622;          /* almost-black warm */
+    --ink-muted: #56544f;      /* warm muted gray */
+    --ink-faint: #8a857d;      /* faint warm gray */
+    --rule: #d4cfc0;           /* warm light rule */
+    --rule-soft: #e6e0d0;      /* very light rule */
+    --beige: #e8e2d6;          /* inactive fill */
+    --beige-light: #f0eadc;    /* lighter beige */
+    --wine: #781818;           /* accent red */
+    --wine-soft: #b86d6d;      /* lighter wine for dimmer accent */
+    --wine-pale: #e8d4d4;      /* very pale wine fill */
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--cream);
+  }
+  body {
+    padding: 56px 24px 96px;
+    font-family: "Spectral", "Iowan Old Style", Georgia, serif;
+    color: var(--ink);
+    line-height: 1.55;
+    font-weight: 400;
+    font-size: 16px;
+    font-feature-settings: "tnum" 1, "kern" 1, "liga" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 920px; margin: 0 auto; }
+
+  /* Page header */
+  header.page {
+    margin-bottom: 56px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--rule);
+  }
+  header.page .eyebrow {
+    font-family: "Spectral", serif;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--wine);
+    font-weight: 600;
+    margin: 0 0 12px 0;
+  }
+  header.page h1 {
+    font-family: "Lora", "Spectral", serif;
+    font-size: 38px;
+    line-height: 1.1;
+    margin: 0 0 14px 0;
+    letter-spacing: -0.01em;
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+  header.page p {
+    font-style: italic;
+    color: var(--ink-muted);
+    font-size: 17px;
+    margin: 0;
+    max-width: 60ch;
+    line-height: 1.45;
+  }
+
+  /* Each figure block */
+  .figure {
+    margin-bottom: 64px;
+  }
+  .figure__eyebrow {
+    font-family: "Spectral", serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--wine);
+    font-weight: 600;
+    margin: 0 0 10px 0;
+  }
+  .figure__title {
+    font-family: "Lora", "Spectral", serif;
+    font-size: 32px;
+    line-height: 1.1;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+    letter-spacing: -0.01em;
+    color: var(--ink-2);
+  }
+  .figure__dek {
+    font-family: "Spectral", serif;
+    font-style: italic;
+    font-size: 17px;
+    color: var(--ink-muted);
+    margin: 0 0 28px 0;
+    max-width: 62ch;
+    line-height: 1.45;
+  }
+  .figure__chart {
+    width: 100%;
+    display: block;
+    margin: 0 auto;
+  }
+  .figure__source {
+    font-family: "Spectral", serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--ink-muted);
+    margin: 24px 0 0 0;
+    border-top: 1px solid var(--rule);
+    padding-top: 14px;
+    line-height: 1.5;
+    max-width: 64ch;
+  }
+  .figure__source strong {
+    color: var(--ink);
+    font-weight: 600;
+    font-style: normal;
+  }
+  .figure__source code {
+    font-family: "IBM Plex Mono", "Menlo", monospace;
+    font-size: 12px;
+    color: var(--ink);
+    background: var(--beige-light);
+    padding: 1px 4px;
+    border-radius: 2px;
+  }
+
+  /* Editorial-style result tables */
+  .table-wrap {
+    margin-top: 28px;
+  }
+  table.results {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: "Spectral", serif;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+  table.results th, table.results td {
+    text-align: right;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--rule-soft);
+    font-weight: 400;
+  }
+  table.results th:first-child, table.results td:first-child {
+    text-align: left;
+  }
+  table.results thead th {
+    border-bottom: 1.5px solid var(--ink);
+    border-top: none;
+    font-family: "Spectral", serif;
+    font-weight: 500;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-muted);
+    padding-top: 6px;
+    padding-bottom: 10px;
+  }
+  table.results tbody tr.highlight td {
+    color: var(--wine);
+  }
+  table.results tbody tr.highlight td:first-child {
+    font-weight: 600;
+  }
+  table.results tbody tr.reference td:first-child {
+    color: var(--ink-muted);
+    font-style: italic;
+  }
+  table.results .num-bold { font-weight: 600; }
+
+  /* SVG / D3 styling */
+  svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    overflow: visible;
+    font-family: "Spectral", serif;
+  }
+  .axis text {
+    font-size: 12px;
+    fill: var(--ink-muted);
+    font-family: "Spectral", serif;
+    font-feature-settings: "tnum" 1;
+  }
+  .axis line, .axis path {
+    stroke: var(--rule);
+    shape-rendering: crispEdges;
+    stroke-width: 1;
+  }
+  .axis .domain { stroke: var(--rule); }
+  .axis .tick line { stroke: var(--rule); }
+
+  .gridline {
+    stroke: var(--rule-soft);
+    shape-rendering: crispEdges;
+  }
+  .ref-line {
+    stroke: var(--ink-muted);
+    stroke-dasharray: 3 3;
+    shape-rendering: crispEdges;
+    stroke-width: 1;
+  }
+  .band-fill { fill: var(--beige-light); }
+
+  .group-label {
+    font-family: "Spectral", serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    fill: var(--wine);
+    font-weight: 600;
+  }
+  .axis-label {
+    font-family: "Spectral", serif;
+    font-style: italic;
+    font-size: 13px;
+    fill: var(--ink-muted);
+  }
+  .data-label {
+    font-family: "Spectral", serif;
+    font-size: 13px;
+    font-weight: 500;
+    fill: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .annotation {
+    font-family: "Spectral", serif;
+    font-size: 12px;
+    fill: var(--ink-muted);
+    font-style: italic;
+  }
+  .annotation-note {
+    font-family: "Spectral", serif;
+    font-size: 11px;
+    fill: var(--ink-faint);
+    font-style: italic;
+  }
+  .panel-title {
+    font-family: "Lora", "Spectral", serif;
+    font-size: 16px;
+    font-weight: 600;
+    fill: var(--ink);
+  }
+  .panel-subtitle {
+    font-family: "Spectral", serif;
+    font-style: italic;
+    font-size: 12px;
+    fill: var(--ink-muted);
+  }
+  .legend {
+    font-family: "Spectral", serif;
+    font-size: 13px;
+    fill: var(--ink);
+  }
+</style>
+</head>
+<body>
+<main>
+  <header class="page">
+    <p class="eyebrow">Towards Local-First Mobile AI Assistance · Part 2</p>
+    <h1>Plans 2–5: figures &amp; tables</h1>
+    <p>
+      Static figures and result tables for the Part 2 blog post.
+      Gemma 4 E2B-it, bfloat16, single 3090. n = 500 GSM8K problems unless stated.
+      Wilson 95% confidence intervals throughout.
+    </p>
+  </header>
+
+  <!-- ============================================================ -->
+  <!-- FIGURE 1 — Plan 2 plateau                                    -->
+  <!-- ============================================================ -->
+  <section class="figure" id="figure-1">
+    <p class="figure__eyebrow">Figure 1 · Plan 2</p>
+    <h2 class="figure__title">The plateau.</h2>
+    <p class="figure__dek">
+      Eight cells along two independent axes — generation length and self-consistency
+      vote count — all land within a 2.6-point band on GSM8K. Inside the 8-shot Wei et al.
+      prompt, more inference compute does not buy more accuracy.
+    </p>
+    <svg id="fig1" class="figure__chart" viewBox="0 0 820 460" width="820" height="460" aria-label="Plan 2 plateau"></svg>
+
+    <div class="table-wrap">
+      <table class="results">
+        <thead>
+          <tr>
+            <th>Cell</th>
+            <th>Decode</th>
+            <th>Tokens</th>
+            <th>k</th>
+            <th>Accuracy</th>
+            <th>95% CI</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>A1</td><td>greedy</td><td>128</td><td>1</td><td>29.8%</td><td>(25.9, 34.0)</td></tr>
+          <tr><td>A2</td><td>greedy</td><td>256</td><td>1</td><td>30.0%</td><td>(26.1, 34.2)</td></tr>
+          <tr class="reference"><td>A3 (reference)</td><td>greedy</td><td>512</td><td>1</td><td>30.0%</td><td>(26.1, 34.2)</td></tr>
+          <tr><td>A4</td><td>greedy</td><td>1024</td><td>1</td><td>30.0%</td><td>(26.1, 34.2)</td></tr>
+          <tr><td>B1</td><td>sampled</td><td>512</td><td>1</td><td>30.8%</td><td>(26.9, 35.0)</td></tr>
+          <tr><td>B2</td><td>sampled</td><td>512</td><td>3</td><td>31.8%</td><td>(27.8, 36.0)</td></tr>
+          <tr><td>B3</td><td>sampled</td><td>512</td><td>5</td><td>29.6%</td><td>(25.7, 33.8)</td></tr>
+          <tr><td>B4</td><td>sampled</td><td>512</td><td>10</td><td>32.2%</td><td>(28.2, 36.4)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="figure__source">
+      <strong>n = 500</strong> GSM8K test problems per cell. Sampling cells use temperature 0.7,
+      top-p 0.95, majority vote on parsed integer answer. Dashed line marks the A3 reference;
+      shaded band marks the 2.6-point range covering all eight cells.
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- FIGURE 2 — Plan 3 failure modes                              -->
+  <!-- ============================================================ -->
+  <section class="figure" id="figure-2">
+    <p class="figure__eyebrow">Figure 2 · Plan 3</p>
+    <h2 class="figure__title">Failure-mode forensics.</h2>
+    <p class="figure__dek">
+      Outcome breakdown across Plan 1's IT-CoT cell, Plan 2's length sweep, and per-chain
+      stats from Plan 2's self-consistency cells. The repetition-loop rate hovers near 10%
+      regardless of generation length or sampling temperature — real, but bounded.
+    </p>
+    <svg id="fig2" class="figure__chart" viewBox="0 0 820 440" width="820" height="440" aria-label="Plan 3 failure modes"></svg>
+
+    <div class="table-wrap">
+      <table class="results">
+        <thead>
+          <tr>
+            <th>Cell</th>
+            <th>n</th>
+            <th>Correct</th>
+            <th>Terminated wrong</th>
+            <th>Repetition loop</th>
+            <th>Truncated</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Plan 1 IT-CoT</td><td>100</td><td>31.0%</td><td>55.0%</td><td>14.0%</td><td>0.0%</td></tr>
+          <tr><td>A3 — greedy 512</td><td>500</td><td>30.0%</td><td>59.4%</td><td>10.2%</td><td>0.4%</td></tr>
+          <tr><td>B1 chain (k=1)</td><td>500</td><td>30.8%</td><td>59.8%</td><td>9.2%</td><td>0.2%</td></tr>
+          <tr><td>B3 chain (k=5)</td><td>2,500</td><td>27.9%</td><td>63.0%</td><td>8.8%</td><td>0.3%</td></tr>
+          <tr><td>B4 chain (k=10)</td><td>5,000</td><td>29.0%</td><td>61.2%</td><td>9.5%</td><td>0.3%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="figure__source">
+      Repetition detected by regex <code>(.{10,60})\1{2,}</code>; manual inspection of a
+      30-completion sample bounded the false-positive rate at ~7%. Counterfactual on A3:
+      lenient adjusted accuracy (rep-loops dropped from denominator) = <strong>33.4%</strong>;
+      A3-imputed upper-bound = <strong>30.0%</strong>.
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- FIGURE 3 — Plan 4 cross-benchmark                            -->
+  <!-- ============================================================ -->
+  <section class="figure" id="figure-3">
+    <p class="figure__eyebrow">Figure 3 · Plan 4</p>
+    <h2 class="figure__title">GSM8K vs ARC-Easy.</h2>
+    <p class="figure__dek">
+      The plateau pattern survives the cross-benchmark check — but ARC-Easy is saturated and
+      direct prompting matches chain-of-thought, eliminating the gap that defined Path 1 on
+      GSM8K.
+    </p>
+    <svg id="fig3" class="figure__chart" viewBox="0 0 820 480" width="820" height="480" aria-label="Plan 4 cross-benchmark"></svg>
+
+    <div class="table-wrap">
+      <table class="results">
+        <thead>
+          <tr>
+            <th>Benchmark</th>
+            <th>Cell</th>
+            <th>n</th>
+            <th>Accuracy</th>
+            <th>95% CI</th>
+            <th>Mean gen tokens</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>GSM8K</td><td>Direct (8-shot)</td><td>100</td><td>1.0%</td><td>(0.0, 5.4)</td><td>~14</td></tr>
+          <tr><td>GSM8K</td><td>CoT (8-shot, greedy)</td><td>500</td><td>30.0%</td><td>(26.1, 34.2)</td><td>403</td></tr>
+          <tr><td>GSM8K</td><td>CoT + SC, k=10</td><td>500</td><td>32.2%</td><td>(28.2, 36.4)</td><td>404 × 10</td></tr>
+          <tr><td>ARC-Easy</td><td>Direct (8-shot)</td><td>500</td><td>83.2%</td><td>(79.7, 86.2)</td><td>11</td></tr>
+          <tr><td>ARC-Easy</td><td>CoT (8-shot, greedy)</td><td>500</td><td>82.8%</td><td>(79.2, 85.8)</td><td>488</td></tr>
+          <tr><td>ARC-Easy</td><td>CoT + SC, k=5</td><td>500</td><td>85.0%</td><td>(81.6, 87.9)</td><td>488 × 5</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="figure__source">
+      GSM8K direct number from Plan 1 (n = 100, IT model with 8-shot direct exemplars).
+      ARC-Easy uses 8-shot exemplars drawn from the train split with handcrafted CoT
+      rationales; answer extracted by <code>"The answer is ([A-D])"</code> with
+      last-letter fallback.
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- FIGURE 4 — Plan 5 the inversion                              -->
+  <!-- ============================================================ -->
+  <section class="figure" id="figure-4">
+    <p class="figure__eyebrow">Figure 4 · Plan 5 · Hero</p>
+    <h2 class="figure__title">The inversion.</h2>
+    <p class="figure__dek">
+      Switching from 8-shot Wei et al. exemplars to a zero-shot prompt under the IT model's
+      chat template adds <strong>+41.6 percentage points</strong> on the same 500 problems,
+      using less compute per problem. The 30% plateau was a prompt-format artifact, not a
+      reasoning ceiling.
+    </p>
+    <svg id="fig4" class="figure__chart" viewBox="0 0 820 380" width="820" height="380" aria-label="Plan 5 inversion"></svg>
+
+    <div class="table-wrap">
+      <table class="results">
+        <thead>
+          <tr>
+            <th>Cell</th>
+            <th>Prompt</th>
+            <th>Accuracy</th>
+            <th>95% CI</th>
+            <th>Mean prompt tokens</th>
+            <th>Mean gen tokens</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="reference"><td>A3 (reference)</td><td>8-shot CoT (Wei et al.)</td><td>30.0%</td><td>(26.1, 34.2)</td><td>747</td><td>403</td></tr>
+          <tr><td>C1</td><td>0-shot "Let's think step by step."</td><td>67.0%</td><td>(62.8, 71.0)</td><td>78</td><td>328</td></tr>
+          <tr class="highlight"><td>C2</td><td>0-shot plain (chat template)</td><td class="num-bold">71.6%</td><td>(67.5, 75.4)</td><td>69</td><td>276</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="figure__source">
+      Paired McNemar tests on the same 500 problems — <strong>C1 vs A3</strong>:
+      p = 5.85 × 10⁻³⁵. <strong>C2 vs A3</strong>: p = 5.08 × 10⁻⁴³. <strong>C1 vs C2</strong>:
+      p = 8.24 × 10⁻⁴ (C2 > C1). Both zero-shot cells use
+      <code>tokenizer.apply_chat_template</code>; A3 uses the raw 8-shot text prompt from
+      Plan 1.
+    </p>
+  </section>
+
+</main>
+
+<script>
+// =====================================================================
+// Editorial palette — matches Substack post visual identity
+// =====================================================================
+const COLOR = {
+  cream:     "#f8f8f0",
+  ink:       "#1a1a1a",
+  ink2:      "#2a2622",
+  inkMuted:  "#56544f",
+  inkFaint:  "#8a857d",
+  rule:      "#d4cfc0",
+  ruleSoft:  "#e6e0d0",
+  beige:     "#e8e2d6",
+  beigeLight:"#f0eadc",
+  wine:      "#781818",
+  wineSoft:  "#b86d6d",
+  winePale:  "#e8d4d4"
+};
+
+const fmtPct = d3.format(".1f");
+
+function drawXAxis(g, scale, y, tickCount, tickFormat) {
+  const axis = d3.axisBottom(scale).ticks(tickCount).tickFormat(tickFormat).tickSizeOuter(0).tickSize(4);
+  g.append("g")
+    .attr("class", "axis x-axis")
+    .attr("transform", `translate(0,${y})`)
+    .call(axis);
+}
+function drawXGridlines(g, scale, y0, y1, ticks) {
+  const grid = g.append("g").attr("class", "gridlines").lower();
+  ticks.forEach(t => {
+    grid.append("line")
+      .attr("class", "gridline")
+      .attr("x1", scale(t)).attr("x2", scale(t))
+      .attr("y1", y0).attr("y2", y1);
+  });
+}
+
+// =====================================================================
+// FIGURE 1 — The plateau (dot plot with CIs, A3 highlighted)
+// =====================================================================
+(function drawFigure1() {
+  const data = [
+    { group: "Length axis (greedy decode)",   cell: "A1 — 128 tok",  acc: 0.298, lo: 0.259, hi: 0.340 },
+    { group: "Length axis (greedy decode)",   cell: "A2 — 256 tok",  acc: 0.300, lo: 0.261, hi: 0.342 },
+    { group: "Length axis (greedy decode)",   cell: "A3 — 512 tok",  acc: 0.300, lo: 0.261, hi: 0.342, ref: true },
+    { group: "Length axis (greedy decode)",   cell: "A4 — 1024 tok", acc: 0.300, lo: 0.261, hi: 0.342 },
+    { group: "Self-consistency (T = 0.7)",    cell: "B1 — k=1",      acc: 0.308, lo: 0.269, hi: 0.350 },
+    { group: "Self-consistency (T = 0.7)",    cell: "B2 — k=3",      acc: 0.318, lo: 0.278, hi: 0.360 },
+    { group: "Self-consistency (T = 0.7)",    cell: "B3 — k=5",      acc: 0.296, lo: 0.257, hi: 0.338 },
+    { group: "Self-consistency (T = 0.7)",    cell: "B4 — k=10",     acc: 0.322, lo: 0.282, hi: 0.364 }
+  ];
+
+  const svg = d3.select("#fig1");
+  const W = 820, H = 460;
+  const margin = { top: 38, right: 90, bottom: 56, left: 220 };
+  const innerW = W - margin.left - margin.right;
+  const innerH = H - margin.top - margin.bottom;
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+  const x = d3.scaleLinear().domain([0.20, 0.40]).range([0, innerW]);
+
+  const groups = Array.from(new Set(data.map(d => d.group)));
+  const rowsPerGroup = data.filter(d => d.group === groups[0]).length;
+  const groupGap = 30;
+  const rowH = (innerH - groupGap) / data.length;
+  const yByCell = {};
+  let yPos = 0;
+  data.forEach((d, i) => {
+    if (i === rowsPerGroup) yPos += groupGap;
+    yByCell[d.cell] = yPos + rowH / 2;
+    yPos += rowH;
+  });
+
+  // Plateau band — the 2.6-pt range (29.6% to 32.2%)
+  g.append("rect")
+    .attr("class", "band-fill")
+    .attr("x", x(0.296))
+    .attr("y", -10)
+    .attr("width", x(0.322) - x(0.296))
+    .attr("height", innerH + 20);
+
+  g.append("text")
+    .attr("class", "annotation")
+    .attr("x", x(0.296) + (x(0.322) - x(0.296)) / 2)
+    .attr("y", -16)
+    .attr("text-anchor", "middle")
+    .text("2.6-point band");
+
+  // X gridlines + axis
+  const xTicks = d3.range(0.20, 0.41, 0.05);
+  drawXGridlines(g, x, -10, innerH + 4, xTicks);
+  drawXAxis(g, x, innerH, 5, d3.format(".0%"));
+
+  g.append("text")
+    .attr("class", "axis-label")
+    .attr("x", innerW / 2).attr("y", innerH + 44)
+    .attr("text-anchor", "middle")
+    .text("Accuracy on GSM8K (n = 500)");
+
+  // Reference line at A3 (30.0%) — wine red
+  g.append("line")
+    .attr("class", "ref-line")
+    .attr("x1", x(0.300)).attr("x2", x(0.300))
+    .attr("y1", -10).attr("y2", innerH + 4)
+    .attr("stroke", COLOR.wine);
+
+  // Group section labels (left side)
+  groups.forEach((grp) => {
+    const cellsInGroup = data.filter(d => d.group === grp);
+    const firstY = yByCell[cellsInGroup[0].cell] - rowH / 2;
+    g.append("text")
+      .attr("class", "group-label")
+      .attr("x", -margin.left + 8)
+      .attr("y", firstY + 4)
+      .attr("text-anchor", "start")
+      .text(grp);
+  });
+
+  // CI bars
+  const dotR = 5.5;
+  const series = g.append("g");
+  series.selectAll(".bar")
+    .data(data)
+    .enter().append("line")
+    .attr("class", "ci-bar")
+    .attr("x1", d => x(d.lo))
+    .attr("x2", d => x(d.hi))
+    .attr("y1", d => yByCell[d.cell])
+    .attr("y2", d => yByCell[d.cell])
+    .attr("stroke", d => d.ref ? COLOR.wine : COLOR.inkMuted)
+    .attr("stroke-width", 1.4)
+    .attr("opacity", d => d.ref ? 0.85 : 0.7);
+
+  // tick caps
+  ["lo", "hi"].forEach(end => {
+    series.selectAll(".tick-" + end)
+      .data(data)
+      .enter().append("line")
+      .attr("class", "tick-" + end)
+      .attr("x1", d => x(d[end]))
+      .attr("x2", d => x(d[end]))
+      .attr("y1", d => yByCell[d.cell] - 4.5)
+      .attr("y2", d => yByCell[d.cell] + 4.5)
+      .attr("stroke", d => d.ref ? COLOR.wine : COLOR.inkMuted)
+      .attr("stroke-width", 1.4)
+      .attr("opacity", d => d.ref ? 0.85 : 0.7);
+  });
+
+  // Cell labels (left of dots)
+  series.selectAll(".cell-label")
+    .data(data)
+    .enter().append("text")
+    .attr("x", -10)
+    .attr("y", d => yByCell[d.cell] + 4)
+    .attr("text-anchor", "end")
+    .attr("fill", d => d.ref ? COLOR.wine : COLOR.ink)
+    .style("font-size", "13px")
+    .style("font-weight", d => d.ref ? "600" : "400")
+    .style("font-family", "Spectral, serif")
+    .text(d => d.cell);
+
+  // Dots
+  series.selectAll(".dot")
+    .data(data)
+    .enter().append("circle")
+    .attr("class", "dot")
+    .attr("cx", d => x(d.acc))
+    .attr("cy", d => yByCell[d.cell])
+    .attr("r", d => d.ref ? dotR + 1 : dotR)
+    .attr("fill", d => d.ref ? COLOR.wine : COLOR.ink)
+    .attr("stroke", COLOR.cream)
+    .attr("stroke-width", 1.5);
+
+  // Right-side numeric labels
+  series.selectAll(".value-label")
+    .data(data)
+    .enter().append("text")
+    .attr("class", "data-label")
+    .attr("x", innerW + 12)
+    .attr("y", d => yByCell[d.cell] + 4)
+    .attr("text-anchor", "start")
+    .attr("fill", d => d.ref ? COLOR.wine : COLOR.ink)
+    .style("font-weight", d => d.ref ? "600" : "500")
+    .text(d => fmtPct(d.acc * 100) + "%");
+})();
+
+// =====================================================================
+// FIGURE 2 — Failure-mode forensics (stacked bars)
+// =====================================================================
+(function drawFigure2() {
+  // Source data — truncated is always < 0.5% and visually negligible; we fold it
+  // into "Other wrong" so the bars sum to exactly 100% and reach the 100% gridline.
+  const raw = [
+    { cell: "Plan 1 IT-CoT",         n: 100,   correct: 0.310, wrong: 0.550, rep: 0.140, trunc: 0.000 },
+    { cell: "A3 — greedy 512",       n: 500,   correct: 0.300, wrong: 0.594, rep: 0.102, trunc: 0.004 },
+    { cell: "B1 chain (k=1)",        n: 500,   correct: 0.308, wrong: 0.598, rep: 0.092, trunc: 0.002 },
+    { cell: "B3 chain (k=5)",        n: 2500,  correct: 0.279, wrong: 0.630, rep: 0.088, trunc: 0.003 },
+    { cell: "B4 chain (k=10)",       n: 5000,  correct: 0.290, wrong: 0.612, rep: 0.095, trunc: 0.003 }
+  ];
+  const data = raw.map(d => ({
+    cell: d.cell, n: d.n, rep: d.rep,
+    correct: d.correct,
+    other:   1 - d.correct - d.rep    // absorbs both terminated-wrong and truncated
+  }));
+
+  const series = [
+    { key: "correct", label: "Correct",         color: COLOR.ink2 },
+    { key: "other",   label: "Wrong (any kind)", color: COLOR.beige },
+    { key: "rep",     label: "Repetition loop", color: COLOR.wine }
+  ];
+
+  const svg = d3.select("#fig2");
+  const W = 820, H = 440;
+  const margin = { top: 60, right: 130, bottom: 60, left: 180 };
+  const innerW = W - margin.left - margin.right;
+  const innerH = H - margin.top - margin.bottom;
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+  const y = d3.scaleBand().domain(data.map(d => d.cell)).range([0, innerH]).padding(0.34);
+  const x = d3.scaleLinear().domain([0, 1]).range([0, innerW]);
+
+  const xTicks = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
+  drawXGridlines(g, x, 0, innerH, xTicks);
+  g.append("g")
+    .attr("class", "axis x-axis")
+    .attr("transform", `translate(0,${innerH})`)
+    .call(d3.axisBottom(x).tickValues(xTicks).tickFormat(d3.format(".0%")).tickSizeOuter(0).tickSize(4));
+
+  g.append("text")
+    .attr("class", "axis-label")
+    .attr("x", innerW / 2).attr("y", innerH + 44)
+    .attr("text-anchor", "middle")
+    .text("Share of completions / chains");
+
+  // Cell labels (left)
+  g.append("g")
+    .selectAll(".cell-label")
+    .data(data)
+    .enter().append("text")
+    .attr("x", -12)
+    .attr("y", d => y(d.cell) + y.bandwidth() / 2 + 4)
+    .attr("text-anchor", "end")
+    .style("font-size", "13px")
+    .style("font-family", "Spectral, serif")
+    .style("fill", COLOR.ink)
+    .text(d => d.cell);
+
+  // n labels
+  g.append("g")
+    .selectAll(".n-label")
+    .data(data)
+    .enter().append("text")
+    .attr("x", -12)
+    .attr("y", d => y(d.cell) + y.bandwidth() / 2 + 19)
+    .attr("text-anchor", "end")
+    .style("font-size", "11px")
+    .style("font-style", "italic")
+    .style("fill", COLOR.inkFaint)
+    .text(d => "n = " + d.n.toLocaleString());
+
+  // Stack
+  const stack = d3.stack().keys(series.map(s => s.key))(data);
+  stack.forEach((layer, i) => {
+    const s = series[i];
+    g.selectAll(".layer-" + s.key)
+      .data(layer)
+      .enter().append("rect")
+      .attr("y", d => y(d.data.cell))
+      .attr("x", d => x(d[0]))
+      .attr("width", d => Math.max(0, x(d[1]) - x(d[0])))
+      .attr("height", y.bandwidth())
+      .attr("fill", s.color)
+      .attr("stroke", COLOR.cream)
+      .attr("stroke-width", 1.5);
+  });
+
+  // rep% on right side of bar (the headline number)
+  g.selectAll(".rep-label")
+    .data(data)
+    .enter().append("text")
+    .attr("class", "data-label")
+    .attr("x", innerW + 14)
+    .attr("y", d => y(d.cell) + y.bandwidth() / 2 + 4)
+    .attr("text-anchor", "start")
+    .style("fill", COLOR.wine)
+    .style("font-weight", "600")
+    .text(d => "rep " + (d.rep * 100).toFixed(1) + "%");
+
+  // Inline correct % label (cream on dark ink)
+  g.selectAll(".correct-label")
+    .data(data)
+    .enter().append("text")
+    .attr("class", "data-label")
+    .attr("x", d => x(d.correct / 2))
+    .attr("y", d => y(d.cell) + y.bandwidth() / 2 + 4)
+    .attr("text-anchor", "middle")
+    .style("fill", COLOR.cream)
+    .style("font-weight", "500")
+    .text(d => (d.correct * 100).toFixed(1) + "%");
+
+  // Legend (top)
+  const legend = svg.append("g")
+    .attr("class", "legend")
+    .attr("transform", `translate(${margin.left}, 22)`);
+  let lx = 0;
+  series.forEach(s => {
+    const grp = legend.append("g").attr("transform", `translate(${lx},0)`);
+    grp.append("rect")
+      .attr("x", 0).attr("y", -10)
+      .attr("width", 12).attr("height", 12)
+      .attr("fill", s.color)
+      .attr("stroke", COLOR.cream)
+      .attr("stroke-width", 0.5);
+    grp.append("text")
+      .attr("x", 18).attr("y", 0)
+      .attr("fill", COLOR.ink)
+      .style("font-size", "12px")
+      .text(s.label);
+    lx += s.label.length * 7.0 + 38;
+  });
+})();
+
+// =====================================================================
+// FIGURE 3 — Cross-benchmark (two panels side by side)
+// =====================================================================
+(function drawFigure3() {
+  const data = {
+    "GSM8K": {
+      subtitle: "Multi-step arithmetic · numeric answer",
+      rows: [
+        { cell: "Direct (8-shot)",       acc: 0.010, lo: 0.000, hi: 0.054, n: 100, accent: true  },
+        { cell: "CoT (8-shot greedy)",   acc: 0.300, lo: 0.261, hi: 0.342, n: 500, accent: false },
+        { cell: "CoT + SC, k = 10",      acc: 0.322, lo: 0.282, hi: 0.364, n: 500, accent: false }
+      ]
+    },
+    "ARC-Easy": {
+      subtitle: "4-way multiple choice · saturated benchmark",
+      rows: [
+        { cell: "Direct (8-shot)",       acc: 0.832, lo: 0.797, hi: 0.862, n: 500, accent: false },
+        { cell: "CoT (8-shot greedy)",   acc: 0.828, lo: 0.792, hi: 0.858, n: 500, accent: false },
+        { cell: "CoT + SC, k = 5",       acc: 0.850, lo: 0.815, hi: 0.879, n: 500, accent: false }
+      ]
+    }
+  };
+
+  const svg = d3.select("#fig3");
+  const W = 820, H = 480;
+  const margin = { top: 56, right: 24, bottom: 70, left: 24 };
+  const panelGap = 60;
+  const panelW = (W - margin.left - margin.right - panelGap) / 2;
+  const innerH = H - margin.top - margin.bottom;
+  const labelLeft = 150;
+
+  const benches = Object.keys(data);
+  benches.forEach((bench, idx) => {
+    const px = margin.left + idx * (panelW + panelGap);
+    const panel = svg.append("g").attr("transform", `translate(${px},${margin.top})`);
+
+    panel.append("text")
+      .attr("class", "panel-title")
+      .attr("x", labelLeft)
+      .attr("y", -22)
+      .attr("text-anchor", "start")
+      .text(bench);
+
+    panel.append("text")
+      .attr("class", "panel-subtitle")
+      .attr("x", labelLeft)
+      .attr("y", -6)
+      .attr("text-anchor", "start")
+      .text(data[bench].subtitle);
+
+    const x = d3.scaleLinear().domain([0, 1]).range([labelLeft, panelW]);
+    const y = d3.scaleBand().domain(data[bench].rows.map(d => d.cell)).range([18, innerH]).padding(0.42);
+
+    const xTicksFig3 = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
+    xTicksFig3.forEach(t => {
+      panel.append("line")
+        .attr("class", "gridline")
+        .attr("x1", x(t)).attr("x2", x(t))
+        .attr("y1", 18).attr("y2", innerH);
+    });
+
+    panel.append("g")
+      .attr("class", "axis x-axis")
+      .attr("transform", `translate(0,${innerH})`)
+      .call(d3.axisBottom(x).tickValues(xTicksFig3).tickFormat(d3.format(".0%")).tickSizeOuter(0).tickSize(4));
+
+    // Per-panel "Accuracy" axis label removed — was overlapping the figure caption
+    // below. Panel titles ("GSM8K", "ARC-Easy") + the percentage tick marks make
+    // the axis self-evident.
+
+    // Cell labels
+    panel.selectAll(".cell-label")
+      .data(data[bench].rows)
+      .enter().append("text")
+      .attr("x", labelLeft - 14)
+      .attr("y", d => y(d.cell) + y.bandwidth() / 2 + 4)
+      .attr("text-anchor", "end")
+      .style("font-size", "13px")
+      .style("font-family", "Spectral, serif")
+      .style("fill", d => d.accent ? COLOR.wine : COLOR.ink)
+      .style("font-weight", d => d.accent ? "600" : "400")
+      .text(d => d.cell);
+
+    // Bars — wine for accent, ink for primary
+    panel.selectAll(".bar")
+      .data(data[bench].rows)
+      .enter().append("rect")
+      .attr("x", x(0))
+      .attr("y", d => y(d.cell))
+      .attr("width", d => Math.max(0, x(d.acc) - x(0)))
+      .attr("height", y.bandwidth())
+      .attr("fill", d => d.accent ? COLOR.wine : COLOR.ink2);
+
+    // Numeric labels at end of bar
+    panel.selectAll(".value-label")
+      .data(data[bench].rows)
+      .enter().append("text")
+      .attr("class", "data-label")
+      .attr("x", d => x(d.acc) + 8)
+      .attr("y", d => y(d.cell) + y.bandwidth() / 2 + 4)
+      .attr("text-anchor", "start")
+      .style("fill", d => d.accent ? COLOR.wine : COLOR.ink)
+      .style("font-weight", "600")
+      .text(d => (d.acc * 100).toFixed(1) + "%");
+  });
+
+  // Caption between panels (italic, muted)
+  svg.append("text")
+    .attr("x", W / 2)
+    .attr("y", H - 18)
+    .attr("text-anchor", "middle")
+    .style("font-family", "Spectral, serif")
+    .style("font-style", "italic")
+    .style("font-size", "13px")
+    .style("fill", COLOR.inkMuted)
+    .text("On GSM8K the direct→CoT gap is 29 points. On ARC-Easy the gap is gone — the benchmark is saturated for this model.");
+})();
+
+// =====================================================================
+// FIGURE 4 — The inversion (HERO)
+// =====================================================================
+(function drawFigure4() {
+  const data = [
+    { cell: "A3 — 8-shot CoT (Wei et al.)",              acc: 0.300, lo: 0.261, hi: 0.342, ref: true,  highlight: false },
+    { cell: "C1 — 0-shot \"Let's think step by step.\"", acc: 0.670, lo: 0.628, hi: 0.710, ref: false, highlight: false },
+    { cell: "C2 — 0-shot plain (chat template)",         acc: 0.716, lo: 0.675, hi: 0.754, ref: false, highlight: true  }
+  ];
+
+  const svg = d3.select("#fig4");
+  const W = 820, H = 380;
+  const margin = { top: 32, right: 220, bottom: 60, left: 270 };
+  const innerW = W - margin.left - margin.right;
+  const innerH = H - margin.top - margin.bottom;
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+  const x = d3.scaleLinear().domain([0, 0.85]).range([0, innerW]);
+  const y = d3.scaleBand().domain(data.map(d => d.cell)).range([0, innerH]).padding(0.42);
+
+  const xTicks = [0, 0.20, 0.40, 0.60, 0.80];
+  drawXGridlines(g, x, 0, innerH, xTicks);
+  drawXAxis(g, x, innerH, 5, d3.format(".0%"));
+
+  g.append("text")
+    .attr("class", "axis-label")
+    .attr("x", innerW / 2).attr("y", innerH + 44)
+    .attr("text-anchor", "middle")
+    .text("Accuracy on GSM8K (n = 500)");
+
+  const barH = y.bandwidth();
+
+  // Bars
+  g.selectAll(".bar")
+    .data(data)
+    .enter().append("rect")
+    .attr("x", x(0))
+    .attr("y", d => y(d.cell))
+    .attr("width", d => Math.max(0, x(d.acc) - x(0)))
+    .attr("height", barH)
+    .attr("fill", d => d.highlight ? COLOR.wine : (d.ref ? COLOR.beige : COLOR.ink2));
+
+  // CI brackets (subtle, on top of bar)
+  g.selectAll(".ci-line")
+    .data(data)
+    .enter().append("line")
+    .attr("x1", d => x(d.lo))
+    .attr("x2", d => x(d.hi))
+    .attr("y1", d => y(d.cell) + barH / 2)
+    .attr("y2", d => y(d.cell) + barH / 2)
+    .attr("stroke", COLOR.cream)
+    .attr("stroke-width", 1.4);
+  ["lo", "hi"].forEach(end => {
+    g.selectAll(".tick-" + end)
+      .data(data)
+      .enter().append("line")
+      .attr("x1", d => x(d[end]))
+      .attr("x2", d => x(d[end]))
+      .attr("y1", d => y(d.cell) + barH / 2 - 5)
+      .attr("y2", d => y(d.cell) + barH / 2 + 5)
+      .attr("stroke", COLOR.cream)
+      .attr("stroke-width", 1.4);
+  });
+
+  // Cell labels (left)
+  g.selectAll(".cell-label")
+    .data(data)
+    .enter().append("text")
+    .attr("x", -16)
+    .attr("y", d => y(d.cell) + barH / 2 + 4)
+    .attr("text-anchor", "end")
+    .style("font-size", "13px")
+    .style("font-family", "Spectral, serif")
+    .style("fill", d => d.highlight ? COLOR.wine : (d.ref ? COLOR.inkMuted : COLOR.ink))
+    .style("font-weight", d => d.highlight ? "600" : (d.ref ? "400" : "500"))
+    .style("font-style", d => d.ref ? "italic" : "normal")
+    .text(d => d.cell);
+
+  // Numeric labels at end of bar
+  g.selectAll(".value-label")
+    .data(data)
+    .enter().append("text")
+    .attr("class", "data-label")
+    .attr("x", d => x(d.acc) + 12)
+    .attr("y", d => y(d.cell) + barH / 2 + 5)
+    .attr("text-anchor", "start")
+    .style("font-family", "Lora, serif")
+    .style("font-weight", "600")
+    .style("font-size", "16px")
+    .style("fill", d => d.highlight ? COLOR.wine : COLOR.ink)
+    .text(d => (d.acc * 100).toFixed(1) + "%");
+
+  // Right-side bracket annotation linking A3 → C2
+  const a3 = data[0];
+  const c2 = data[2];
+  const yA3 = y(a3.cell) + barH / 2;
+  const yC2 = y(c2.cell) + barH / 2;
+  const bracketX = innerW + 110;
+  const tickLen = 8;
+
+  g.append("line")
+    .attr("x1", bracketX).attr("x2", bracketX)
+    .attr("y1", yA3).attr("y2", yC2)
+    .attr("stroke", COLOR.wine)
+    .attr("stroke-width", 1.4);
+  g.append("line")
+    .attr("x1", bracketX - tickLen).attr("x2", bracketX)
+    .attr("y1", yA3).attr("y2", yA3)
+    .attr("stroke", COLOR.wine)
+    .attr("stroke-width", 1.4);
+  g.append("line")
+    .attr("x1", bracketX - tickLen).attr("x2", bracketX)
+    .attr("y1", yC2).attr("y2", yC2)
+    .attr("stroke", COLOR.wine)
+    .attr("stroke-width", 1.4);
+
+  // Annotation text — Lora big number + spectral italic notes
+  g.append("text")
+    .attr("x", bracketX + 14)
+    .attr("y", (yA3 + yC2) / 2 - 4)
+    .attr("text-anchor", "start")
+    .style("fill", COLOR.wine)
+    .style("font-family", "Lora, serif")
+    .style("font-weight", "600")
+    .style("font-size", "20px")
+    .text("+41.6 pp");
+
+  g.append("text")
+    .attr("x", bracketX + 14)
+    .attr("y", (yA3 + yC2) / 2 + 16)
+    .attr("text-anchor", "start")
+    .style("fill", COLOR.inkMuted)
+    .style("font-family", "Spectral, serif")
+    .style("font-style", "italic")
+    .style("font-size", "12px")
+    .text("same model");
+
+  g.append("text")
+    .attr("x", bracketX + 14)
+    .attr("y", (yA3 + yC2) / 2 + 32)
+    .attr("text-anchor", "start")
+    .style("fill", COLOR.inkMuted)
+    .style("font-family", "Spectral, serif")
+    .style("font-style", "italic")
+    .style("font-size", "12px")
+    .text("less compute");
+})();
+</script>
+</body>
+</html>

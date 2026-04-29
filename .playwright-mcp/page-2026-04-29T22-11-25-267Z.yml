@@ -1,0 +1,458 @@
+- generic [ref=e2]:
+  - iframe
+  - generic [ref=e3]:
+    - generic [ref=e7]:
+      - link "Latent Mind" [ref=e9] [cursor=pointer]:
+        - /url: /
+        - img "Latent Mind" [ref=e13]
+      - heading "Latent Mind" [level=1] [ref=e15]:
+        - link "Latent Mind" [ref=e16] [cursor=pointer]:
+          - /url: /
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - button "Search" [ref=e22] [cursor=pointer]:
+            - img [ref=e23]
+          - button "Share Publication" [ref=e26] [cursor=pointer]:
+            - img [ref=e27]
+        - button "Subscribe" [ref=e30] [cursor=pointer]
+        - button "Sign in" [ref=e31] [cursor=pointer]
+    - main "Post" [ref=e34]:
+      - article [ref=e38]:
+        - dialog "Subscribe modal" [ref=e40]:
+          - generic [ref=e41]:
+            - button "close" [ref=e42] [cursor=pointer]:
+              - img [ref=e43]
+            - generic "User" [ref=e48]:
+              - img "User's avatar" [ref=e50]
+            - generic [ref=e51]:
+              - generic [ref=e52]: Discover more from Latent Mind
+              - generic [ref=e53]: Poking at AI systems to see how they break — the smaller the model, the better.
+            - generic [ref=e55]:
+              - textbox "Enter your email..." [ref=e57]
+              - button "Subscribe" [ref=e58] [cursor=pointer]
+              - generic [ref=e61]:
+                - text: By subscribing, you agree Substack's
+                - link "Terms of Use" [ref=e62] [cursor=pointer]:
+                  - /url: https://substack.com/tos
+                - text: ", and acknowledge its"
+                - link "Information Collection Notice" [ref=e63] [cursor=pointer]:
+                  - /url: https://substack.com/ccpa#personal-data-collected
+                - text: and
+                - link "Privacy Policy" [ref=e64] [cursor=pointer]:
+                  - /url: https://substack.com/privacy
+                - text: .
+          - generic [ref=e66]: Already have an account? Sign in
+        - region "Post header" [ref=e67]:
+          - heading "Towards local-first mobile AI assistance" [level=1] [ref=e68]
+          - 'heading "Part 1: Can a small language model think harder without growing?" [level=3] [ref=e69]'
+          - region "Post UFI" [ref=e70]:
+            - generic [ref=e72]:
+              - link "View Kasun Perera's profile" [ref=e77] [cursor=pointer]:
+                - /url: https://substack.com/@kasunperera1
+                - generic "Kasun Perera" [ref=e79]:
+                  - img "Kasun Perera's avatar" [ref=e81]
+              - generic [ref=e82]:
+                - link "Kasun Perera" [ref=e85] [cursor=pointer]:
+                  - /url: https://substack.com/@kasunperera1
+                - generic [ref=e87]: Apr 25, 2026
+            - generic [ref=e88]:
+              - generic [ref=e89]:
+                - button "Like" [ref=e91] [cursor=pointer]:
+                  - img [ref=e92]:
+                    - img [ref=e94]
+                - button "View comments (0)" [ref=e96] [cursor=pointer]:
+                  - img [ref=e97]:
+                    - img [ref=e99]
+                - button [ref=e101] [cursor=pointer]:
+                  - img [ref=e102]
+              - button "Share" [ref=e106] [cursor=pointer]:
+                - generic [ref=e107]: Share
+        - generic [ref=e108]:
+          - button "Table of Contents" [ref=e109] [cursor=pointer]
+          - generic [ref=e131]:
+            - heading "The thesis Link" [level=2] [ref=e132]:
+              - text: The thesis
+              - button "Link" [ref=e135] [cursor=pointer]:
+                - img [ref=e136]
+            - paragraph [ref=e139]: A private mobile AI assistant that runs entirely on your device and can understand your schedule, write emails, condense long texts, take photos, and diagnose car problems requires more advanced cognitive capabilities than current small AI models offer.
+            - paragraph [ref=e140]: The phone’s unchangeable 6-12GB of usable memory and 8W power constraints prevent simply scaling up the model for achieving that capability. The challenge, then, is to determine, within a device’s fixed memory, power, and latency constraints, which test-time computational strategy offers the greatest reasoning accuracy per unit energy.
+            - paragraph [ref=e141]: In the first part of this new blog post series, we explore how inference-time compute scales on Small Language Models, focusing on Gemma 4 E2B (more details on model selection below). We’re curious if longer generations can truly enhance reasoning accuracy without increasing the weights' load. In the upcoming posts, we’ll also take a closer look at self-consistency, richer prompting, and their influence on reasoning ability.
+            - heading "The approach Link" [level=2] [ref=e142]:
+              - text: The approach
+              - button "Link" [ref=e145] [cursor=pointer]:
+                - img [ref=e146]
+            - paragraph [ref=e149]: In this series, we consider the following four candidate mechanisms.
+            - list [ref=e150]:
+              - listitem [ref=e151]:
+                - paragraph [ref=e152]:
+                  - strong [ref=e153]: Path 1 — Generate more tokens.
+                  - text: Don’t touch the model at all; let it think for longer during inference. The path this site documents.
+              - listitem [ref=e154]:
+                - paragraph [ref=e155]:
+                  - strong [ref=e156]:
+                    - text: Path 2 —
+                    - link "Retrofitted Recurrence" [ref=e157] [cursor=pointer]:
+                      - /url: https://arxiv.org/abs/2511.07384
+                    - text: .
+                  - text: Force a chunk of decoder layers to run multiple times per forward pass, trading wall-clock for depth on the same weights.
+              - listitem [ref=e158]:
+                - paragraph [ref=e159]:
+                  - strong [ref=e160]: Path 3 — A bigger sibling, aggressively quantized.
+                  - text: Swap E2B for its E4B sibling at INT4, landing in roughly the same memory envelope with twice the parameters.
+              - listitem [ref=e161]:
+                - paragraph [ref=e162]:
+                  - strong [ref=e163]:
+                    - text: Path 4 —
+                    - link "Mixture-of-Depths" [ref=e164] [cursor=pointer]:
+                      - /url: https://arxiv.org/abs/2404.02258
+                    - text: .
+                  - text: Route hard tokens through full compute and bypass easy ones, allocating per-token rather than per-layer.
+            - paragraph [ref=e165]: Accuracy comes at the cost of various taxes, such as latency, training expenses, quantization loss, and router complexity. The one that achieves the highest accuracy per token in a standard evaluation setup will win the competition.
+            - 'figure "Figure 1: The four candidate paths we will be evaluating in this series" [ref=e167]':
+              - 'link "Figure 1: The four candidate paths we will be evaluating in this series" [ref=e168]':
+                - /url: https://substackcdn.com/image/fetch/$s_!aQdu!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fec9080e2-f3d7-4815-939c-a320097968b8_3014x1988.png
+                - generic [ref=e169]:
+                  - 'img "Figure 1: The four candidate paths we will be evaluating in this series" [ref=e171]'
+                  - generic [ref=e173]:
+                    - button [ref=e174] [cursor=pointer]:
+                      - img [ref=e175]
+                    - button [ref=e177] [cursor=pointer]:
+                      - img [ref=e178]
+              - generic [ref=e179]: "Figure 1: The four candidate paths we will be evaluating in this series"
+            - paragraph [ref=e181]:
+              - strong [ref=e182]: NOTE
+              - text: ": This post covers only the very first experiment of"
+              - strong [ref=e183]: Path 1
+              - text: . The four-paths comparison is the program; Path 1 is the zero-engineering baseline that every other path has to beat. If inference-time compute on the off-the-shelf model doesn’t show meaningful results, that’s a strong result — it means the other paths don’t have a moving target to chase. We will explore the other paths in the next few posts of the series.
+            - heading "Why Gemma 4 E2B Link" [level=2] [ref=e184]:
+              - text: Why Gemma 4 E2B
+              - button "Link" [ref=e187] [cursor=pointer]:
+                - img [ref=e188]
+            - paragraph [ref=e191]:
+              - text: Any investigation depends on a baseline model, and the baseline matters. We picked
+              - strong [ref=e192]: Gemma 4 E2B-it
+              - text: for three reasons, in order of weight.
+            - heading "It fits the phone-class budget by construction. Link" [level=3] [ref=e193]:
+              - text: It fits the phone-class budget by construction.
+              - button "Link" [ref=e196] [cursor=pointer]:
+                - img [ref=e197]
+            - paragraph [ref=e200]:
+              - text: Gemma 4 E2B is engineered for on-device deployment. Google reports around 2.3 billion
+              - emphasis [ref=e201]: effective
+              - text: "parameters, and the model pulls off a neat trick to get there: the weights are partitioned between accelerator-resident layers (the transformer proper) and CPU-resident"
+              - strong [ref=e202]: Per-Layer Embeddings
+              - text: that stream into the accelerator on demand. The result is an on-device memory footprint of roughly 2GB — comfortably within a 6GB phone envelope, with headroom for a KV cache, a vision encoder, and anything the other paths need. A 7B-class model does not fit that budget under any realistic quantization, making it the wrong size for this investigation, full stop.
+            - heading "It is natively multimodal — what a mobile assistant actually needs. Link" [level=3] [ref=e203]:
+              - text: It is natively multimodal — what a mobile assistant actually needs.
+              - button "Link" [ref=e206] [cursor=pointer]:
+                - img [ref=e207]
+            - paragraph [ref=e210]: A phone assistant that can hear and see its user offers far more value than one that can't. Gemma 4 E2B stands out by handling not just text, but also images, videos, and, uniquely among the small E2B and E4B models, audio. As we work to improve the model's reasoning abilities, it’s important that these multimodal features stay intact. Thankfully, E2B’s architecture makes it feasible to maintain these capabilities without turning them into a challenge to overcome.
+            - heading "The license lets the work ship. Link" [level=3] [ref=e211]:
+              - text: The license lets the work ship.
+              - button "Link" [ref=e214] [cursor=pointer]:
+                - img [ref=e215]
+            - paragraph [ref=e218]: Gemma 4 is licensed under Apache 2.0, allowing us to fine-tune, retrofit, and publish derived weights and benchmark results without needing individual approvals from Google. None of the four options involves licensing issues, which alone excludes many other potential competitors.
+            - blockquote [ref=e219]:
+              - paragraph [ref=e220]:
+                - text: If you’d like to understand the Gemma 4 class of models and their design decisions better, I highly recommend reading
+                - strong [ref=e221]:
+                  - link "A Visual Guide to Gemma 4" [ref=e222] [cursor=pointer]:
+                    - /url: https://open.substack.com/pub/maartengrootendorst/p/a-visual-guide-to-gemma-4?utm_campaign=post-expanded-share&utm_medium=web
+                - text: by
+                - link "Maarten Grootendorst" [ref=e224] [cursor=pointer]:
+                  - /url: https://open.substack.com/users/14309499-maarten-grootendorst?utm_source=mentions
+                - text: .
+            - separator [ref=e226]
+            - heading "What Path 1 is about Link" [level=2] [ref=e227]:
+              - text: What Path 1 is about
+              - button "Link" [ref=e230] [cursor=pointer]:
+                - img [ref=e231]
+            - paragraph [ref=e234]:
+              - text: "Path 1 asks a single question:"
+              - strong [ref=e235]: can Gemma 4 E2B trade inference-time compute for reasoning accuracy, with no weight changes at all — just longer/richer prompting?
+            - paragraph [ref=e236]: The three mechanisms in that bucket are
+            - list [ref=e237]:
+              - listitem [ref=e238]:
+                - paragraph [ref=e239]: Longer chain-of-thought generation
+              - listitem [ref=e240]:
+                - paragraph [ref=e241]: Self-consistency sampling
+              - listitem [ref=e242]:
+                - paragraph [ref=e243]: Deliberation/reflection prompts
+            - paragraph [ref=e244]: "But before sweeping any of them, we need an experiment to answer one simpler, but extremely important question:"
+            - blockquote [ref=e245]:
+              - paragraph [ref=e246]:
+                - strong [ref=e247]: Does giving Gemma 4 E2B reasoning steps in-context beat giving it none, on GSM8K, at a matched prompting protocol?
+            - paragraph [ref=e248]: Based on common sense and existing literature, the answer might be yes, but we'll investigate this further. We need not only a yes-or-no answer but also a measure of how much improvement is achieved—especially for our chosen model, Gemma 4 E2B, if any. If the answer turns out to be no (something we'll need to analyze), then Path 1 faces limitations on E2B during inference, and all its sub-mechanisms, like longer CoT, self-consistency, and deliberation, will be affected by that weakness. So, let’s set up an affordable experiment first to explore this important question.
+            - 'heading "Experiment 1: The CoT gate on GSM8K Link" [level=3] [ref=e249]':
+              - text: "Experiment 1: The CoT gate on GSM8K"
+              - button "Link" [ref=e252] [cursor=pointer]:
+                - img [ref=e253]
+            - heading "What we are testing Link" [level=4] [ref=e256]:
+              - text: What we are testing
+              - button "Link" [ref=e259] [cursor=pointer]:
+                - img [ref=e260]
+            - paragraph [ref=e263]: "The experiment is small and deliberate. We load Gemma 4 E2B-it — the instruction-tuned variant of Gemma 4 E2B — as the main subject, with the raw base model along for a sanity check. We run both against GSM8K, the grade-school math benchmark, using the first 100 problems of the test split. That slice is deterministic: nothing random, nothing cherry-picked, same 100 problems every time."
+            - paragraph [ref=e264]: Each model experiences two prompting scenarios, both using the same set of 8 standard GSM8K examples. In the “direct” scenario, we simplify the examples by removing the reasoning steps, leaving only the final answer, so the model is prompted to generate just a number. In the “chain-of-thought” scenario, the examples retain their reasoning steps, demonstrating the step-by-step process we want to evaluate. The only difference is whether the examples include reasoning. The model, questions, and other factors stay consistent throughout.
+            - paragraph [ref=e265]:
+              - text: Decoding is straightforward — it doesn't involve sampling, temperature adjustments, or surprises. The direct condition provides a 16-token output limit (suitable for a number), while the chain-of-thought condition allows up to 512 tokens (perfect for reasoning). We extract the integer answer from the model's output, compare it to the correct answer using exact-match scoring, calculate
+              - link "95% Wilson confidence intervals" [ref=e266] [cursor=pointer]:
+                - /url: https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval
+              - text: ", display a simple results table, save the raw data in JSON format, and follow our pre-planned decision rules."
+            - heading "What we’re not testing (deliberately) Link" [level=4] [ref=e267]:
+              - text: What we’re not testing (deliberately)
+              - button "Link" [ref=e270] [cursor=pointer]:
+                - img [ref=e271]
+            - paragraph [ref=e274]: "The scope is narrow because widening it would muddy the result. A few tempting additions are explicitly off the table:"
+            - list [ref=e275]:
+              - listitem [ref=e276]:
+                - paragraph [ref=e277]:
+                  - strong [ref=e278]: No self-consistent voting, no varying the output length.
+                  - text: These conditions are for the next experiments to test. If we throw them in here, we won’t be able to tell which lever actually mattered.
+              - listitem [ref=e279]:
+                - paragraph [ref=e280]:
+                  - strong [ref=e281]: No other benchmarks (for now).
+                  - text: GSM8K only. ARC-Easy, MATH, and BBH have not been considered yet; including them now would turn a clear question into multiple ambiguous ones.
+              - listitem [ref=e282]:
+                - paragraph [ref=e283]:
+                  - strong [ref=e284]: No clever prompting tricks.
+                  - text: No “let’s verify your answer,” no reflection loops, no deliberation prompts. Just the canonical 8 exemplars, verbatim, in two variants.
+              - listitem [ref=e285]:
+                - paragraph [ref=e286]:
+                  - strong [ref=e287]: No zero-shot “let’s think step by step” either.
+                  - text: Keeping both conditions 8-shot is the whole point — it’s what isolates
+                  - emphasis [ref=e288]: “does having reasoning in-context help?”
+                  - text: from
+                  - emphasis [ref=e289]: “does the model follow zero-shot instructions?”
+                  - text: Different question, different experiment.
+              - listitem [ref=e290]:
+                - paragraph [ref=e291]:
+                  - strong [ref=e292]: No training, no fine-tuning, no adapter surgery, no on-device measurement.
+                  - text: This experiment does not touch the weights at all.
+            - 'figure "Table 1: Four cells, all at n = 100 on the deterministic first slice of the GSM8K test; the only variable is whether the exemplars'' reasoning is present (CoT) or stripped (direct), and whether the model is instruction-tuned or base." [ref=e294]':
+              - link [ref=e295]:
+                - /url: https://substackcdn.com/image/fetch/$s_!a4-L!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F39d62a1d-c87d-4791-87ef-435507eafc80_1406x552.png
+                - generic [ref=e299]:
+                  - button [ref=e300] [cursor=pointer]:
+                    - img [ref=e301]
+                  - button [ref=e303] [cursor=pointer]:
+                    - img [ref=e304]
+              - generic [ref=e305]: "Table 1: Four cells, all at n = 100 on the deterministic first slice of the GSM8K test; the only variable is whether the exemplars' reasoning is present (CoT) or stripped (direct), and whether the model is instruction-tuned or base."
+            - heading "A note on the statistics Link" [level=4] [ref=e306]:
+              - text: A note on the statistics
+              - button "Link" [ref=e309] [cursor=pointer]:
+                - img [ref=e310]
+            - paragraph [ref=e313]: Two choices about how the numbers were tested.
+            - list [ref=e314]:
+              - listitem [ref=e315]:
+                - paragraph [ref=e316]:
+                  - strong [ref=e317]:
+                    - link "Wilson 95% confidence intervals" [ref=e318] [cursor=pointer]:
+                      - /url: https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval
+                  - text: for every accuracy reported. A confidence interval shows the range of values where a sample statistic is likely to fall, offering a “give or take” around an estimate. While the usual way to calculate a percentage can run into problems at the very low or high ends—like when a cell scores just 1 out of 100, resulting in a range that includes negative numbers, which don't make sense for percentages—Wilson’s method stays reliable no matter what the score or sample size. Since one cell scored exactly 1%, this wasn’t just a matter of preference but a difference between an interval that makes sense and one that doesn’t.
+              - listitem [ref=e319]:
+                - paragraph [ref=e320]:
+                  - strong [ref=e321]:
+                    - link "McNemar’s two-sided exact test" [ref=e322] [cursor=pointer]:
+                      - /url: https://en.wikipedia.org/wiki/McNemar%27s_test
+                  - text: to compare the chain-of-thought condition to the direct condition. The two conditions were tested on the same set of 100 problems, with only the prompt changed — it's an important detail. To truly find out if 'chain-of-thought' genuinely helps, we should focus on the 30 problems where chain-of-thought got it right but direct didn’t, since there were no problems the other way around. McNemar’s test specifically looks at these disagreements, providing solid evidence for the claim. Ignoring the pairing would have missed this key information and led to a weaker, less trustworthy result.
+            - paragraph [ref=e323]:
+              - text: In summary,
+              - strong [ref=e324]: Wilson's method is great for adding error bars to small samples, and McNemar's test is perfect for comparing two conditions tested on the same problems.
+              - text: Throughout the project, we use both methods for the same reasons, ensuring accurate and reliable results.
+            - generic [ref=e325]:
+              - heading "Execution rig" [level=4] [ref=e326]
+              - paragraph [ref=e327]: The experiment ran on a single RTX 3090 in bfloat16, taking about three hours across all four cells — 100 x 4 = 400 GSM8K inferences in total.
+              - paragraph [ref=e328]: The software stack consisted of PyTorch 2.4.1 on CUDA 12.4, Transformers 5.6.1, and Datasets 4.8.4, with both model variants pinned to specific HuggingFace commits to ensure reproducibility. The 8-shot exemplar prompt was fingerprinted to a canonical hash, so any re-run can verify it’s using the same prompt byte-for-byte.
+            - heading "Results Link" [level=3] [ref=e329]:
+              - text: Results
+              - button "Link" [ref=e332] [cursor=pointer]:
+                - img [ref=e333]
+            - 'figure "Table 2: Gate results at n = 100. \"Hash-hit rate\" is the share of completions where the model emitted the canonical #### answer marker — a format-compliance check distinct from accuracy." [ref=e337]':
+              - link [ref=e338]:
+                - /url: https://substackcdn.com/image/fetch/$s_!3An-!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F5d824f64-9cd5-4bbe-8362-73be63b78016_1396x530.png
+                - generic [ref=e342]:
+                  - button [ref=e343] [cursor=pointer]:
+                    - img [ref=e344]
+                  - button [ref=e346] [cursor=pointer]:
+                    - img [ref=e347]
+              - generic [ref=e348]:
+                - text: "Table 2: Gate results at n = 100. \"Hash-hit rate\" is the share of completions where the model emitted the canonical"
+                - code [ref=e349]: "#### answer"
+                - text: marker — a format-compliance check distinct from accuracy.
+            - 'figure "Figure 2: GSM8K accuracy across all four cells. Bars show point estimates; thin vertical lines are Wilson 95% confidence intervals." [ref=e351]':
+              - link [ref=e352]:
+                - /url: https://substackcdn.com/image/fetch/$s_!uMOC!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F8174e13a-7441-4c82-910d-7d49e04f8912_1396x1245.png
+                - generic [ref=e356]:
+                  - button [ref=e357] [cursor=pointer]:
+                    - img [ref=e358]
+                  - button [ref=e360] [cursor=pointer]:
+                    - img [ref=e361]
+              - generic [ref=e362]: "Figure 2: GSM8K accuracy across all four cells. Bars show point estimates; thin vertical lines are Wilson 95% confidence intervals."
+            - heading "Paired statistics (IT model, the primary gate) Link" [level=4] [ref=e363]:
+              - text: Paired statistics (IT model, the primary gate)
+              - button "Link" [ref=e366] [cursor=pointer]:
+                - img [ref=e367]
+            - 'figure "Table 3: The 2×2 discordance table on the 100 shared problems" [ref=e371]':
+              - link [ref=e372]:
+                - /url: https://substackcdn.com/image/fetch/$s_!uGpm!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fa60d01bc-3a59-45d6-8092-3e81b5ecc170_1372x398.png
+                - generic [ref=e376]:
+                  - button [ref=e377] [cursor=pointer]:
+                    - img [ref=e378]
+                  - button [ref=e380] [cursor=pointer]:
+                    - img [ref=e381]
+              - generic [ref=e382]: "Table 3: The 2×2 discordance table on the 100 shared problems"
+            - paragraph [ref=e383]:
+              - text: McNemar's two-sided exact test gives a
+              - strong [ref=e384]: p-value of 1.9 × 10⁻⁹ —
+              - text: a result that effectively rules out chance
+              - strong [ref=e385]: .
+              - text: "The disagreement is 30 to 0: every problem where the two conditions parted ways was won by chain-of-thought, and direct never won a single one."
+            - heading "Failure mode breakdown Link" [level=4] [ref=e386]:
+              - text: Failure mode breakdown
+              - button "Link" [ref=e389] [cursor=pointer]:
+                - img [ref=e390]
+            - paragraph [ref=e393]: "Of the 69 IT-CoT completions that scored wrong, classified into four categories:"
+            - list [ref=e394]:
+              - listitem [ref=e395]:
+                - paragraph [ref=e396]: Correct
+              - listitem [ref=e397]:
+                - paragraph [ref=e398]: Terminated-with-wrong-answer (genuine reasoning failure)
+              - listitem [ref=e399]:
+                - paragraph [ref=e400]: Repetition-loop (degenerate generation)
+              - listitem [ref=e401]:
+                - paragraph [ref=e402]:
+                  - text: Truncated-without-any-answer (ran out of tokens before producing
+                  - code [ref=e403]: "####"
+                  - text: )
+            - 'figure "Figure 3: How the failures fail. Each row breaks 100 chain-of-thought completions into four outcome categories: correct, terminated with a wrong answer, collapsed into repetition, or truncated before producing any answer." [ref=e405]':
+              - link [ref=e406]:
+                - /url: https://substackcdn.com/image/fetch/$s_!ShuJ!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Ff6287d5b-e6c6-4788-8623-9f6d8595839f_1382x762.png
+                - generic [ref=e410]:
+                  - button [ref=e411] [cursor=pointer]:
+                    - img [ref=e412]
+                  - button [ref=e414] [cursor=pointer]:
+                    - img [ref=e415]
+              - generic [ref=e416]: "Figure 3: How the failures fail. Each row breaks 100 chain-of-thought completions into four outcome categories: correct, terminated with a wrong answer, collapsed into repetition, or truncated before producing any answer."
+            - heading "What does this mean? Link" [level=2] [ref=e417]:
+              - text: What does this mean?
+              - button "Link" [ref=e420] [cursor=pointer]:
+                - img [ref=e421]
+            - paragraph [ref=e424]: Three things.
+            - list [ref=e425]:
+              - listitem [ref=e426]:
+                - paragraph [ref=e427]:
+                  - strong [ref=e428]: The +30-point gap really is significant, and there's no need for a larger sample to be confident about it.
+                  - text: A McNemar p-value of 1.9 × 10⁻⁹ is incredibly strong evidence that won’t be changed just by adding more data. The decision is clear. Chain-of-thought truly makes a difference on Gemma 4 E2B, especially for at least 30 out of 100 problems that can only be solved when the model has the chance to reason in context.
+              - listitem [ref=e429]:
+                - paragraph [ref=e430]:
+                  - strong [ref=e431]: Path 1 begins on a solid note.
+                  - text: The instruction-tuned version with 8-shot CoT achieves a 31% success rate on GSM8K. This sets a benchmark that all other paths in the four-path exploration need to surpass when running on the same device. If a depth-recurrent version, a quantized larger model, or a Mixture-of-Depths router can’t reach this 31% mark, it probably isn’t as strong in this comparison, as it’s a clear standard to beat.
+              - listitem [ref=e432]:
+                - paragraph [ref=e433]:
+                  - strong [ref=e434]: The 1% direct-cell number is simply a result of the way the prompt is set up, not a sign of flawed reasoning.
+                  - text: When using 16 generation tokens with 8-shot priming, the instruction-tuned model tends to pattern-match the examples and repeat the
+                  - emphasis [ref=e435]: next
+                  - text: question instead of providing an answer. If the direct cell were better framed, it might score above 1%, but it would still be lower than the CoT cell, because no direct prompt can match the multi-step reasoning required for the 30 problems that are correct with Chain-of-Thought (CoT). The key finding about the gate remains unchanged despite this artifact.
+            - heading "The way forward Link" [level=2] [ref=e436]:
+              - text: The way forward
+              - button "Link" [ref=e439] [cursor=pointer]:
+                - img [ref=e440]
+            - paragraph [ref=e443]: The gate cleared — we have proven that chain-of-thought genuinely works on Gemma 4 E2B.
+            - paragraph [ref=e444]:
+              - strong [ref=e445]: Here's the first important question
+              - text: ": If giving the model more space to reason in context increases its accuracy by 30 points, could providing even more room — like longer outputs or multiple tries at the same problem with a vote at the end — boost accuracy even further? This approach, where we trade off inference time for better results, is a common strategy and a clear next step to explore. Our upcoming experiment will test both factors: how long the model can generate, and how many independent attempts it gets per problem. If we see a noticeable improvement, then Path 1 has a lot of room to grow. If the results level off, then we've found the maximum potential — which is still a valuable and worth sharing insight."
+            - paragraph [ref=e446]:
+              - strong [ref=e447]: A second question, hidden in the data, is what failures look like.
+              - text: Out of 69 problems Gemma 4 E2B-it got wrong, 13 weren’t true errors — the model fell into a repetition loop and produced no answer. The base model did this 3 times. This four-fold gap suggests some errors are due to
+              - emphasis [ref=e448]: generation stability
+              - text: ", not"
+              - emphasis [ref=e449]: reasoning capacity
+              - text: ". The difference is important: a reasoning ceiling means the model truly can’t solve the problems, while a stability ceiling indicates it might know but can’t output the answer cleanly. An analysis of existing data can estimate how much of the 30% ceiling is due to each."
+            - paragraph [ref=e450]:
+              - strong [ref=e451]: A third question is whether this generalizes
+              - text: . All data is from GSM8K, a grade-school math benchmark. The chain-of-thought lift is significant on this benchmark, so it’s likely to appear on other reasoning tests, but this isn’t confirmed. Testing on another benchmark, ARC-Easy, which differs from GSM8K by lacking multi-step arithmetic, answer-format markers, and a risk of token exhaustion, can verify robustness. If results repeat, the finding is solid; if not, we learn which benchmarks benefit from chain-of-thought.
+            - paragraph [ref=e452]:
+              - strong [ref=e453]: Finally, the prompt itself deserves a check.
+              - text: The 30% ceiling is what Gemma 4 E2B-it achieves with the 8-example chain-of-thought prompt. But that prompt is just one setup. Asking the model to “think step by step,” without examples, sometimes matches or beats the 8-example version on instruction-tuned models. We should test that. If the simpler prompt hits the same ceiling, the model has a true limit regardless of prompt, and the write-up is clearer. If it improves accuracy, the 30% figure was prompt-specific, and the baseline shifts.
+            - paragraph [ref=e454]:
+              - strong [ref=e455]: "All four follow-ups are designed in a similar way:"
+              - text: each one looks into how the gate result might be misleading or incomplete, with a planned conclusion for every possible outcome. They help us test conditions we intentionally left out from this experiment. The good news is, there's no need for new model training, architecture changes, or extra infrastructure — it’s all about taking more careful measurements of the current model on the same hardware. Once we finish these four follow-ups, we'll have a clear understanding of Path 1, and we'll be ready to compare it directly with the other three paths.
+            - heading "Parting comments Link" [level=2] [ref=e456]:
+              - text: Parting comments
+              - button "Link" [ref=e459] [cursor=pointer]:
+                - img [ref=e460]
+            - paragraph [ref=e463]: "Next is Plan 2: Does allowing the model to generate longer responses improve results? Does sampling multiple attempts and then voting on the answers make a difference? Or does the performance curve level off? Stay tuned for the next post."
+          - separator [ref=e464]
+          - generic [ref=e465]:
+            - generic [ref=e466]:
+              - heading "Subscribe to Latent Mind" [level=4] [ref=e467]
+              - generic [ref=e468]: By Kasun Perera · Launched 4 days ago
+              - generic [ref=e469]: Poking at AI systems to see how they break — the smaller the model, the better.
+            - generic [ref=e470]:
+              - generic [ref=e475]:
+                - textbox "Type your email..." [ref=e478]
+                - button "Subscribe" [disabled] [ref=e479]
+              - generic [ref=e482]:
+                - text: By subscribing, you agree Substack's
+                - link "Terms of Use" [ref=e483] [cursor=pointer]:
+                  - /url: https://substack.com/tos
+                - text: ", and acknowledge its"
+                - link "Information Collection Notice" [ref=e484] [cursor=pointer]:
+                  - /url: https://substack.com/ccpa#personal-data-collected
+                - text: and
+                - link "Privacy Policy" [ref=e485] [cursor=pointer]:
+                  - /url: https://substack.com/privacy
+                - text: .
+          - generic [ref=e487]:
+            - generic [ref=e488]:
+              - button "Like" [ref=e490] [cursor=pointer]:
+                - img [ref=e491]:
+                  - img [ref=e493]
+              - button "View comments (0)" [ref=e495] [cursor=pointer]:
+                - img [ref=e496]:
+                  - img [ref=e498]
+              - button [ref=e500] [cursor=pointer]:
+                - img [ref=e501]
+            - button "Share" [ref=e505] [cursor=pointer]:
+              - generic [ref=e506]: Share
+      - generic [ref=e507]:
+        - generic [ref=e508]:
+          - generic [ref=e509]:
+            - heading "Discussion about this post" [level=4] [ref=e510]
+            - tablist "Select discussion type" [ref=e514]:
+              - tab "Comments" [selected] [ref=e515] [cursor=pointer]
+              - tab "Restacks" [ref=e516] [cursor=pointer]
+          - generic [ref=e521]:
+            - generic "User" [ref=e523]:
+              - img "User's avatar" [ref=e525]
+            - textbox "Write a comment..." [ref=e528]
+        - generic [ref=e531]:
+          - heading "Ready for more?" [level=3] [ref=e532]
+          - generic [ref=e535]:
+            - textbox "Type your email..." [ref=e538]
+            - button "Subscribe" [disabled] [ref=e539]
+    - generic [ref=e542]:
+      - generic [ref=e543]:
+        - generic [ref=e544]: © 2026 Kasun Perera
+        - text: ·
+        - link "Privacy" [ref=e545] [cursor=pointer]:
+          - /url: https://substack.com/privacy
+        - text: ∙
+        - link "Terms" [ref=e546] [cursor=pointer]:
+          - /url: https://substack.com/tos
+        - text: ∙
+        - link "Collection notice" [ref=e547] [cursor=pointer]:
+          - /url: https://substack.com/ccpa#personal-data-collected
+      - generic [ref=e548]:
+        - link "Start your Substack" [ref=e549] [cursor=pointer]:
+          - /url: https://substack.com/signup?utm_source=substack&utm_medium=web&utm_content=footer
+          - img [ref=e550]
+          - text: Start your Substack
+        - link "Get the app" [ref=e555] [cursor=pointer]:
+          - /url: https://substack.com/app/app-store-redirect?utm_campaign=app-marketing&utm_content=web-footer-button
+      - generic [ref=e556]:
+        - link "Substack" [ref=e557] [cursor=pointer]:
+          - /url: https://substack.com
+        - text: is the home for great culture
+  - region "Notifications (F8)":
+    - list
