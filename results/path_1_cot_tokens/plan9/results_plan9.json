@@ -1,0 +1,54 @@
+{
+  "config": {
+    "a3_path": "results/path_1_cot_tokens/plan2/cells/A3_len512__0000_0500.jsonl",
+    "c2_path": "results/path_1_cot_tokens/plan5/cells/C2_zeroshot_plain__0000_0500.jsonl",
+    "smart_extractor": "smart_v2: handle \\$, last **bold** number, Answer:N, end-of-line =N, fallback last-int"
+  },
+  "buckets_with_original_extractor": {
+    "only_a3": 26,
+    "only_c2": 234,
+    "both": 124,
+    "neither": 116
+  },
+  "auto_flags_on_only_a3": {
+    "n_problems": 26,
+    "c2_repetition": 0,
+    "c2_truncated": 1,
+    "c2_completion_contains_gold_int": 24,
+    "c2_smart_v2_recovers": 17
+  },
+  "extractor_audit": {
+    "c2_completions_total": 500,
+    "c2_completions_containing_gold_int": 454,
+    "c2_orig_accuracy": [
+      358,
+      500,
+      0.716
+    ],
+    "c2_smart_v2_accuracy": [
+      390,
+      500,
+      0.78
+    ],
+    "c2_smart_v2_ci95": [
+      0.7416305610182787,
+      0.8140996526044155
+    ],
+    "a3_orig_accuracy": [
+      150,
+      500,
+      0.3
+    ],
+    "buckets_with_smart_v2_on_c2": {
+      "only_a3": 24,
+      "only_c2": 264,
+      "both": 126,
+      "neither": 86
+    }
+  },
+  "finding": {
+    "letter": "A",
+    "label": "Format failure dominates",
+    "summary": "Of the 26 problems where A3 is correct and C2 is scored wrong, 24 (92.3%) have the correct gold integer present in C2's completion text. Manual inspection confirms C2 reasoned correctly to the gold answer in markdown prose like '**$16.00**'; the original last-integer fallback regex picks the wrong substring. A prose-aware extractor (smart_v2) lifts C2 from 0.716 to 0.780 with no model change. 90.8% of C2 completions contain the gold integer somewhere, suggesting the true reasoning ceiling is closer to 91%."
+  }
+}

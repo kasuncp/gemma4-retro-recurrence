@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Path 1 — Plans 2–5 figures</title>
+<title>Path 1 — Experiments 2–5 figures</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600&display=swap" rel="stylesheet">
@@ -270,7 +270,7 @@
 <main>
   <header class="page">
     <p class="eyebrow">Towards Local-First Mobile AI Assistance · Part 2</p>
-    <h1>Plans 2–5: figures &amp; tables</h1>
+    <h1>Experiments 2–5: figures &amp; tables</h1>
     <p>
       Static figures and result tables for the Part 2 blog post.
       Gemma 4 E2B-it, bfloat16, single 3090. n = 500 GSM8K problems unless stated.
@@ -279,17 +279,17 @@
   </header>
 
   <!-- ============================================================ -->
-  <!-- FIGURE 1 — Plan 2 plateau                                    -->
+  <!-- FIGURE 1 — Experiment 2 plateau                                    -->
   <!-- ============================================================ -->
   <section class="figure" id="figure-1">
-    <p class="figure__eyebrow">Figure 1 · Plan 2</p>
+    <p class="figure__eyebrow">Figure 1 · Experiment 2</p>
     <h2 class="figure__title">The plateau.</h2>
     <p class="figure__dek">
       Eight cells along two independent axes — generation length and self-consistency
       vote count — all land within a 2.6-point band on GSM8K. Inside the 8-shot Wei et al.
       prompt, more inference compute does not buy more accuracy.
     </p>
-    <svg id="fig1" class="figure__chart" viewBox="0 0 820 460" width="820" height="460" aria-label="Plan 2 plateau"></svg>
+    <svg id="fig1" class="figure__chart" viewBox="0 0 820 460" width="820" height="460" aria-label="Experiment 2 plateau"></svg>
 
     <div class="table-wrap">
       <table class="results">
@@ -324,17 +324,17 @@
   </section>
 
   <!-- ============================================================ -->
-  <!-- FIGURE 2 — Plan 3 failure modes                              -->
+  <!-- FIGURE 2 — Experiment 3 failure modes                              -->
   <!-- ============================================================ -->
   <section class="figure" id="figure-2">
-    <p class="figure__eyebrow">Figure 2 · Plan 3</p>
+    <p class="figure__eyebrow">Figure 2 · Experiment 3</p>
     <h2 class="figure__title">Failure-mode forensics.</h2>
     <p class="figure__dek">
-      Outcome breakdown across Plan 1's IT-CoT cell, Plan 2's length sweep, and per-chain
-      stats from Plan 2's self-consistency cells. The repetition-loop rate hovers near 10%
+      Outcome breakdown across Experiment 1's IT-CoT cell, Experiment 2's length sweep, and per-chain
+      stats from Experiment 2's self-consistency cells. The repetition-loop rate hovers near 10%
       regardless of generation length or sampling temperature — real, but bounded.
     </p>
-    <svg id="fig2" class="figure__chart" viewBox="0 0 820 440" width="820" height="440" aria-label="Plan 3 failure modes"></svg>
+    <svg id="fig2" class="figure__chart" viewBox="0 0 820 440" width="820" height="440" aria-label="Experiment 3 failure modes"></svg>
 
     <div class="table-wrap">
       <table class="results">
@@ -349,7 +349,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td>Plan 1 IT-CoT</td><td>100</td><td>31.0%</td><td>55.0%</td><td>14.0%</td><td>0.0%</td></tr>
+          <tr><td>Experiment 1 IT-CoT</td><td>100</td><td>31.0%</td><td>55.0%</td><td>14.0%</td><td>0.0%</td></tr>
           <tr><td>A3 — greedy 512</td><td>500</td><td>30.0%</td><td>59.4%</td><td>10.2%</td><td>0.4%</td></tr>
           <tr><td>B1 chain (k=1)</td><td>500</td><td>30.8%</td><td>59.8%</td><td>9.2%</td><td>0.2%</td></tr>
           <tr><td>B3 chain (k=5)</td><td>2,500</td><td>27.9%</td><td>63.0%</td><td>8.8%</td><td>0.3%</td></tr>
@@ -367,17 +367,17 @@
   </section>
 
   <!-- ============================================================ -->
-  <!-- FIGURE 3 — Plan 4 cross-benchmark                            -->
+  <!-- FIGURE 3 — Experiment 4 cross-benchmark                            -->
   <!-- ============================================================ -->
   <section class="figure" id="figure-3">
-    <p class="figure__eyebrow">Figure 3 · Plan 4</p>
+    <p class="figure__eyebrow">Figure 3 · Experiment 4</p>
     <h2 class="figure__title">GSM8K vs ARC-Easy.</h2>
     <p class="figure__dek">
       The plateau pattern survives the cross-benchmark check — but ARC-Easy is saturated and
       direct prompting matches chain-of-thought, eliminating the gap that defined Path 1 on
       GSM8K.
     </p>
-    <svg id="fig3" class="figure__chart" viewBox="0 0 820 480" width="820" height="480" aria-label="Plan 4 cross-benchmark"></svg>
+    <svg id="fig3" class="figure__chart" viewBox="0 0 820 480" width="820" height="480" aria-label="Experiment 4 cross-benchmark"></svg>
 
     <div class="table-wrap">
       <table class="results">
@@ -403,7 +403,7 @@
     </div>
 
     <p class="figure__source">
-      GSM8K direct number from Plan 1 (n = 100, IT model with 8-shot direct exemplars).
+      GSM8K direct number from Experiment 1 (n = 100, IT model with 8-shot direct exemplars).
       ARC-Easy uses 8-shot exemplars drawn from the train split with handcrafted CoT
       rationales; answer extracted by <code>"The answer is ([A-D])"</code> with
       last-letter fallback.
@@ -411,10 +411,10 @@
   </section>
 
   <!-- ============================================================ -->
-  <!-- FIGURE 4 — Plan 5 the inversion                              -->
+  <!-- FIGURE 4 — Experiment 5 the inversion                              -->
   <!-- ============================================================ -->
   <section class="figure" id="figure-4">
-    <p class="figure__eyebrow">Figure 4 · Plan 5 · Hero</p>
+    <p class="figure__eyebrow">Figure 4 · Experiment 5 · Hero</p>
     <h2 class="figure__title">The inversion.</h2>
     <p class="figure__dek">
       Switching from 8-shot Wei et al. exemplars to a zero-shot prompt under the IT model's
@@ -422,7 +422,7 @@
       using less compute per problem. The 30% plateau was a prompt-format artifact, not a
       reasoning ceiling.
     </p>
-    <svg id="fig4" class="figure__chart" viewBox="0 0 820 380" width="820" height="380" aria-label="Plan 5 inversion"></svg>
+    <svg id="fig4" class="figure__chart" viewBox="0 0 820 380" width="820" height="380" aria-label="Experiment 5 inversion"></svg>
 
     <div class="table-wrap">
       <table class="results">
@@ -449,7 +449,7 @@
       p = 5.85 × 10⁻³⁵. <strong>C2 vs A3</strong>: p = 5.08 × 10⁻⁴³. <strong>C1 vs C2</strong>:
       p = 8.24 × 10⁻⁴ (C2 > C1). Both zero-shot cells use
       <code>tokenizer.apply_chat_template</code>; A3 uses the raw 8-shot text prompt from
-      Plan 1.
+      Experiment 1.
     </p>
   </section>
 
@@ -649,7 +649,7 @@ function drawXGridlines(g, scale, y0, y1, ticks) {
   // Source data — truncated is always < 0.5% and visually negligible; we fold it
   // into "Other wrong" so the bars sum to exactly 100% and reach the 100% gridline.
   const raw = [
-    { cell: "Plan 1 IT-CoT",         n: 100,   correct: 0.310, wrong: 0.550, rep: 0.140, trunc: 0.000 },
+    { cell: "Experiment 1 IT-CoT",         n: 100,   correct: 0.310, wrong: 0.550, rep: 0.140, trunc: 0.000 },
     { cell: "A3 — greedy 512",       n: 500,   correct: 0.300, wrong: 0.594, rep: 0.102, trunc: 0.004 },
     { cell: "B1 chain (k=1)",        n: 500,   correct: 0.308, wrong: 0.598, rep: 0.092, trunc: 0.002 },
     { cell: "B3 chain (k=5)",        n: 2500,  correct: 0.279, wrong: 0.630, rep: 0.088, trunc: 0.003 },
