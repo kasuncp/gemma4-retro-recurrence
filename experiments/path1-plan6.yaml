@@ -1,0 +1,48 @@
+# Path 1, plan 6: length sweep + self-consistency on the C2 prompt format,
+# n=500. Re-uses plan 5's C2 shard as the C2_A3_len512 reference cell, so
+# this run generates 7 new cells (A1/A2/A4 + B1..B4) on top of plan 5's
+# committed C2 result.
+#
+# The git ref pinned below should already include plan 5's committed shard
+# under results/path_1_cot_tokens/plan5/cells/. The bootstrap step does a
+# fresh checkout, so committed plan 5 results travel up to the pod
+# automatically and sanity check #1 (C2-A3 reproduction at 358/500 = 71.6%)
+# runs at startup before any new generation begins.
+#
+# Usage:
+#   ./runpod.sh go experiments/path1-plan6.yaml
+#
+# To tweak a parameter for a one-off run without changing the committed
+# record, copy this file to ./experiment.yaml (gitignored) and edit there,
+# then run `./runpod.sh go` with no argument.
+
+run:
+  # --batch-size 8 brings axis-A throughput on a 3090 up ~5x vs batch=1.
+  # Axis B already batches its k chains internally and ignores this flag.
+  flags: "--script path1-plan6 --batch-size 8"
+  result_dir: "results/path_1_cot_tokens/plan6"
+  # local_result_dir defaults to result_dir if omitted.
+
+pod:
+  # Plan 6 budget estimate is ~13h on a 3090, ~9h on a 4090. The B4 cell
+  # alone is ~6h on a 3090 (5,000 sampled generations at len=512). 4090
+  # is preferred when available.
+  gpu_types: "NVIDIA GeForce RTX 4090,NVIDIA GeForce RTX 3090"
+  gpu_count: 1
+  cloud_type: SECURE
+  container_disk_gb: 20
+  volume_gb: 30
+
+git:
+  url: "https://github.com/kasuncp/gemma4-retro-recurrence.git"
+  # Pin to a branch during active development; pin to a SHA to freeze
+  # the exact code a run used.
+  ref: "path_1_plan_6"
+
+budget:
+  cap_usd: 8           # plan 6 ~9-13 GPU-hr, soft warn at the 4090 budget
+  emergency_usd: 0.50  # hard teardown when account balance drops below this
+  max_hours: 16        # hard teardown on wall time, with margin over 13h
+
+watch:
+  tick_seconds: 420    # 7 minutes (longer cells, less frequent sync ok)
