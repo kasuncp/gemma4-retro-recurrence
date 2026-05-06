@@ -268,21 +268,41 @@ echo "Using $($PYTHON --version) at $(command -v $PYTHON)"
 # pod that has never run pip. The import probe catches that case.
 INSTALL_MARKER=".deps-installed"
 _deps_ok() {
-    # Verify all deps import AND that torch is new enough for transformers 5.x.
-    "$PYTHON" -c "
-import transformers, datasets, accelerate, torch
-major, minor = (int(x) for x in torch.__version__.split('.')[:2])
-assert (major, minor) >= (2, 5), f'torch {torch.__version__} < 2.5 (required by transformers 5.x)'
-" 2>/dev/null
+    # Verify all deps import cleanly (transformers moe.py must not crash).
+    "$PYTHON" -c "import transformers, datasets, accelerate, torch" 2>/dev/null
 }
 if [[ "${FORCE_INSTALL:-0}" == "1" ]] || [[ ! -f "$INSTALL_MARKER" ]] || ! _deps_ok; then
-    echo "Installing/upgrading torch, transformers, datasets, accelerate ..."
+    echo "Installing/upgrading transformers, datasets, accelerate ..."
     "$PYTHON" -m pip install -U pip
-    # torch>=2.5 is required by transformers 5.x (custom_op API change).
-    # The pod image ships torch 2.4.x; upgrade it first so the transformers
-    # install that follows doesn't break on import.
-    "$PYTHON" -m pip install -U "torch>=2.5"
     "$PYTHON" -m pip install -U transformers datasets accelerate
+    # transformers 5.x registers a custom_op in integrations/moe.py using bare
+    # torch.Tensor type annotations, which torch<2.5 rejects at import time.
+    # Rather than upgrading torch (which pulls cu130 wheels that break on pods
+    # with CUDA 12.4 drivers), patch the registration into a try/except so the
+    # fallback is silently skipped on older torch. Gemma4 inference does not
+    # need the grouped_mm custom kernel.
+    _MOE_PATH=$("$PYTHON" -c "import transformers, os; print(os.path.join(os.path.dirname(transformers.__file__), 'integrations', 'moe.py'))" 2>/dev/null)
+    if [[ -f "$_MOE_PATH" ]]; then
+        "$PYTHON" - <<'PYEOF'
+import sys
+path = sys.argv[1]
+with open(path) as f:
+    src = f.read()
+old = 'if is_torch_available():\n    torch.library.custom_op("transformers::grouped_mm_fallback", _grouped_mm_fallback, mutates_args=())'
+new = 'if is_torch_available():\n    try:\n        torch.library.custom_op("transformers::grouped_mm_fallback", _grouped_mm_fallback, mutates_args=())'
+if old in src and 'try:' not in src.split('if is_torch_available():')[1][:80]:
+    close = '    )\n\n\ndef _can_use_grouped_mm'
+    new_close = '    )\n    except Exception:\n        pass  # torch<2.5: unsupported type annotation in custom_op\n\n\ndef _can_use_grouped_mm'
+    patched = src.replace(old, new, 1).replace(close, new_close, 1)
+    with open(path, 'w') as f:
+        f.write(patched)
+    print(f"patched {path}")
+else:
+    print(f"moe.py already patched or pattern changed — skipping")
+PYEOF
+        "$PYTHON" - "$_MOE_PATH" 2>/dev/null || true
+    fi
+    touch "$INSTALL_MARKER"
     touch "$INSTALL_MARKER"
 else
     echo "Deps already installed (delete $INSTALL_MARKER or set FORCE_INSTALL=1 to reinstall)."
