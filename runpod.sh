@@ -275,6 +275,7 @@ _load_state() {
     POD_SSH_USER=$(jq -r '.sshUser // "root"' "$STATE_FILE")
     POD_STARTED_AT=$(jq -r '.started_at // empty' "$STATE_FILE")
     POD_REPO_DIR=$(jq -r '.repo_dir // empty' "$STATE_FILE")
+    RESULT_DIR=$(jq -r '.result_dir // empty' "$STATE_FILE")
     [[ -n "$POD_ID" ]] || die "malformed state file"
 }
 
@@ -442,6 +443,10 @@ cmd_launch() {
     _load_state; _refresh_ssh
     [[ -n "$POD_REPO_DIR" ]] || die "no repo_dir in state; run bootstrap first"
 
+    # Persist result_dir so 'watch' can find it without a config file.
+    jq --arg rd "$result_dir" '. + {result_dir: $rd}' "$STATE_FILE" > "$STATE_FILE.tmp" \
+        && mv "$STATE_FILE.tmp" "$STATE_FILE"
+
     local session="gemma-recurrence"
     local launch_cmd
     # Tee all run.sh output (stdout+stderr) to startup.log so crash diagnostics
@@ -553,10 +558,18 @@ cmd_watch() {
     [[ -f "$config" ]] || die "config file not found: $config"
     export EXPERIMENT_CONFIG="$config"
 
+    # First load state to get result_dir persisted during launch.
+    # This helps 'watch' find the experiment even if config is stale
+    # or not provided.
+    _load_state
+    local result_dir_from_state="$RESULT_DIR"
+
     # Load config.
     local flags result_dir local_result_dir cap emergency max_hours tick
     flags=$(_read_config '.run.flags')
+    # Prefer result_dir from state (persisted during launch) over config file.
     result_dir=$(_read_config '.run.result_dir')
+    [[ -z "$result_dir" && -n "$result_dir_from_state" ]] && result_dir="$result_dir_from_state"
     local_result_dir=$(_read_config '.run.local_result_dir')
     [[ -z "$local_result_dir" ]] && local_result_dir="$result_dir"
     cap=$(_read_config '.budget.cap_usd')
