@@ -268,11 +268,20 @@ echo "Using $($PYTHON --version) at $(command -v $PYTHON)"
 # pod that has never run pip. The import probe catches that case.
 INSTALL_MARKER=".deps-installed"
 _deps_ok() {
-    "$PYTHON" -c "import transformers, datasets, accelerate" 2>/dev/null
+    # Verify all deps import AND that torch is new enough for transformers 5.x.
+    "$PYTHON" -c "
+import transformers, datasets, accelerate, torch
+major, minor = (int(x) for x in torch.__version__.split('.')[:2])
+assert (major, minor) >= (2, 5), f'torch {torch.__version__} < 2.5 (required by transformers 5.x)'
+" 2>/dev/null
 }
 if [[ "${FORCE_INSTALL:-0}" == "1" ]] || [[ ! -f "$INSTALL_MARKER" ]] || ! _deps_ok; then
-    echo "Installing/upgrading transformers, datasets, accelerate ..."
+    echo "Installing/upgrading torch, transformers, datasets, accelerate ..."
     "$PYTHON" -m pip install -U pip
+    # torch>=2.5 is required by transformers 5.x (custom_op API change).
+    # The pod image ships torch 2.4.x; upgrade it first so the transformers
+    # install that follows doesn't break on import.
+    "$PYTHON" -m pip install -U "torch>=2.5"
     "$PYTHON" -m pip install -U transformers datasets accelerate
     touch "$INSTALL_MARKER"
 else
