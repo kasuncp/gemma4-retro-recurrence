@@ -444,8 +444,10 @@ cmd_launch() {
 
     local session="gemma-recurrence"
     local launch_cmd
-    # Quote flags + result_dir defensively. printf %q handles embedded spaces.
-    launch_cmd=$(printf 'cd %q && EXPERIMENT_RESULT_DIR=%q ./run.sh %s' \
+    # Tee all run.sh output (stdout+stderr) to startup.log so crash diagnostics
+    # survive pod teardown and are reachable via 'runpod.sh logs' or synced down
+    # during the FAILED branch of the watch loop.
+    launch_cmd=$(printf 'cd %q && EXPERIMENT_RESULT_DIR=%q ./run.sh %s 2>&1 | tee /workspace/startup.log' \
         "$POD_REPO_DIR" "$result_dir" "$flags")
 
     _ssh "set -e
@@ -623,6 +625,19 @@ cmd_watch() {
             DONE|FAILED)
                 _log "terminal: $marker — final pull + teardown"
                 _final_pull 120
+                # On failure, also pull startup.log so the crash reason is
+                # preserved locally before the pod disappears.
+                if [[ "$marker" == "FAILED" ]]; then
+                    _log "pulling startup.log for crash diagnostics..."
+                    timeout 30 "$0" pull /workspace/startup.log "./startup.log" 2>&1 \
+                        | tee -a "$log" \
+                        || _log "WARN: could not pull startup.log"
+                    if [[ -f ./startup.log ]]; then
+                        _log "--- last 40 lines of startup.log ---"
+                        tail -n 40 ./startup.log | tee -a "$log"
+                        _log "--- end startup.log ---"
+                    fi
+                fi
                 "$0" down 2>&1 | tee -a "$log"
                 _log "CLEAN exit (marker=$marker)"
                 return 0
