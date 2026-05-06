@@ -62,7 +62,34 @@ _need_yq() {
     command -v yq >/dev/null || die "missing dependency: yq — install with 'brew install yq' (macOS) or 'apt-get install yq' (Linux). Required for reading experiment.yaml."
 }
 
+_ssh_ready_probe() {
+    # Return 0 when any known RunPod username accepts key auth.
+    # Echo one line: "<user>|ok" or "|<last error>".
+    local host="$1" port="$2"
+    local users=(root runpod ubuntu)
+    local user err last_err="ssh probe failed"
+    for user in "${users[@]}"; do
+        err=$(ssh $(_ssh_opts)                   -o ConnectTimeout=5 -o BatchMode=yes                   -o PreferredAuthentications=publickey                   -o PubkeyAuthentication=yes                   -i "$SSH_KEY" -p "$port" "$user@$host" true 2>&1)
+        if [[ $? -eq 0 ]]; then
+            echo "$user|ok"
+            return 0
+        fi
+        # Keep only one trimmed line so polling logs stay readable.
+        err=$(awk 'NF { print; exit }' <<<"$err")
+        [[ -n "$err" ]] && last_err="$user: $err"
+    done
+    echo "|$last_err"
+    return 1
+}
+
 _unix_now() { date +%s; }
+
+_ssh_opts() {
+    printf '%s\n' \
+        '-o' 'StrictHostKeyChecking=no' \
+        '-o' 'UserKnownHostsFile=/dev/null' \
+        '-o' 'LogLevel=ERROR'
+}
 
 # Read one yaml field from experiment.yaml. Usage: _read_config '.run.flags'
 # Returns empty string if the field is null/absent. Errors out if file missing.
@@ -203,25 +230,39 @@ cmd_up() {
     echo "pod id: $pod_id — waiting for SSH..."
 
     # Poll until port 22 is mapped + reachable.
-    local host port attempts=60
+    local host port attempts=60 ssh_user="" probe_out="" probe_msg=""
     while (( attempts-- > 0 )); do
         sleep 5
         local info; info=$(api GET "/pods/$pod_id") || continue
         host=$(jq -r '.publicIp // empty' <<<"$info")
         port=$(jq -r '.portMappings["22"] // empty' <<<"$info")
         if [[ -n "$host" && -n "$port" ]]; then
-            if ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                   -o ConnectTimeout=5 -o BatchMode=yes \
-                   -i "$SSH_KEY" -p "$port" "root@$host" true 2>/dev/null; then
-                jq --arg h "$host" --arg p "$port" '. + {publicIp: $h, sshPort: ($p|tonumber)}' \
+            if probe_out=$(_ssh_ready_probe "$host" "$port"); then
+                ssh_user="${probe_out%%|*}"
+                jq --arg h "$host" --arg p "$port" --arg u "$ssh_user" '. + {publicIp: $h, sshPort: ($p|tonumber), sshUser: $u}' \
                     "$STATE_FILE" > "$STATE_FILE.tmp" && mv "$STATE_FILE.tmp" "$STATE_FILE"
-                echo "ready: ssh -p $port root@$host"
+                echo "ready: ssh -p $port $ssh_user@$host"
                 _pending_pod_id=""   # disarm: pod is healthy, state file is authoritative
                 trap - EXIT INT TERM
                 return 0
             fi
+            # If probe failed, print a compact diagnostic from the first user
+            # attempt so auth/user issues are visible instead of silent waits.
+            probe_msg="${probe_out#*|}"
         fi
-        echo "  still waiting... (host=${host:-?} port=${port:-?})"
+        if [[ -n "$probe_msg" ]]; then
+            echo "  still waiting... (host=${host:-?} port=${port:-?} ssh=${probe_msg})"
+            # "Permission denied (publickey)" after the port is open means the pod
+            # is up but no auth key is installed. Remind once so the operator
+            # doesn't sit through 60 attempts wondering what's wrong.
+            if [[ "$probe_msg" == *"Permission denied"* && "${_auth_hint_shown:-0}" == "0" ]]; then
+                _auth_hint_shown=1
+                echo "  hint: key auth failed — make sure $SSH_KEY.pub is registered"
+                echo "        at console.runpod.io → Settings → SSH Public Keys"
+            fi
+        else
+            echo "  still waiting... (host=${host:-?} port=${port:-?})"
+        fi
     done
     die "timed out waiting for SSH"
 }
@@ -231,6 +272,7 @@ _load_state() {
     POD_ID=$(jq -r '.id' "$STATE_FILE")
     POD_HOST=$(jq -r '.publicIp // empty' "$STATE_FILE")
     POD_PORT=$(jq -r '.sshPort // empty' "$STATE_FILE")
+    POD_SSH_USER=$(jq -r '.sshUser // "root"' "$STATE_FILE")
     POD_STARTED_AT=$(jq -r '.started_at // empty' "$STATE_FILE")
     POD_REPO_DIR=$(jq -r '.repo_dir // empty' "$STATE_FILE")
     [[ -n "$POD_ID" ]] || die "malformed state file"
@@ -243,13 +285,18 @@ _refresh_ssh() {
         POD_HOST=$(jq -r '.publicIp // empty' <<<"$info")
         POD_PORT=$(jq -r '.portMappings["22"] // empty' <<<"$info")
         [[ -n "$POD_HOST" && -n "$POD_PORT" ]] || die "pod has no SSH endpoint yet"
+        local probe_out
+        if probe_out=$(_ssh_ready_probe "$POD_HOST" "$POD_PORT"); then
+            POD_SSH_USER="${probe_out%%|*}"
+            jq --arg h "$POD_HOST" --arg p "$POD_PORT" --arg u "$POD_SSH_USER" '. + {publicIp: $h, sshPort: ($p|tonumber), sshUser: $u}' \
+                "$STATE_FILE" > "$STATE_FILE.tmp" && mv "$STATE_FILE.tmp" "$STATE_FILE"
+        fi
     fi
 }
 
 _ssh() {
     _load_state; _refresh_ssh
-    ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-        -i "$SSH_KEY" -p "$POD_PORT" "root@$POD_HOST" "$@"
+    ssh $(_ssh_opts) -i "$SSH_KEY" -p "$POD_PORT" "$POD_SSH_USER@$POD_HOST" "$@"
 }
 
 cmd_exec() {
@@ -262,23 +309,20 @@ cmd_run() {
     local script="$1"; shift
     _load_state; _refresh_ssh
     local remote="/tmp/$(basename "$script").$$"
-    scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-        -i "$SSH_KEY" -P "$POD_PORT" "$script" "root@$POD_HOST:$remote"
+    scp $(_ssh_opts) -i "$SSH_KEY" -P "$POD_PORT" "$script" "$POD_SSH_USER@$POD_HOST:$remote"
     _ssh "chmod +x $remote && $remote $*"
 }
 
 cmd_push() {
     [[ $# -eq 2 ]] || die "push needs <local> <remote>"
     _load_state; _refresh_ssh
-    scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-        -i "$SSH_KEY" -P "$POD_PORT" "$1" "root@$POD_HOST:$2"
+    scp -r $(_ssh_opts) -i "$SSH_KEY" -P "$POD_PORT" "$1" "$POD_SSH_USER@$POD_HOST:$2"
 }
 
 cmd_pull() {
     [[ $# -eq 2 ]] || die "pull needs <remote> <local>"
     _load_state; _refresh_ssh
-    scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-        -i "$SSH_KEY" -P "$POD_PORT" "root@$POD_HOST:$1" "$2"
+    scp -r $(_ssh_opts) -i "$SSH_KEY" -P "$POD_PORT" "$POD_SSH_USER@$POD_HOST:$1" "$2"
 }
 
 cmd_ssh() { _ssh; }
@@ -382,8 +426,7 @@ cmd_bootstrap() {
     # Copy local .env up if it exists. Without it run.sh will abort on missing HF_TOKEN.
     if [[ -f .env ]]; then
         echo "uploading .env -> $repo_dir/.env"
-        scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            -i "$SSH_KEY" -P "$POD_PORT" .env "root@$POD_HOST:$repo_dir/.env"
+        scp $(_ssh_opts) -i "$SSH_KEY" -P "$POD_PORT" .env "$POD_SSH_USER@$POD_HOST:$repo_dir/.env"
     else
         echo "warn: local .env not found — run.sh will fail on the pod without HF_TOKEN"
     fi
@@ -487,8 +530,8 @@ cmd_sync_down() {
     # rsync's --stats provides a transferred-bytes count we can parse. -az keeps
     # perms/mtimes and compresses over the wire. --partial lets resumable
     # transfers survive a mid-pull disconnect.
-    local ssh_cmd="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $SSH_KEY -p $POD_PORT"
-    local src="root@$POD_HOST:$POD_REPO_DIR/$remote_sub/"
+    local ssh_cmd="ssh $(_ssh_opts) -i $SSH_KEY -p $POD_PORT"
+    local src="$POD_SSH_USER@$POD_HOST:$POD_REPO_DIR/$remote_sub/"
     local stats
     stats=$(rsync -az --partial --stats -e "$ssh_cmd" "$src" "$local_dir/" 2>&1) \
         || die "rsync failed: $stats"
@@ -624,6 +667,17 @@ cmd_go() {
     result_dir=$(_read_config '.run.result_dir')
     [[ -n "$url" && -n "$ref" && -n "$flags" && -n "$result_dir" ]] \
         || die "experiment.yaml missing required fields (git.url, git.ref, run.flags, run.result_dir)"
+
+    # Apply pod settings from config (override env var defaults when set in yaml).
+    local _v
+    _v=$(_read_config '.pod.gpu_types');        [[ -n "$_v" ]] && export POD_GPU_TYPES="$_v"
+    _v=$(_read_config '.pod.gpu_count');        [[ -n "$_v" ]] && export POD_GPU_COUNT="$_v"
+    _v=$(_read_config '.pod.cloud_type');       [[ -n "$_v" ]] && export POD_CLOUD_TYPE="$_v"
+    _v=$(_read_config '.pod.container_disk_gb'); [[ -n "$_v" ]] && export POD_CONTAINER_DISK_GB="$_v"
+    _v=$(_read_config '.pod.volume_gb');        [[ -n "$_v" ]] && export POD_VOLUME_GB="$_v"
+    _v=$(_read_config '.pod.data_centers');     [[ -n "$_v" ]] && export POD_DATA_CENTERS="$_v"
+    _v=$(_read_config '.pod.interruptible');    [[ -n "$_v" ]] && export POD_INTERRUPTIBLE="$_v"
+    _v=$(_read_config '.pod.env_json');         [[ -n "$_v" ]] && export POD_ENV_JSON="$_v"
 
     # Refuse to stack. Explicit teardown is safer than silently orphaning.
     [[ ! -f "$STATE_FILE" ]] \
