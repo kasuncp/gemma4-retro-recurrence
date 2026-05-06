@@ -3,8 +3,10 @@ __pycache__/
 experiment.yaml
 watch.log
 watch.out
+startup.log
 .runpod-state.json
 .runpod-state.json.bak
+.deps-installed
 
 **/.DS_Store
 results/.DS_Store

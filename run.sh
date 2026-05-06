@@ -262,9 +262,15 @@ export HF_TOKEN="${HF_TOKEN:-${HUGGING_FACE_HUB_TOKEN}}"
 PYTHON="${PYTHON:-python3}"
 echo "Using $($PYTHON --version) at $(command -v $PYTHON)"
 
-# Skip pip install on re-runs once the marker exists, unless FORCE_INSTALL=1.
+# Skip pip install on re-runs once the marker exists AND the packages actually
+# import, unless FORCE_INSTALL=1. The marker alone is not enough: it can be
+# committed to the repo by accident, causing installs to be skipped on a fresh
+# pod that has never run pip. The import probe catches that case.
 INSTALL_MARKER=".deps-installed"
-if [[ ! -f "$INSTALL_MARKER" || "${FORCE_INSTALL:-0}" == "1" ]]; then
+_deps_ok() {
+    "$PYTHON" -c "import transformers, datasets, accelerate" 2>/dev/null
+}
+if [[ "${FORCE_INSTALL:-0}" == "1" ]] || [[ ! -f "$INSTALL_MARKER" ]] || ! _deps_ok; then
     echo "Installing/upgrading transformers, datasets, accelerate ..."
     "$PYTHON" -m pip install -U pip
     "$PYTHON" -m pip install -U transformers datasets accelerate
