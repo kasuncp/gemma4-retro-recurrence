@@ -1,0 +1,78 @@
+{
+  "plan": "path_1_cot_tokens/plan6",
+  "model_id": "google/gemma-4-E2B-it",
+  "model_key": "it",
+  "dtype": "bf16",
+  "n_total": 500,
+  "axis_a_cells": [
+    {
+      "cell": "C2_A1_len128",
+      "max_new_tokens": 128,
+      "decode": "greedy",
+      "virtual": false
+    },
+    {
+      "cell": "C2_A2_len256",
+      "max_new_tokens": 256,
+      "decode": "greedy",
+      "virtual": false
+    },
+    {
+      "cell": "C2_A3_len512",
+      "max_new_tokens": 512,
+      "decode": "greedy",
+      "virtual": true
+    },
+    {
+      "cell": "C2_A4_len1024",
+      "max_new_tokens": 1024,
+      "decode": "greedy",
+      "virtual": false
+    }
+  ],
+  "axis_b_cells": [
+    {
+      "cell": "C2_B1_k1",
+      "k": 1,
+      "max_new_tokens": 512,
+      "decode": "sampled",
+      "temperature": 0.7,
+      "top_p": 0.95
+    },
+    {
+      "cell": "C2_B2_k3",
+      "k": 3,
+      "max_new_tokens": 512,
+      "decode": "sampled",
+      "temperature": 0.7,
+      "top_p": 0.95
+    },
+    {
+      "cell": "C2_B3_k5",
+      "k": 5,
+      "max_new_tokens": 512,
+      "decode": "sampled",
+      "temperature": 0.7,
+      "top_p": 0.95
+    },
+    {
+      "cell": "C2_B4_k10",
+      "k": 10,
+      "max_new_tokens": 512,
+      "decode": "sampled",
+      "temperature": 0.7,
+      "top_p": 0.95
+    }
+  ],
+  "axis_b_base_seed": 0,
+  "uses_chat_template": true,
+  "user_template": "{question}",
+  "answer_primary_regex": "####\\s*(-?\\d+)",
+  "answer_fallback_regex": "(-?\\d+)",
+  "c2_ref": {
+    "dir": "results/path_1_cot_tokens/plan5",
+    "cell": "C2_zeroshot_plain",
+    "expected_correct": 358,
+    "expected_acc": 0.716
+  }
+}
