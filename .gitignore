@@ -10,3 +10,5 @@ startup.log
 
 **/.DS_Store
 results/.DS_Store
+**/.DONE
+**/.FAILED
