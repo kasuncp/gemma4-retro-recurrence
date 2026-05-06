@@ -283,26 +283,47 @@ if [[ "${FORCE_INSTALL:-0}" == "1" ]] || [[ ! -f "$INSTALL_MARKER" ]] || ! _deps
     # need the grouped_mm custom kernel.
     _MOE_PATH=$("$PYTHON" -c "import transformers, os; print(os.path.join(os.path.dirname(transformers.__file__), 'integrations', 'moe.py'))" 2>/dev/null)
     if [[ -f "$_MOE_PATH" ]]; then
-        "$PYTHON" - <<'PYEOF'
+        "$PYTHON" "$_MOE_PATH" 2>/dev/null || true   # dry-run to surface import errors
+        # Write the patch script to a temp file (avoids heredoc quoting issues
+        # and sys.argv problems with `python -`).
+        _PATCH_SCRIPT=$(mktemp /tmp/patch_moe_XXXXXX.py)
+        cat > "$_PATCH_SCRIPT" << 'PATCH_EOF'
 import sys
 path = sys.argv[1]
 with open(path) as f:
     src = f.read()
-old = 'if is_torch_available():\n    torch.library.custom_op("transformers::grouped_mm_fallback", _grouped_mm_fallback, mutates_args=())'
-new = 'if is_torch_available():\n    try:\n        torch.library.custom_op("transformers::grouped_mm_fallback", _grouped_mm_fallback, mutates_args=())'
-if old in src and 'try:' not in src.split('if is_torch_available():')[1][:80]:
-    close = '    )\n\n\ndef _can_use_grouped_mm'
-    new_close = '    )\n    except Exception:\n        pass  # torch<2.5: unsupported type annotation in custom_op\n\n\ndef _can_use_grouped_mm'
-    patched = src.replace(old, new, 1).replace(close, new_close, 1)
+OLD = (
+    'if is_torch_available():\n'
+    '    torch.library.custom_op("transformers::grouped_mm_fallback", _grouped_mm_fallback, mutates_args=())\n'
+    '    torch.library.register_fake("transformers::grouped_mm_fallback", _grouped_mm_fallback_fake)\n'
+    '    torch.library.register_autograd(\n'
+    '        "transformers::grouped_mm_fallback",\n'
+    '        _grouped_mm_fallback_backward,\n'
+    '        setup_context=_grouped_mm_fallback_setup_context,\n'
+    '    )\n'
+)
+NEW = (
+    'if is_torch_available():\n'
+    '    try:\n'
+    '        torch.library.custom_op("transformers::grouped_mm_fallback", _grouped_mm_fallback, mutates_args=())\n'
+    '        torch.library.register_fake("transformers::grouped_mm_fallback", _grouped_mm_fallback_fake)\n'
+    '        torch.library.register_autograd(\n'
+    '            "transformers::grouped_mm_fallback",\n'
+    '            _grouped_mm_fallback_backward,\n'
+    '            setup_context=_grouped_mm_fallback_setup_context,\n'
+    '        )\n'
+    '    except Exception:\n'
+    '        pass  # torch<2.5: bare torch.Tensor annotations unsupported in custom_op\n'
+)
+if OLD in src:
     with open(path, 'w') as f:
-        f.write(patched)
+        f.write(src.replace(OLD, NEW, 1))
     print(f"patched {path}")
 else:
-    print(f"moe.py already patched or pattern changed — skipping")
-PYEOF
-        "$PYTHON" - "$_MOE_PATH" 2>/dev/null || true
+    print(f"moe.py already patched or layout changed — skipping")
+PATCH_EOF
+        "$PYTHON" "$_PATCH_SCRIPT" "$_MOE_PATH" && rm -f "$_PATCH_SCRIPT" || rm -f "$_PATCH_SCRIPT"
     fi
-    touch "$INSTALL_MARKER"
     touch "$INSTALL_MARKER"
 else
     echo "Deps already installed (delete $INSTALL_MARKER or set FORCE_INSTALL=1 to reinstall)."
