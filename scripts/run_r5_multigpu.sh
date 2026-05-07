@@ -32,7 +32,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_ROOT"
 
 # ---------- tmux wrapper (mirrors run.sh) ----------
 # Auto-wraps this script in a detached-friendly tmux session so SSH
@@ -140,14 +141,15 @@ PARTIAL_DIR_PREFIX="results/round5_partial_gpu"
 LOG_DIR="results/round5_logs"
 
 # --- Env setup (mirrors run.sh step 1+2) ---
-if [[ ! -f .env ]]; then
-    echo "ERROR: .env not found. Run ./run.sh once to bootstrap .env, or"
+ENV_FILE="$REPO_ROOT/.env"
+if [[ ! -f "$ENV_FILE" ]]; then
+    echo "ERROR: $ENV_FILE not found. Run ./scripts/run.sh once to bootstrap .env, or"
     echo "       create it manually with HF_TOKEN=<your token>."
     exit 1
 fi
 set -a
 # shellcheck disable=SC1091
-source .env
+source "$ENV_FILE"
 set +a
 if [[ -z "${HF_TOKEN:-}" && -z "${HUGGING_FACE_HUB_TOKEN:-}" ]]; then
     echo "ERROR: HF_TOKEN is not set in .env."
@@ -168,6 +170,7 @@ if [[ ! -f "$INSTALL_MARKER" || "${FORCE_INSTALL:-0}" == "1" ]]; then
     echo "Installing/upgrading transformers, datasets, accelerate ..."
     "$PYTHON" -m pip install -U pip
     "$PYTHON" -m pip install -U transformers datasets accelerate
+    "$PYTHON" scripts/patch_moe.py
     touch "$INSTALL_MARKER"
 else
     echo "Deps already installed (delete $INSTALL_MARKER or set FORCE_INSTALL=1 to reinstall)."
@@ -201,7 +204,7 @@ launch_shard() {
     echo "[gpu${gpu_id}] configs: ${configs[*]}"
     echo "[gpu${gpu_id}] ckpt:    ${ckpt_dir}"
     echo "[gpu${gpu_id}] log:     ${log_file}"
-    CUDA_VISIBLE_DEVICES="$gpu_id" "$PYTHON" ple_sanity_check.py \
+    CUDA_VISIBLE_DEVICES="$gpu_id" "$PYTHON" experiments/ple_sanity_check.py \
         "${COMMON_ARGS[@]}" \
         --configs "${configs[@]}" \
         --checkpoint-dir "$ckpt_dir" \

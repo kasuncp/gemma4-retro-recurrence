@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Offline smoke test for run.sh's registry-driven dispatch.
 #
-# Runs ./run.sh --dry-run --script X for every registered script key and
+# Runs ./scripts/run.sh --dry-run --script X for every registered script key and
 # asserts that the dispatch summary names the right Python file, result
 # root, and depth. Does NOT load Python, install deps, or touch git —
 # takes <1s and is safe to run with the live experiment ticking.
@@ -20,10 +20,10 @@ _fail() { FAIL=$((FAIL+1)); echo "  FAIL: $1"; echo "    got:  $2"; echo "    wa
 # Expected dispatch rows. One per registered script:
 #   key | py_script | default_args | result_root | result_depth
 EXPECTED=(
-    "probe|ple_sanity_check.py|--mode ple-variants|results|flat"
-    "path1|path1_cot_gate.py||results/path_1_cot_tokens|recursive"
-    "path1-plan2|path1_length_and_sc.py||results/path_1_cot_tokens/plan2|recursive"
-    "path1-plan4|path1_arc_easy.py||results/path_1_cot_tokens/plan4|recursive"
+    "probe|experiments/ple_sanity_check.py|--mode ple-variants|results|flat"
+    "path1|experiments/path1_cot_gate.py||results/path_1_cot_tokens|recursive"
+    "path1-plan2|experiments/path1_length_and_sc.py||results/path_1_cot_tokens/plan2|recursive"
+    "path1-plan4|experiments/path1_arc_easy.py||results/path_1_cot_tokens/plan4|recursive"
 )
 
 # Extract one `dry-run: <field>=<value>` line from run.sh's output.
@@ -36,7 +36,7 @@ for row in "${EXPECTED[@]}"; do
     IFS='|' read -r key py defaults root depth <<<"$row"
     echo "scenario: --script $key"
 
-    out=$(cd "$REPO_ROOT" && ./run.sh --dry-run --script "$key" 2>&1) \
+    out=$(cd "$REPO_ROOT" && ./scripts/run.sh --dry-run --script "$key" 2>&1) \
         || { _fail "$key: run.sh exited non-zero" "$out" "exit=0"; continue; }
 
     got_py=$(_extract "$out" py_script)
@@ -56,7 +56,7 @@ done
 
 # Forwarded args: extra flags after --script must pass through to effective_args.
 echo "scenario: forwarded args"
-out=$(cd "$REPO_ROOT" && ./run.sh --dry-run --script path1 --n 5 --batch-size 8 2>&1)
+out=$(cd "$REPO_ROOT" && ./scripts/run.sh --dry-run --script path1 --n 5 --batch-size 8 2>&1)
 got_eff=$(_extract "$out" effective_args)
 [[ "$got_eff" == "--n 5 --batch-size 8" ]] \
     && _pass "effective_args forwards extras" \
@@ -64,7 +64,7 @@ got_eff=$(_extract "$out" effective_args)
 
 # Unknown script must be rejected BEFORE the dry-run summary prints.
 echo "scenario: unknown script rejected"
-out=$(cd "$REPO_ROOT" && ./run.sh --dry-run --script frobnicate 2>&1) \
+out=$(cd "$REPO_ROOT" && ./scripts/run.sh --dry-run --script frobnicate 2>&1) \
     && rc=0 || rc=$?
 grep -q "unknown --script 'frobnicate'" <<<"$out" \
     && _pass "unknown script errors with message" \

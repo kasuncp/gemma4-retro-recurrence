@@ -50,7 +50,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 SESSION_NAME="${TMUX_SESSION:-gemma-recurrence}"
 
@@ -73,7 +73,7 @@ SESSION_NAME="${TMUX_SESSION:-gemma-recurrence}"
 # We use parallel indexed arrays instead of `declare -A` so this file runs
 # on both macOS stock bash 3.2 (no assoc-array support) and pod bash 4+.
 EXPERIMENT_KEYS=(probe                path1                       path1-plan2                       path1-plan4                       path1-plan5                       path1-plan6                      path1-plan7)
-EXPERIMENT_SCRIPTS=(ple_sanity_check.py  path1_cot_gate.py           path1_length_and_sc.py           path1_arc_easy.py                 path1_zero_shot.py                path1_c2_length_and_sc.py          path1_harder_benchmarks.py)
+EXPERIMENT_SCRIPTS=(experiments/ple_sanity_check.py  experiments/path1_cot_gate.py           experiments/path1_length_and_sc.py           experiments/path1_arc_easy.py                 experiments/path1_zero_shot.py                experiments/path1_c2_length_and_sc.py          experiments/path1_harder_benchmarks.py)
 EXPERIMENT_DEFAULTS=("--mode ple-variants"  ""                        ""                                ""                                ""                                 ""                             "")
 EXPERIMENT_ROOTS=(results             results/path_1_cot_tokens    results/path_1_cot_tokens/plan2  results/path_1_cot_tokens/plan4  results/path_1_cot_tokens/plan5  results/path_1_cot_tokens/plan6  results/path_1_cot_tokens/plan7)
 EXPERIMENT_DEPTHS=(flat               recursive                    recursive                        recursive                        recursive                         recursive                        recursive)
@@ -189,9 +189,9 @@ if [[ "$USE_TMUX" == "1" && -z "${TMUX:-}" ]]; then
     else
         QUOTED_ARGS=$(printf '%q ' "${FORWARDED_ARGS[@]}")
     fi
-    QUOTED_DIR=$(printf '%q' "$SCRIPT_DIR")
+    QUOTED_REPO=$(printf '%q' "$REPO_ROOT")
     QUOTED_SCRIPT=$(printf '%q' "$TARGET_SCRIPT")
-    INNER_CMD="cd $QUOTED_DIR && ./run.sh --script $QUOTED_SCRIPT ${QUOTED_ARGS}--no-tmux; status=\$?; echo; echo \"=== run finished (exit=\$status). Type exit or Ctrl+D to close session. ===\"; exec bash"
+    INNER_CMD="cd $QUOTED_REPO && ./scripts/run.sh --script $QUOTED_SCRIPT ${QUOTED_ARGS}--no-tmux; status=\$?; echo; echo \"=== run finished (exit=\$status). Type exit or Ctrl+D to close session. ===\"; exec bash"
 
     echo "Launching tmux session '$SESSION_NAME' ..."
     echo "  Detach (run keeps going): Ctrl+B then D"
@@ -229,19 +229,23 @@ if [[ "$DRY_RUN" == "1" ]]; then
 fi
 
 # ---------- 1. Load .env ----------
-if [[ ! -f .env ]]; then
-    if [[ -f .env.example ]]; then
-        cp .env.example .env
-        echo "Created .env from .env.example. Edit it to set HF_TOKEN, then re-run."
+# .env lives at repo root; resolve relative to this script's directory
+ENV_FILE="$REPO_ROOT/.env"
+ENV_EXAMPLE="$REPO_ROOT/.env.example"
+
+if [[ ! -f "$ENV_FILE" ]]; then
+    if [[ -f "$ENV_EXAMPLE" ]]; then
+        cp "$ENV_EXAMPLE" "$ENV_FILE"
+        echo "Created $ENV_FILE from .env.example. Edit it to set HF_TOKEN, then re-run."
         exit 1
     else
-        cat > .env <<'EOF'
+        cat > "$ENV_FILE" <<'EOF'
 # Hugging Face access token for gated Gemma weights.
 # Get one at https://huggingface.co/settings/tokens after accepting the
 # Gemma license at https://huggingface.co/google/gemma-4-E2B
 HF_TOKEN=
 EOF
-        echo "Created .env stub. Edit it to set HF_TOKEN, then re-run."
+        echo "Created $ENV_FILE stub. Edit it to set HF_TOKEN, then re-run."
         exit 1
     fi
 fi
@@ -249,7 +253,7 @@ fi
 # Export every non-comment, non-blank assignment from .env into this shell.
 set -a
 # shellcheck disable=SC1091
-source .env
+source "$ENV_FILE"
 set +a
 
 # ---------- 2. Validate token ----------
@@ -301,6 +305,9 @@ fi
 unset _default_args
 
 RUN_ARGS=("$@")
+
+# Change to repo root so Python imports (e.g., probes module) resolve correctly
+cd "$REPO_ROOT"
 
 echo
 echo "=== Running: $PYTHON $PY_SCRIPT ${RUN_ARGS[*]} ==="
