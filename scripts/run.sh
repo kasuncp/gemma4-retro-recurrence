@@ -308,6 +308,7 @@ RUN_ARGS=("$@")
 
 # Change to repo root so Python imports (e.g., probes module) resolve correctly
 cd "$REPO_ROOT"
+export PYTHONPATH="$REPO_ROOT"
 
 echo
 echo "=== Running: $PYTHON $PY_SCRIPT ${RUN_ARGS[*]} ==="
