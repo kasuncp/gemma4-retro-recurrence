@@ -198,7 +198,7 @@ def load_math(problems_dir=None):
 
 def load_bbh_lite(problems_dir=None):
     from datasets import load_dataset
-    ds = load_dataset("openeval/BIG-Bench-Hard", split="test")
+    ds = load_dataset("openeval/BIG-Bench-Hard", split="train")
     tasks = ["boolean_expressions", "causal_judgement", "date_understanding",
              "disambiguation_qa", "dyck_languages", "formal_fallacies",
              "geometric_shapes", "hyperbaton", "logical_deduction_five_objects",
