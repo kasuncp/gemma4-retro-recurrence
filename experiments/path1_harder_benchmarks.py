@@ -186,7 +186,7 @@ def load_arc_challenge(problems_dir=None):
 
 def load_math(problems_dir=None):
     from datasets import load_dataset
-    ds = load_dataset("lighteval/MATH", split="test")
+    ds = load_dataset("hendrycks/competition_math", split="test")
     rows = []
     for i, row in enumerate(ds):
         if i >= 200:
