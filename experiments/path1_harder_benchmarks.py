@@ -924,11 +924,13 @@ def write_csv(root, benchmark_metrics):
 
 def main():
     args = parse_args()
-    print_env()
 
     if args.summarize:
+        from path1_cot_gate import wilson_ci, load_existing
         summarize(args.results_dir)
         return
+
+    print_env()
 
     check_manifest(args.results_dir, args)
 

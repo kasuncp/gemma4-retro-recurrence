@@ -1,0 +1,241 @@
+{
+  "config": {
+    "plan": "path_1_cot_tokens/plan7",
+    "model_id": "google/gemma-4-E2B-it",
+    "model_key": "it",
+    "dtype": "bf16",
+    "cells": [
+      {
+        "benchmark": "arc",
+        "cell": "arc_C2_greedy",
+        "n": 500,
+        "max_new_tokens": 512,
+        "decode": "greedy"
+      },
+      {
+        "benchmark": "arc",
+        "cell": "arc_A3_style",
+        "n": 500,
+        "max_new_tokens": 16,
+        "decode": "greedy"
+      },
+      {
+        "benchmark": "arc",
+        "cell": "arc_direct",
+        "n": 500,
+        "max_new_tokens": 16,
+        "decode": "greedy"
+      },
+      {
+        "benchmark": "math",
+        "cell": "math_C2_greedy",
+        "n": 200,
+        "max_new_tokens": 512,
+        "decode": "greedy"
+      },
+      {
+        "benchmark": "math",
+        "cell": "math_A3_style",
+        "n": 200,
+        "max_new_tokens": 16,
+        "decode": "greedy"
+      },
+      {
+        "benchmark": "math",
+        "cell": "math_direct",
+        "n": 200,
+        "max_new_tokens": 16,
+        "decode": "greedy"
+      },
+      {
+        "benchmark": "bbh",
+        "cell": "bbh_C2_greedy",
+        "n": 500,
+        "max_new_tokens": 512,
+        "decode": "greedy"
+      },
+      {
+        "benchmark": "bbh",
+        "cell": "bbh_A3_style",
+        "n": 500,
+        "max_new_tokens": 16,
+        "decode": "greedy"
+      },
+      {
+        "benchmark": "bbh",
+        "cell": "bbh_direct",
+        "n": 500,
+        "max_new_tokens": 16,
+        "decode": "greedy"
+      }
+    ],
+    "uses_chat_template": true,
+    "n_total": 500
+  },
+  "benchmark_metrics": {
+    "arc": {
+      "arc_C2_greedy": {
+        "n": 500,
+        "correct": 378,
+        "accuracy": 0.756,
+        "ci95": [
+          0.7164944353121212,
+          0.7916017600000562
+        ],
+        "hash_hit_rate": 0.002,
+        "fallback_hit_rate": 0.982,
+        "no_extract_rate": 0.018,
+        "mean_gen_tokens": 256.804,
+        "mean_prompt_tokens": 71.794,
+        "mean_flops_per_problem": 1527715008148.48,
+        "mean_wallclock_sec": 2.4273053665147164
+      },
+      "arc_A3_style": {
+        "n": 500,
+        "correct": 68,
+        "accuracy": 0.136,
+        "ci95": [
+          0.10871499179718816,
+          0.1688357304933095
+        ],
+        "hash_hit_rate": 0.104,
+        "fallback_hit_rate": 0.29400000000000004,
+        "no_extract_rate": 0.706,
+        "mean_gen_tokens": 15.976,
+        "mean_prompt_tokens": 760.794,
+        "mean_flops_per_problem": 3576663634959.36,
+        "mean_wallclock_sec": 0.12847689459007233
+      },
+      "arc_direct": {
+        "n": 500,
+        "correct": 166,
+        "accuracy": 0.332,
+        "ci95": [
+          0.2921397376306511,
+          0.3744221341957325
+        ],
+        "hash_hit_rate": 0.002,
+        "fallback_hit_rate": 0.874,
+        "no_extract_rate": 0.126,
+        "mean_gen_tokens": 11.542,
+        "mean_prompt_tokens": 504.794,
+        "mean_flops_per_problem": 2376833708441.6,
+        "mean_wallclock_sec": 0.11492892633378506
+      }
+    },
+    "math": {
+      "math_C2_greedy": {
+        "n": 200,
+        "correct": 0,
+        "accuracy": 0.0,
+        "ci95": [
+          0.0,
+          0.018846005918320894
+        ],
+        "hash_hit_rate": 0.0,
+        "fallback_hit_rate": 1.0,
+        "no_extract_rate": 0.0,
+        "mean_gen_tokens": 466.04,
+        "mean_prompt_tokens": 79.17,
+        "mean_flops_per_problem": 2550992867609.6,
+        "mean_wallclock_sec": 3.216676900595776
+      },
+      "math_A3_style": {
+        "n": 200,
+        "correct": 0,
+        "accuracy": 0.0,
+        "ci95": [
+          0.0,
+          0.018846005918320894
+        ],
+        "hash_hit_rate": 0.03,
+        "fallback_hit_rate": 0.78,
+        "no_extract_rate": 0.22,
+        "mean_gen_tokens": 15.87,
+        "mean_prompt_tokens": 489.165,
+        "mean_flops_per_problem": 2325421633804.8,
+        "mean_wallclock_sec": 0.14298207566491328
+      },
+      "math_direct": {
+        "n": 200,
+        "correct": 0,
+        "accuracy": 0.0,
+        "ci95": [
+          0.0,
+          0.018846005918320894
+        ],
+        "hash_hit_rate": 0.945,
+        "fallback_hit_rate": 1.0,
+        "no_extract_rate": 0.0,
+        "mean_gen_tokens": 8.82,
+        "mean_prompt_tokens": 300.165,
+        "mean_flops_per_problem": 1422085708684.8,
+        "mean_wallclock_sec": 0.12683127626776694
+      }
+    },
+    "bbh": {
+      "bbh_C2_greedy": {
+        "n": 500,
+        "correct": 103,
+        "accuracy": 0.206,
+        "ci95": [
+          0.17285607517585092,
+          0.24362720052032025
+        ],
+        "hash_hit_rate": 0.004,
+        "fallback_hit_rate": 1.0,
+        "no_extract_rate": 0.0,
+        "mean_gen_tokens": 299.032,
+        "mean_prompt_tokens": 114.664,
+        "mean_flops_per_problem": 1931137792000.0,
+        "mean_wallclock_sec": 2.606681638935581
+      },
+      "bbh_A3_style": {
+        "n": 500,
+        "correct": 170,
+        "accuracy": 0.34,
+        "ci95": [
+          0.29983814768649814,
+          0.382601730243391
+        ],
+        "hash_hit_rate": 0.25,
+        "fallback_hit_rate": 1.0,
+        "no_extract_rate": 0.0,
+        "mean_gen_tokens": 16.0,
+        "mean_prompt_tokens": 267.414,
+        "mean_flops_per_problem": 1304967867233.28,
+        "mean_wallclock_sec": 0.11032772220298648
+      },
+      "bbh_direct": {
+        "n": 500,
+        "correct": 249,
+        "accuracy": 0.498,
+        "ci95": [
+          0.45435606501666037,
+          0.5416744334574632
+        ],
+        "hash_hit_rate": 0.08,
+        "fallback_hit_rate": 1.0,
+        "no_extract_rate": 0.0,
+        "mean_gen_tokens": 14.98,
+        "mean_prompt_tokens": 201.414,
+        "mean_flops_per_problem": 996259656453.12,
+        "mean_wallclock_sec": 0.10766342516988515
+      }
+    }
+  },
+  "outcomes": {
+    "arc": [
+      "A_SATURATED",
+      "C2 (0.756) >= A3 (0.136) + 0.10 | Direct\u2248CoT"
+    ],
+    "math": [
+      "B_SATURATED",
+      "C2 \u2248 A3 within 0.03 | Direct\u2248CoT"
+    ],
+    "bbh": [
+      "E_SATURATED",
+      "C2 (0.206) < A3 (0.340) - 0.10 | Direct\u2248CoT"
+    ]
+  }
+}
