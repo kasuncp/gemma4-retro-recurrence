@@ -455,7 +455,7 @@ cmd_launch() {
     # Tee all run.sh output (stdout+stderr) to startup.log so crash diagnostics
     # survive pod teardown and are reachable via 'runpod.sh logs' or synced down
     # during the FAILED branch of the watch loop.
-    launch_cmd=$(printf 'cd %q && EXPERIMENT_RESULT_DIR=%q ./run.sh %s 2>&1 | tee /workspace/startup.log' \
+    launch_cmd=$(printf 'cd %q && EXPERIMENT_RESULT_DIR=%q ./scripts/run.sh %s 2>&1 | tee /workspace/startup.log' \
         "$POD_REPO_DIR" "$result_dir" "$flags")
 
     _ssh "set -e
