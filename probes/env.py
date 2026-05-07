@@ -14,7 +14,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 MODEL_ID = "google/gemma-4-E2B"
 EXPECTED_NUM_LAYERS = 35
-DTYPE_MAP = {"bf16": "bfloat16", "fp16": "float16", "fp32": "float32"}
+DTYPE_MAP = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}
 
 # Round 1's anchor for regression checks that compare against the
 # originally-published unmodified perplexity.
@@ -73,13 +73,13 @@ def load_model(model_id, dtype):
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     try:
         model = AutoModelForCausalLM.from_pretrained(
-            model_id, dtype=dtype, device_map="cuda",
+            model_id, torch_dtype=dtype, device_map="cuda",
         )
     except (ValueError, KeyError) as e:
         print(f"AutoModelForCausalLM failed ({e}); trying multimodal loader.")
         from transformers import AutoModelForImageTextToText
         model = AutoModelForImageTextToText.from_pretrained(
-            model_id, dtype=dtype, device_map="cuda",
+            model_id, torch_dtype=dtype, device_map="cuda",
         )
     model.train(False)  # inference mode
     return tokenizer, model
