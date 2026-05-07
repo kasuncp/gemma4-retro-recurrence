@@ -766,6 +766,13 @@ cmd_down() {
     # With no args: terminate the pod in the state file and remove it.
     # With an id arg: terminate that specific pod, leave state file alone
     # (supports reaping orphans the state file doesn't know about).
+    if command -v tmux >/dev/null 2>&1 && tmux has-session -t rp-watch 2>/dev/null; then
+        echo "killing watcher session rp-watch..."
+        tmux kill-session -t rp-watch 2>/dev/null
+    fi
+    if command -v screen >/dev/null 2>&1 && screen -ls 2>/dev/null | grep -q '\.rp-watch'; then
+        screen -S rp-watch -X quit 2>/dev/null
+    fi
     local pod_id state_bound=0
     if [[ $# -ge 1 && -n "$1" ]]; then
         pod_id="$1"

@@ -180,7 +180,7 @@ def load_arc_challenge(problems_dir=None):
         labels = ["A", "B", "C", "D"][:len(choices)]
         options_text = "\n".join(f"{l}. {t}" for l, t in zip(labels, choices))
         full_q = f"{question}\n{options_text}"
-        gold = labels[int(row["answerKey"])]
+        gold = labels[labels.index(row["answerKey"])]
         rows.append({"idx": i, "question": full_q, "gold": gold})
     return rows
 
