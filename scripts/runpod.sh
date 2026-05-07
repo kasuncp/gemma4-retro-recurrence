@@ -29,10 +29,13 @@
 # Auto-source a sibling .env so `./runpod.sh go` works as a single command
 # without requiring the caller to `source .env` first.
 _rp_script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
-if [[ -f "$_rp_script_dir/.env" ]]; then
-    set -a; . "$_rp_script_dir/.env"; set +a
-fi
-unset _rp_script_dir
+_rp_parent_dir=$(cd "$_rp_script_dir/.." && pwd -P)
+for _env_file in "$_rp_script_dir/.env" "$_rp_parent_dir/.env"; do
+    if [[ -f "$_env_file" ]]; then
+        set -a; . "$_env_file"; set +a
+    fi
+done
+unset _rp_script_dir _rp_parent_dir _env_file
 : "${RUNPOD_API_KEY:?set RUNPOD_API_KEY (directly or in sibling .env)}"
 : "${POD_NAME:=probe-$(date +%Y%m%d-%H%M%S)}"
 : "${POD_IMAGE:=runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04}"

@@ -14,7 +14,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 MODEL_ID = "google/gemma-4-E2B"
 EXPECTED_NUM_LAYERS = 35
-DTYPE_MAP = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}
+DTYPE_MAP = {"bf16": "bfloat16", "fp16": "float16", "fp32": "float32"}
 
 # Round 1's anchor for regression checks that compare against the
 # originally-published unmodified perplexity.

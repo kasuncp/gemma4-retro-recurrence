@@ -1,0 +1,73 @@
+{
+  "plan": "path_1_cot_tokens/plan7",
+  "model_id": "google/gemma-4-E2B-it",
+  "model_key": "it",
+  "dtype": "bf16",
+  "cells": [
+    {
+      "benchmark": "arc",
+      "cell": "arc_C2_greedy",
+      "n": 500,
+      "max_new_tokens": 512,
+      "decode": "greedy"
+    },
+    {
+      "benchmark": "arc",
+      "cell": "arc_A3_style",
+      "n": 500,
+      "max_new_tokens": 16,
+      "decode": "greedy"
+    },
+    {
+      "benchmark": "arc",
+      "cell": "arc_direct",
+      "n": 500,
+      "max_new_tokens": 16,
+      "decode": "greedy"
+    },
+    {
+      "benchmark": "math",
+      "cell": "math_C2_greedy",
+      "n": 200,
+      "max_new_tokens": 512,
+      "decode": "greedy"
+    },
+    {
+      "benchmark": "math",
+      "cell": "math_A3_style",
+      "n": 200,
+      "max_new_tokens": 16,
+      "decode": "greedy"
+    },
+    {
+      "benchmark": "math",
+      "cell": "math_direct",
+      "n": 200,
+      "max_new_tokens": 16,
+      "decode": "greedy"
+    },
+    {
+      "benchmark": "bbh",
+      "cell": "bbh_C2_greedy",
+      "n": 500,
+      "max_new_tokens": 512,
+      "decode": "greedy"
+    },
+    {
+      "benchmark": "bbh",
+      "cell": "bbh_A3_style",
+      "n": 500,
+      "max_new_tokens": 16,
+      "decode": "greedy"
+    },
+    {
+      "benchmark": "bbh",
+      "cell": "bbh_direct",
+      "n": 500,
+      "max_new_tokens": 16,
+      "decode": "greedy"
+    }
+  ],
+  "uses_chat_template": true,
+  "n_total": 500
+}

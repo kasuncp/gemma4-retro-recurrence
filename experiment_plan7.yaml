@@ -1,7 +1,7 @@
 # Copy to experiment.yaml (gitignored) and edit for your run.
 # This config is for plan7: cross-benchmark validity on harder reasoning.
 run:
-  flags: "--script path1-plan7 --batch-size 8"
+  flags: "--script path1-plan7 --batch-size 8 --dtype fp16"
   result_dir: "results/path_1_cot_tokens/plan7"
 
 pod:
