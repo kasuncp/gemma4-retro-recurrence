@@ -1,0 +1,270 @@
+{
+  "config": {
+    "plan": "path_1_cot_tokens/plan6",
+    "model_id": "google/gemma-4-E2B-it",
+    "model_key": "it",
+    "dtype": "bf16",
+    "n_total": 500,
+    "axis_a_cells": [
+      {
+        "cell": "C2_A1_len128",
+        "max_new_tokens": 128,
+        "decode": "greedy",
+        "virtual": false
+      },
+      {
+        "cell": "C2_A2_len256",
+        "max_new_tokens": 256,
+        "decode": "greedy",
+        "virtual": false
+      },
+      {
+        "cell": "C2_A3_len512",
+        "max_new_tokens": 512,
+        "decode": "greedy",
+        "virtual": true
+      },
+      {
+        "cell": "C2_A4_len1024",
+        "max_new_tokens": 1024,
+        "decode": "greedy",
+        "virtual": false
+      }
+    ],
+    "axis_b_cells": [
+      {
+        "cell": "C2_B1_k1",
+        "k": 1,
+        "max_new_tokens": 512,
+        "decode": "sampled",
+        "temperature": 0.7,
+        "top_p": 0.95
+      },
+      {
+        "cell": "C2_B2_k3",
+        "k": 3,
+        "max_new_tokens": 512,
+        "decode": "sampled",
+        "temperature": 0.7,
+        "top_p": 0.95
+      },
+      {
+        "cell": "C2_B3_k5",
+        "k": 5,
+        "max_new_tokens": 512,
+        "decode": "sampled",
+        "temperature": 0.7,
+        "top_p": 0.95
+      },
+      {
+        "cell": "C2_B4_k10",
+        "k": 10,
+        "max_new_tokens": 512,
+        "decode": "sampled",
+        "temperature": 0.7,
+        "top_p": 0.95
+      }
+    ],
+    "axis_b_base_seed": 0,
+    "uses_chat_template": true,
+    "user_template": "{question}",
+    "answer_primary_regex": "####\\s*(-?\\d+)",
+    "answer_fallback_regex": "(-?\\d+)",
+    "c2_ref": {
+      "dir": "results/path_1_cot_tokens/plan5",
+      "cell": "C2_zeroshot_plain",
+      "shard_files": [
+        "C2_zeroshot_plain__0000_0500.jsonl"
+      ]
+    },
+    "outcome_thresholds": {
+      "near": 0.03,
+      "win": 0.05,
+      "hurt": 0.03
+    },
+    "hash_hit_floor": 0.3,
+    "fallback_hit_floor": 0.95,
+    "vote_degeneracy_window": [
+      0.5,
+      0.95
+    ],
+    "flops_formula": "ff = 2*N_active*(prompt+completion); attn = N_layers*N_heads*head_dim*(prompt*completion + completion^2/2); total = ff + 4*attn, times k for axis B",
+    "flops_constants": {
+      "N_active": 2300000000.0,
+      "N_layers": 35,
+      "N_heads": 8,
+      "head_dim": 256
+    }
+  },
+  "axis_a": {
+    "C2_A3_len512": {
+      "n": 500,
+      "correct": 358,
+      "accuracy": 0.716,
+      "ci95": [
+        0.6749432769152115,
+        0.7537628878794382
+      ],
+      "hash_hit_rate": 0.0,
+      "fallback_hit_rate": 1.0,
+      "strict_fallback_hit_rate": 1.0,
+      "no_extract_rate": 0.0,
+      "mean_gen_tokens": 275.748,
+      "mean_prompt_tokens": 69.062,
+      "mean_flops_per_problem": 1604357821189.12,
+      "mean_wallclock_sec": 3.327022329315543
+    },
+    "C2_A1_len128": {
+      "n": 500,
+      "correct": 57,
+      "accuracy": 0.114,
+      "ci95": [
+        0.08903649378821105,
+        0.14484971171764635
+      ],
+      "hash_hit_rate": 0.0,
+      "fallback_hit_rate": 1.0,
+      "strict_fallback_hit_rate": 1.0,
+      "no_extract_rate": 0.0,
+      "mean_gen_tokens": 127.1,
+      "mean_prompt_tokens": 69.062,
+      "mean_flops_per_problem": 907186901294.08,
+      "mean_wallclock_sec": 0.7841308980584144
+    },
+    "C2_A2_len256": {
+      "n": 500,
+      "correct": 241,
+      "accuracy": 0.482,
+      "ci95": [
+        0.43850579699662956,
+        0.5257686892704829
+      ],
+      "hash_hit_rate": 0.0,
+      "fallback_hit_rate": 1.0,
+      "strict_fallback_hit_rate": 1.0,
+      "no_extract_rate": 0.0,
+      "mean_gen_tokens": 223.4,
+      "mean_prompt_tokens": 69.062,
+      "mean_flops_per_problem": 1357301853946.88,
+      "mean_wallclock_sec": 1.6043937320392578
+    },
+    "C2_A4_len1024": {
+      "n": 500,
+      "correct": 364,
+      "accuracy": 0.728,
+      "ci95": [
+        0.6873666188831685,
+        0.7651565550667395
+      ],
+      "hash_hit_rate": 0.0,
+      "fallback_hit_rate": 1.0,
+      "strict_fallback_hit_rate": 1.0,
+      "no_extract_rate": 0.0,
+      "mean_gen_tokens": 287.332,
+      "mean_prompt_tokens": 69.062,
+      "mean_flops_per_problem": 1660112604564.48,
+      "mean_wallclock_sec": 3.2141836175508796
+    }
+  },
+  "axis_b": {
+    "C2_B1_k1": {
+      "n": 500,
+      "correct": 351,
+      "accuracy": 0.702,
+      "ci95": [
+        0.6604921922645164,
+        0.7404274618489985
+      ],
+      "hash_hit_rate": 0.0,
+      "fallback_hit_rate": 1.0,
+      "strict_fallback_hit_rate": 1.0,
+      "no_extract_rate": 0.0,
+      "vote_degeneracy_rate": 1.0,
+      "mean_gen_tokens": 276.858,
+      "mean_prompt_tokens": 73,
+      "mean_flops_per_problem": 1609636688977.92,
+      "mean_wallclock_sec": 12.815979540865868
+    },
+    "C2_B2_k3": {
+      "n": 500,
+      "correct": 359,
+      "accuracy": 0.718,
+      "ci95": [
+        0.6770114417638189,
+        0.7556642245567071
+      ],
+      "hash_hit_rate": 0.0,
+      "fallback_hit_rate": 1.0,
+      "strict_fallback_hit_rate": 1.0,
+      "no_extract_rate": 0.0,
+      "vote_degeneracy_rate": 0.83,
+      "mean_gen_tokens": 277.87733333333335,
+      "mean_prompt_tokens": 73,
+      "mean_flops_per_problem": 4843031443607.903,
+      "mean_wallclock_sec": 14.506755755491556
+    },
+    "C2_B3_k5": {
+      "n": 500,
+      "correct": 361,
+      "accuracy": 0.722,
+      "ci95": [
+        0.6811506232701695,
+        0.7594640461021093
+      ],
+      "hash_hit_rate": 0.0,
+      "fallback_hit_rate": 1.0,
+      "strict_fallback_hit_rate": 1.0,
+      "no_extract_rate": 0.0,
+      "vote_degeneracy_rate": 0.786,
+      "mean_gen_tokens": 279.0644,
+      "mean_prompt_tokens": 73,
+      "mean_flops_per_problem": 8099607928336.384,
+      "mean_wallclock_sec": 14.963072421854362
+    },
+    "C2_B4_k10": {
+      "n": 316,
+      "correct": 223,
+      "accuracy": 0.7056962025316456,
+      "ci95": [
+        0.6532191370456515,
+        0.7532320562950521
+      ],
+      "hash_hit_rate": 0.0,
+      "fallback_hit_rate": 1.0,
+      "strict_fallback_hit_rate": 1.0,
+      "no_extract_rate": 0.0,
+      "vote_degeneracy_rate": 0.7341772151898734,
+      "mean_gen_tokens": 278.3174050632911,
+      "mean_prompt_tokens": 73,
+      "mean_flops_per_problem": 16160468670643.848,
+      "mean_wallclock_sec": 15.10925294092821
+    }
+  },
+  "pareto_frontier": [
+    {
+      "cell": "C2_A1_len128",
+      "accuracy": 0.114,
+      "mean_flops_per_problem": 907186901294.08
+    },
+    {
+      "cell": "C2_A2_len256",
+      "accuracy": 0.482,
+      "mean_flops_per_problem": 1357301853946.88
+    },
+    {
+      "cell": "C2_A3_len512",
+      "accuracy": 0.716,
+      "mean_flops_per_problem": 1604357821189.12
+    },
+    {
+      "cell": "C2_A4_len1024",
+      "accuracy": 0.728,
+      "mean_flops_per_problem": 1660112604564.48
+    }
+  ],
+  "outcome": {
+    "label": "AMBIGUOUS",
+    "reason": "a3=0.716 | a4_lift=0.01200000000000001 clean=False, C2_B3_k5_lift=0.006000000000000005 clean=False, bands=[C2_A1_len128=-0.602, C2_A2_len256=-0.234, C2_A4_len1024=+0.012, C2_B1_k1=-0.014, C2_B2_k3=+0.002, C2_B3_k5=+0.006, C2_B4_k10=-0.010]; no plan-6 pre-registered pattern matched.",
+    "representative_cell": null
+  }
+}
