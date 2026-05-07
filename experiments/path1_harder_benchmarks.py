@@ -150,10 +150,8 @@ def parse_args():
         else:
             args.n_per_benchmark = {bm: BENCHMARKS[bm]["n"] for bm in args.benchmarks_to_run}
 
-    if args.problems is None and args.benchmark:
-        args.problems = f"0:{args.n_per_benchmark[args.benchmark]}"
-    elif args.problems is None:
-        args.problems = "0:500"
+    if args.problems is None:
+        args.problems = {bm: f"0:{args.n_per_benchmark[bm]}" for bm in args.benchmarks_to_run}
 
     return args
 
@@ -915,7 +913,8 @@ def main():
 
     for benchmark in args.benchmarks_to_run:
         n = args.n_per_benchmark[benchmark]
-        start, end = parse_range(args.problems, n)
+        spec = args.problems[benchmark] if isinstance(args.problems, dict) else args.problems
+        start, end = parse_range(spec, n)
         print(f"\n=== Loading {benchmark} problems ({n} total, running {start}:{end}) ===")
         problems = LOADERS[benchmark]()
 
