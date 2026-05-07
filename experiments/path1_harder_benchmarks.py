@@ -176,7 +176,7 @@ def load_arc_challenge(problems_dir=None):
         if i >= 500:
             break
         question = row["question"]
-        choices = row["options"]
+        choices = row["choices"]
         labels = ["A", "B", "C", "D"][:len(choices)]
         options_text = "\n".join(f"{l}. {t}" for l, t in zip(labels, choices))
         full_q = f"{question}\n{options_text}"
