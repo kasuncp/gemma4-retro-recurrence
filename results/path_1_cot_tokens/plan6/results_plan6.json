@@ -222,22 +222,22 @@
       "mean_wallclock_sec": 14.963072421854362
     },
     "C2_B4_k10": {
-      "n": 316,
-      "correct": 223,
-      "accuracy": 0.7056962025316456,
+      "n": 500,
+      "correct": 362,
+      "accuracy": 0.724,
       "ci95": [
-        0.6532191370456515,
-        0.7532320562950521
+        0.6832216523131053,
+        0.76136251858505
       ],
       "hash_hit_rate": 0.0,
       "fallback_hit_rate": 1.0,
       "strict_fallback_hit_rate": 1.0,
       "no_extract_rate": 0.0,
-      "vote_degeneracy_rate": 0.7341772151898734,
-      "mean_gen_tokens": 278.3174050632911,
+      "vote_degeneracy_rate": 0.732,
+      "mean_gen_tokens": 280.0756,
       "mean_prompt_tokens": 73,
-      "mean_flops_per_problem": 16160468670643.848,
-      "mean_wallclock_sec": 15.10925294092821
+      "mean_flops_per_problem": 16246610464301.057,
+      "mean_wallclock_sec": 15.33887985479273
     }
   },
   "pareto_frontier": [
@@ -264,7 +264,7 @@
   ],
   "outcome": {
     "label": "AMBIGUOUS",
-    "reason": "a3=0.716 | a4_lift=0.01200000000000001 clean=False, C2_B3_k5_lift=0.006000000000000005 clean=False, bands=[C2_A1_len128=-0.602, C2_A2_len256=-0.234, C2_A4_len1024=+0.012, C2_B1_k1=-0.014, C2_B2_k3=+0.002, C2_B3_k5=+0.006, C2_B4_k10=-0.010]; no plan-6 pre-registered pattern matched.",
+    "reason": "a3=0.716 | a4_lift=0.01200000000000001 clean=False, C2_B4_k10_lift=0.008000000000000007 clean=False, bands=[C2_A1_len128=-0.602, C2_A2_len256=-0.234, C2_A4_len1024=+0.012, C2_B1_k1=-0.014, C2_B2_k3=+0.002, C2_B3_k5=+0.006, C2_B4_k10=+0.008]; no plan-6 pre-registered pattern matched.",
     "representative_cell": null
   }
 }
