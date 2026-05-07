@@ -176,11 +176,12 @@ def load_arc_challenge(problems_dir=None):
         if i >= 500:
             break
         question = row["question"]
-        choices = row["choices"]
-        labels = ["A", "B", "C", "D"][:len(choices)]
-        options_text = "\n".join(f"{l}. {t}" for l, t in zip(labels, choices))
+        choices_dict = row["choices"]
+        choice_texts = choices_dict["text"]
+        choice_labels = choices_dict["label"]
+        options_text = "\n".join(f"{l}. {t}" for l, t in zip(choice_labels, choice_texts))
         full_q = f"{question}\n{options_text}"
-        gold = labels[labels.index(row["answerKey"])]
+        gold = row["answerKey"]
         rows.append({"idx": i, "question": full_q, "gold": gold})
     return rows
 
