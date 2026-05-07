@@ -1,0 +1,24 @@
+# Experiment config for plan8: phone-class on-device measurement
+# This runs on RunPod GPU but measures the same metrics as phone-class deployment
+run:
+  flags: "--script path1-plan8 --batch-size 4"
+  result_dir: "results/path_1_cot_tokens/plan8"
+
+pod:
+  gpu_types: "NVIDIA GeForce RTX 3090"
+  gpu_count: 1
+  cloud_type: SECURE
+  container_disk_gb: 30
+  volume_gb: 50
+
+git:
+  url: "https://github.com/kasuncp/gemma4-retro-recurrence.git"
+  ref: "path_1_plan_8"
+
+budget:
+  cap_usd: 12
+  emergency_usd: 1.00
+  max_hours: 8
+
+watch:
+  tick_seconds: 300

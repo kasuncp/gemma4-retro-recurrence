@@ -24,9 +24,11 @@
 #   ./run.sh --script path1-plan7                # Path 1 plan 7: cross-benchmark on harder reasoning
 #   ./run.sh --script path1-plan7 --benchmark arc # Path 1 plan 7: run only ARC-Challenge
 #   ./run.sh --script path1-plan7 --summarize    # Path 1 plan 7: aggregate shards + outcome label
+#   ./run.sh --script path1-plan8                # Path 1 plan 8: phone-class on-device measurement
+#   ./run.sh --script path1-plan8 --summarize    # Path 1 plan 8: aggregate results + outcome
 #   ./run.sh --no-tmux                           # run inline without a tmux wrapper
 #   ./run.sh --dry-run --script path1            # offline smoke: prints dispatch summary, no deps/python/git
-#
+
 # --script selects the python entry point:
 #   probe  (default) -> ple_sanity_check.py     (Path 2 depth-recurrence probes)
 #   path1            -> path1_cot_gate.py       (Path 1 CoT gate, plan 1)
@@ -35,6 +37,7 @@
 #   path1-plan5      -> path1_zero_shot.py      (Path 1 plan 5: 0-shot vs 8-shot CoT on GSM8K)
 #   path1-plan6      -> path1_c2_length_and_sc.py (Path 1 plan 6: length + SC on C2 prompt)
 #   path1-plan7      -> path1_harder_benchmarks.py (Path 1 plan 7: cross-benchmark on harder reasoning)
+#   path1-plan8      -> path1_plan8.py        (Path 1 plan 8: phone-class on-device measurement)
 #
 # By default the run is launched inside a detached-friendly tmux session named
 # "gemma-recurrence" so closing your SSH terminal will NOT kill the experiment.
@@ -72,11 +75,11 @@ SESSION_NAME="${TMUX_SESSION:-gemma-recurrence}"
 #
 # We use parallel indexed arrays instead of `declare -A` so this file runs
 # on both macOS stock bash 3.2 (no assoc-array support) and pod bash 4+.
-EXPERIMENT_KEYS=(probe                path1                       path1-plan2                       path1-plan4                       path1-plan5                       path1-plan6                      path1-plan7)
-EXPERIMENT_SCRIPTS=(experiments/ple_sanity_check.py  experiments/path1_cot_gate.py           experiments/path1_length_and_sc.py           experiments/path1_arc_easy.py                 experiments/path1_zero_shot.py                experiments/path1_c2_length_and_sc.py          experiments/path1_harder_benchmarks.py)
-EXPERIMENT_DEFAULTS=("--mode ple-variants"  ""                        ""                                ""                                ""                                 ""                             "")
-EXPERIMENT_ROOTS=(results             results/path_1_cot_tokens    results/path_1_cot_tokens/plan2  results/path_1_cot_tokens/plan4  results/path_1_cot_tokens/plan5  results/path_1_cot_tokens/plan6  results/path_1_cot_tokens/plan7)
-EXPERIMENT_DEPTHS=(flat               recursive                    recursive                        recursive                        recursive                         recursive                        recursive)
+EXPERIMENT_KEYS=(probe                path1                       path1-plan2                       path1-plan4                       path1-plan5                       path1-plan6                      path1-plan7                 path1-plan8)
+EXPERIMENT_SCRIPTS=(experiments/ple_sanity_check.py  experiments/path1_cot_gate.py           experiments/path1_length_and_sc.py           experiments/path1_arc_easy.py                 experiments/path1_zero_shot.py                experiments/path1_c2_length_and_sc.py          experiments/path1_harder_benchmarks.py        experiments/path1_plan8.py)
+EXPERIMENT_DEFAULTS=("--mode ple-variants"  ""                        ""                                ""                                ""                                 ""                             ""                           "")
+EXPERIMENT_ROOTS=(results             results/path_1_cot_tokens    results/path_1_cot_tokens/plan2  results/path_1_cot_tokens/plan4  results/path_1_cot_tokens/plan5  results/path_1_cot_tokens/plan6  results/path_1_cot_tokens/plan7       results/path_1_cot_tokens/plan8)
+EXPERIMENT_DEPTHS=(flat               recursive                    recursive                        recursive                        recursive                         recursive                        recursive                   recursive)
 
 # Return the index of $1 in EXPERIMENT_KEYS, or non-zero if not found.
 # Echoes the index on success.
