@@ -216,7 +216,7 @@ def load_bbh_lite(problems_dir=None):
     rows = []
     idx = 0
     for task in task_order:
-        ds = load_dataset("maveriq/bigbenchhard", task, split="train")
+        ds = load_dataset("dawidmt/bigbenchhard", task, split="train")
         for row in ds:
             if idx >= 500:
                 return rows
