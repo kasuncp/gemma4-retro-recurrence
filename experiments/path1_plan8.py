@@ -127,7 +127,7 @@ def parse_range(spec, upper):
 
 def load_problems(start, end, n_total):
     from datasets import load_dataset
-    ds = load_dataset("openai/gsm8k", "test")
+    ds = load_dataset("openai/gsm8k", "main", split="test")
     problems = []
     golds = []
     for i, row in enumerate(ds):
