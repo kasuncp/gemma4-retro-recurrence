@@ -198,30 +198,36 @@ def load_math(problems_dir=None):
 
 def load_bbh_lite(problems_dir=None):
     from datasets import load_dataset
-    ds = load_dataset("openeval/BIG-Bench-Hard", split="train")
-    tasks = ["boolean_expressions", "causal_judgement", "date_understanding",
-             "disambiguation_qa", "dyck_languages", "formal_fallacies",
-             "geometric_shapes", "hyperbaton", "logical_deduction_five_objects",
-             "logical_deduction_seven_objects", "logical_deduction_three_objects",
-             "movie_recommendation", "multistep_arithmetic_two", "navigate",
-             "object_counting", "penguins_in_a_table", "reasoning_about_colored_objects",
-             "ruin_names", "salient_translation_error_detection", "snarks",
-             "sports_understanding", "temporal_sequences",
-             "tracking_shuffled_objects_five_objects", "tracking_shuffled_objects_seven_objects",
-             "tracking_shuffled_objects_three_objects", "web_of_lies", "word_sorting"]
+
+    task_order = [
+        "boolean_expressions", "causal_judgement", "date_understanding",
+        "disambiguation_qa", "dyck_languages", "formal_fallacies",
+        "geometric_shapes", "hyperbaton", "logical_deduction_three_objects",
+        "logical_deduction_five_objects", "logical_deduction_seven_objects",
+        "movie_recommendation", "multistep_arithmetic_two", "navigate",
+        "object_counting", "penguins_in_a_table", "reasoning_about_colored_objects",
+        "ruin_names", "salient_translation_error_detection", "snarks",
+        "sports_understanding", "temporal_sequences",
+        "tracking_shuffled_objects_three_objects",
+        "tracking_shuffled_objects_five_objects",
+        "tracking_shuffled_objects_seven_objects", "web_of_lies", "word_sorting",
+    ]
+
     rows = []
     idx = 0
-    for task in tasks:
-        task_ds = ds.filter(lambda x: x["task"] == task)
-        for row in task_ds:
+    for task in task_order:
+        ds = load_dataset("maveriq/bigbenchhard", task, split="train")
+        for row in ds:
             if idx >= 500:
-                break
-            question = row["input"]
-            rows.append({"idx": idx, "task": task, "question": question, "gold": row["target"]})
+                return rows
+            rows.append({
+                "idx": idx,
+                "task": task,
+                "question": row["input"],
+                "gold": row["target"],
+            })
             idx += 1
-        if idx >= 500:
-            break
-    return rows[:500]
+    return rows
 
 
 LOADERS = {
@@ -526,12 +532,27 @@ def extract_math(text):
 
 def extract_bbh(text):
     text_clean = text.strip()
-    for ans in ["True", "False", "true", "false"]:
-        if text_clean.endswith(ans):
-            return ans, True, False
-    m = re.search(r"\b(True|False)\b", text, re.IGNORECASE)
+    m = re.search(r"\(([A-G])\)", text)
     if m:
         return m.group(1), False, True
+    m = re.search(r"\b([A-G])\b(?!\s*\))", text)
+    if m:
+        return m.group(1), False, True
+    m = re.search(r"Answer:\s*([A-G])\b", text, re.IGNORECASE)
+    if m:
+        return m.group(1), True, False
+    for ans in ["True", "False", "Yes", "No"]:
+        if text_clean.endswith(ans):
+            return ans, True, False
+    m = re.search(r"\b(True|False|Yes|No)\b", text, re.IGNORECASE)
+    if m:
+        return m.group(1), False, True
+    m = re.search(r"Answer:\s*(\S+)", text)
+    if m:
+        return m.group(1), True, False
+    words = text_clean.split()
+    if words:
+        return words[-1], False, True
     return None, False, False
 
 
