@@ -69,17 +69,17 @@ def print_env():
         )
 
 
-def load_model(model_id, dtype):
+def load_model(model_id, dtype=None):
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     try:
         model = AutoModelForCausalLM.from_pretrained(
-            model_id, torch_dtype=dtype, device_map="cuda",
+            model_id, device_map="cuda",
         )
     except (ValueError, KeyError) as e:
         print(f"AutoModelForCausalLM failed ({e}); trying multimodal loader.")
         from transformers import AutoModelForImageTextToText
         model = AutoModelForImageTextToText.from_pretrained(
-            model_id, torch_dtype=dtype, device_map="cuda",
+            model_id, device_map="cuda",
         )
     model.train(False)  # inference mode
     return tokenizer, model
