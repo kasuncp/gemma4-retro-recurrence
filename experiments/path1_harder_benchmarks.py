@@ -198,14 +198,17 @@ def load_math(problems_dir=None):
 
 def load_bbh_lite(problems_dir=None):
     from datasets import load_dataset
-    ds = load_dataset("EleutherAI/bbh", split="test")
-    tasks = ["boolean_expressions", "causal_judgment", "city", "colored_nodes",
-             "formal_fallacies", "geometric_shapes", "logical_deduction",
+    ds = load_dataset("openeval/BIG-Bench-Hard", split="test")
+    tasks = ["boolean_expressions", "causal_judgement", "date_understanding",
+             "disambiguation_qa", "dyck_languages", "formal_fallacies",
+             "geometric_shapes", "hyperbaton", "logical_deduction_five_objects",
+             "logical_deduction_seven_objects", "logical_deduction_three_objects",
              "movie_recommendation", "multistep_arithmetic_two", "navigate",
-             "object_counting", "penguins", "reasoning_about_colored_objects",
-             "ruin_words", "salient_translation_error_detection",
-             "snarks", "sports_understanding", "temporal_sequences",
-             "tracking_shuffled_objects", "web_of_lies"]
+             "object_counting", "penguins_in_a_table", "reasoning_about_colored_objects",
+             "ruin_names", "salient_translation_error_detection", "snarks",
+             "sports_understanding", "temporal_sequences",
+             "tracking_shuffled_objects_five_objects", "tracking_shuffled_objects_seven_objects",
+             "tracking_shuffled_objects_three_objects", "web_of_lies", "word_sorting"]
     rows = []
     idx = 0
     for task in tasks:
@@ -213,8 +216,8 @@ def load_bbh_lite(problems_dir=None):
         for row in task_ds:
             if idx >= 500:
                 break
-            question = row["question"]
-            rows.append({"idx": idx, "task": task, "question": question, "gold": row["answer"]})
+            question = row["input"]
+            rows.append({"idx": idx, "task": task, "question": question, "gold": row["target"]})
             idx += 1
         if idx >= 500:
             break
