@@ -909,7 +909,7 @@ def main():
 
     check_manifest(args.results_dir, args)
 
-    model, tokenizer = load_model(MODEL_ID, args.dtype)
+    tokenizer, model = load_model(MODEL_ID, args.dtype)
     verify_model_arch(model)
 
     for benchmark in args.benchmarks_to_run:
