@@ -287,7 +287,7 @@ if [[ "${FORCE_INSTALL:-0}" == "1" ]] || [[ ! -f "$INSTALL_MARKER" ]] || ! _deps
     # torch.Tensor type annotations, which torch<2.5 rejects at import time.
     # Rather than upgrading torch (which pulls incompatible CUDA wheels),
     # patch the registration into a try/except via the committed patch_moe.py.
-    "$PYTHON" patch_moe.py
+    "$PYTHON" scripts/patch_moe.py
     touch "$INSTALL_MARKER"
 else
     echo "Deps already installed (delete $INSTALL_MARKER or set FORCE_INSTALL=1 to reinstall)."
