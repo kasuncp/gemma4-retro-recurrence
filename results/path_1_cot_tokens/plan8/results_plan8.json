@@ -1,0 +1,33 @@
+{
+  "plan": "path_1_cot_tokens/plan8",
+  "model_id": "google/gemma-4-E2B-it",
+  "cells": {
+    "C2_SD": {
+      "n": 50,
+      "correct": 33,
+      "accuracy": 0.66,
+      "ci95": [
+        0.5215356854148285,
+        0.7756323036493895
+      ],
+      "mean_wallclock_sec": 16.687616735957562,
+      "mean_joules": 2471.288559318389,
+      "mean_temp_c": 49.54,
+      "mean_gen_tokens": 293.34
+    },
+    "A3_SD": {
+      "n": 44,
+      "correct": 29,
+      "accuracy": 0.6590909090909091,
+      "ci95": [
+        0.5113886797193951,
+        0.7812436737136005
+      ],
+      "mean_wallclock_sec": 13.377883748791646,
+      "mean_joules": 1989.5953015371786,
+      "mean_temp_c": 51.13636363636363,
+      "mean_gen_tokens": 230.75
+    }
+  },
+  "outcome": "D"
+}
