@@ -170,7 +170,7 @@ def parse_range(spec, upper):
 
 def load_arc_challenge(problems_dir=None):
     from datasets import load_dataset
-    ds = load_dataset("ai2/arc", "challenge", split="test")
+    ds = load_dataset("allenai/ai2_arc", "ARC-Challenge", split="test")
     rows = []
     for i, row in enumerate(ds):
         if i >= 500:
