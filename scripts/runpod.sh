@@ -654,7 +654,7 @@ cmd_watch() {
                         _log "--- end startup.log ---"
                     fi
                 fi
-                "$0" down 2>&1 | tee -a "$log"
+                _watcher_inline_teardown "$marker"
                 _log "CLEAN exit (marker=$marker)"
                 return 0
                 ;;
@@ -674,10 +674,53 @@ cmd_watch() {
     # Reached only via emergency break.
     _log "EMERGENCY: $emergency_reason"
     _final_pull 60
-    "$0" down 2>&1 | tee -a "$log"
+    _watcher_inline_teardown "EMERGENCY"
     _log "EMERGENCY exit (reason: $emergency_reason)"
     printf '\a'  # terminal bell
     return 2
+}
+
+# Inline pod teardown for cmd_watch.
+#
+# We must NOT shell to `$0 down` from inside the rp-watch tmux session: the
+# old cmd_down killed tmux first, which SIGHUPed this very script before the
+# API DELETE could run, leaving the pod billing. Instead, do the API call
+# directly here, then let cmd_watch return naturally --- the rp-watch session
+# ends because its only command (cmd_watch) finished.
+#
+# The local _log function from cmd_watch is in scope (this is a nested
+# helper called only from cmd_watch).
+_watcher_inline_teardown() {
+    local why="${1:-teardown}"
+    local pod_id="$POD_ID"
+    if [[ -z "$pod_id" ]]; then
+        _log "WARNING: no POD_ID in scope at $why teardown; cannot delete pod"
+        return 1
+    fi
+    _log "terminating pod $pod_id (reason: $why)..."
+    if api DELETE "/pods/$pod_id" >/dev/null 2>&1; then
+        _log "API DELETE succeeded for $pod_id"
+    else
+        _log "ERROR: API DELETE failed for $pod_id --- run './runpod.sh reap' to terminate manually"
+    fi
+    rm -f "$STATE_FILE"
+    # Verify the pod is actually gone. RunPod sometimes accepts the DELETE
+    # but takes a few seconds to fully terminate; this catches the case
+    # where DELETE silently 404'd or returned 200 but the pod is still
+    # billing. If still present, retry once.
+    sleep 5
+    local check
+    check=$(api GET "/pods/$pod_id" 2>&1 || true)
+    if echo "$check" | grep -q '"id"'; then
+        _log "WARNING: pod $pod_id still present 5s after DELETE --- retrying..."
+        if api DELETE "/pods/$pod_id" >/dev/null 2>&1; then
+            _log "retry DELETE succeeded"
+        else
+            _log "RETRY FAILED. Run './runpod.sh down $pod_id' or './runpod.sh reap' from another shell IMMEDIATELY --- pod is still billing."
+        fi
+    else
+        _log "pod $pod_id confirmed terminated"
+    fi
 }
 
 cmd_logs() { _ssh "tail -n 200 -f /workspace/startup.log"; }
@@ -766,13 +809,11 @@ cmd_down() {
     # With no args: terminate the pod in the state file and remove it.
     # With an id arg: terminate that specific pod, leave state file alone
     # (supports reaping orphans the state file doesn't know about).
-    if command -v tmux >/dev/null 2>&1 && tmux has-session -t rp-watch 2>/dev/null; then
-        echo "killing watcher session rp-watch..."
-        tmux kill-session -t rp-watch 2>/dev/null
-    fi
-    if command -v screen >/dev/null 2>&1 && screen -ls 2>/dev/null | grep -q '\.rp-watch'; then
-        screen -S rp-watch -X quit 2>/dev/null
-    fi
+    #
+    # ORDER MATTERS: do API DELETE + state cleanup FIRST, tmux/screen kill
+    # LAST and backgrounded. Previously this killed rp-watch first, which
+    # SIGHUPed the calling shell when cmd_down was called from inside the
+    # watcher --- the API DELETE never ran, leaving pods billing forever.
     local pod_id state_bound=0
     if [[ $# -ge 1 && -n "$1" ]]; then
         pod_id="$1"
@@ -784,6 +825,16 @@ cmd_down() {
     echo "terminating pod $pod_id..."
     api DELETE "/pods/$pod_id" >/dev/null && echo "deleted"
     [[ "$state_bound" == "1" ]] && rm -f "$STATE_FILE"
+
+    # Now safe to kill the watcher session. Background + subshell-detach
+    # so a SIGHUP from the kill can't race anything later in this script.
+    if command -v tmux >/dev/null 2>&1 && tmux has-session -t rp-watch 2>/dev/null; then
+        echo "killing watcher session rp-watch..."
+        ( tmux kill-session -t rp-watch 2>/dev/null & ) 2>/dev/null
+    fi
+    if command -v screen >/dev/null 2>&1 && screen -ls 2>/dev/null | grep -q '\.rp-watch'; then
+        ( screen -S rp-watch -X quit 2>/dev/null & ) 2>/dev/null
+    fi
 }
 
 cmd_list() {

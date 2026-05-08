@@ -26,6 +26,7 @@ EXPECTED=(
     "path1-plan4|experiments/path1_arc_easy.py||results/path_1_cot_tokens/plan4|recursive"
     "probe-plan5c|experiments/ple_sanity_check.py|--mode it-perplexity-bridge|results/path_2_depth_recurrence/plan5c|recursive"
     "path2-v2|experiments/path2_v2_eval.py|--phase sanity --config baseline-C2 --benchmark gsm8k --n 50 --output-dir results/path_2_depth_recurrence_v2/sanity|results/path_2_depth_recurrence_v2|recursive"
+    "path2-v2-phase1|experiments/path2_v2_phase1.py|--output-dir results/path_2_depth_recurrence_v2/phase1|results/path_2_depth_recurrence_v2/phase1|recursive"
 )
 
 # Extract one `dry-run: <field>=<value>` line from run.sh's output.

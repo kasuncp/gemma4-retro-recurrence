@@ -75,11 +75,11 @@ SESSION_NAME="${TMUX_SESSION:-gemma-recurrence}"
 #
 # We use parallel indexed arrays instead of `declare -A` so this file runs
 # on both macOS stock bash 3.2 (no assoc-array support) and pod bash 4+.
-EXPERIMENT_KEYS=(probe                path1                       path1-plan2                       path1-plan4                       path1-plan5                       path1-plan6                      path1-plan7                 path1-plan8                 probe-plan5c                              path2-v2)
-EXPERIMENT_SCRIPTS=(experiments/ple_sanity_check.py  experiments/path1_cot_gate.py           experiments/path1_length_and_sc.py           experiments/path1_arc_easy.py                 experiments/path1_zero_shot.py                experiments/path1_c2_length_and_sc.py          experiments/path1_harder_benchmarks.py        experiments/path1_plan8.py        experiments/ple_sanity_check.py        experiments/path2_v2_eval.py)
-EXPERIMENT_DEFAULTS=("--mode ple-variants"  ""                        ""                                ""                                ""                                 ""                             ""                           ""                          "--mode it-perplexity-bridge"                "--phase sanity --config baseline-C2 --benchmark gsm8k --n 50 --output-dir results/path_2_depth_recurrence_v2/sanity")
-EXPERIMENT_ROOTS=(results             results/path_1_cot_tokens    results/path_1_cot_tokens/plan2  results/path_1_cot_tokens/plan4  results/path_1_cot_tokens/plan5  results/path_1_cot_tokens/plan6  results/path_1_cot_tokens/plan7       results/path_1_cot_tokens/plan8       results/path_2_depth_recurrence/plan5c   results/path_2_depth_recurrence_v2)
-EXPERIMENT_DEPTHS=(flat               recursive                    recursive                        recursive                        recursive                         recursive                        recursive                   recursive                  recursive                                  recursive)
+EXPERIMENT_KEYS=(probe                path1                       path1-plan2                       path1-plan4                       path1-plan5                       path1-plan6                      path1-plan7                 path1-plan8                 probe-plan5c                              path2-v2                                                                                                                              path2-v2-phase1)
+EXPERIMENT_SCRIPTS=(experiments/ple_sanity_check.py  experiments/path1_cot_gate.py           experiments/path1_length_and_sc.py           experiments/path1_arc_easy.py                 experiments/path1_zero_shot.py                experiments/path1_c2_length_and_sc.py          experiments/path1_harder_benchmarks.py        experiments/path1_plan8.py        experiments/ple_sanity_check.py        experiments/path2_v2_eval.py                                                                                                          experiments/path2_v2_phase1.py)
+EXPERIMENT_DEFAULTS=("--mode ple-variants"  ""                        ""                                ""                                ""                                 ""                             ""                           ""                          "--mode it-perplexity-bridge"                "--phase sanity --config baseline-C2 --benchmark gsm8k --n 50 --output-dir results/path_2_depth_recurrence_v2/sanity"        "--output-dir results/path_2_depth_recurrence_v2/phase1")
+EXPERIMENT_ROOTS=(results             results/path_1_cot_tokens    results/path_1_cot_tokens/plan2  results/path_1_cot_tokens/plan4  results/path_1_cot_tokens/plan5  results/path_1_cot_tokens/plan6  results/path_1_cot_tokens/plan7       results/path_1_cot_tokens/plan8       results/path_2_depth_recurrence/plan5c   results/path_2_depth_recurrence_v2                                                                                                    results/path_2_depth_recurrence_v2/phase1)
+EXPERIMENT_DEPTHS=(flat               recursive                    recursive                        recursive                        recursive                         recursive                        recursive                   recursive                  recursive                                  recursive                                                                                                                             recursive)
 
 # Return the index of $1 in EXPERIMENT_KEYS, or non-zero if not found.
 # Echoes the index on success.
@@ -409,5 +409,12 @@ if git push; then
 else
     echo "WARNING: git push failed. Commit is local at $(git rev-parse HEAD)."
     echo "Push manually once credentials / network are sorted:  git push"
-    exit 1
+    echo "(Results were already rsynced down by 'runpod.sh watch'; the push"
+    echo " is a redundant backup. Exiting 0 so the .DONE marker stands and"
+    echo " the watcher tears the pod down promptly.)"
+    # Was: exit 1. That left run.sh's exit status non-zero, which interacted
+    # badly with cmd_down's tmux-kill suicide bug to leave pods running and
+    # billing. The .DONE marker was already on disk before stage 5; don't
+    # let a missing git credential keep the pod alive.
+    exit 0
 fi

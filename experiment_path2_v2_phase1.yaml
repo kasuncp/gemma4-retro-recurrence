@@ -1,0 +1,43 @@
+# Path 2 v2 — Phase 1: hook sanity gate.
+#
+# Sequentially runs five cells (~45 min on a 4090):
+#   1A baseline-C2     (50 GSM8K, IT)         band [0.65, 0.82]
+#   1B baseline-8shot  (50 GSM8K, IT)         band [0.44, 0.64] (legacy)
+#   1C W5-r1           (20 GSM8K, IT)         token-match vs 1A
+#   1D W5-r8           (10 GSM8K, IT)         loop_rate < 0.95
+#   1E base ppl smoke  (Wikitext-2, base)     drift < 1e-4
+#
+# All gates must pass before Phase 2 launches. The runner exits
+# non-zero on any failure and emits phase1_summary.json.
+#
+# Usage:
+#   ./scripts/runpod.sh go experiment_path2_v2_phase1.yaml
+
+run:
+  flags: "--script path2-v2-phase1"
+  result_dir: "results/path_2_depth_recurrence_v2/phase1"
+
+pod:
+  gpu_types: "NVIDIA GeForce RTX 4090"
+  gpu_count: 1
+  cloud_type: SECURE
+  container_disk_gb: 30
+  volume_gb: 50
+
+git:
+  url: "https://github.com/kasuncp/gemma4-retro-recurrence.git"
+  ref: "path_2_v2"
+
+budget:
+  # Phase 1 is small and slow-to-fail: every cell has a numeric gate;
+  # any failure halts the route. The cap_usd here matches the plan's
+  # ~$0.50-0.75 budget at 4090 spot pricing, with headroom for the
+  # one-off model download on a fresh pod.
+  cap_usd: 1.5
+  emergency_usd: 0.30
+  max_hours: 2
+
+watch:
+  # Tighter than usual --- Phase 1 is short, so a 5-min tick would
+  # let it finish before the watcher even checks once.
+  tick_seconds: 180
