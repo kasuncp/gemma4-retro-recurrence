@@ -129,6 +129,7 @@ from probes.mode_round5 import (
     run_reasoning_eval_r5_mode,
     summarize_checkpoints_r5,
 )
+from probes.mode_round5c import run_it_perplexity_bridge
 
 
 def parse_args():
@@ -146,6 +147,7 @@ def parse_args():
             "block-looping-3c",
             "reasoning-eval",
             "reasoning-eval-r5",
+            "it-perplexity-bridge",
         ],
         default="original",
         help=(
@@ -162,7 +164,11 @@ def parse_args():
             "configs (baseline, D-r4, D-r8, G-r4, G-r8, A-r8, D-r1); "
             "reasoning-eval-r5 = round-5 fixed-baseline width + start + PLE "
             "sweep, 9 configs over GSM8K (E2B-it + chat template + 8-shot "
-            "CoT) and ARC-Easy (base E2B, raw prompt, round-4 parity)"
+            "CoT) and ARC-Easy (base E2B, raw prompt, round-4 parity); "
+            "it-perplexity-bridge = round-5c IT-weight perplexity bridge "
+            "(google/gemma-4-E2B-it on Wikitext-2 raw text; ~22 cells: "
+            "blocks A/D/G x r in {1,2,4,8} + F r=8 control + 9-layer "
+            "single-layer overlay) --- compares against rounds 2c/3b/3c"
         ),
     )
     p.add_argument("--target-layer", type=int, default=17)
@@ -249,6 +255,26 @@ def parse_args():
         ),
     )
     p.add_argument("--model-id", default=MODEL_ID)
+    p.add_argument(
+        "--round3b-json",
+        default=_results_path("path_2_depth_recurrence/results_round3b_blocks.json"),
+        help=(
+            "Path to round-3b block-looping JSON (base weights). Used by "
+            "--mode it-perplexity-bridge to merge per-cell base ppl into "
+            "the comparison table and compute transfer ratios. Default: "
+            "results/path_2_depth_recurrence/results_round3b_blocks.json."
+        ),
+    )
+    p.add_argument(
+        "--round3c-json",
+        default=_results_path("path_2_depth_recurrence/results_round3c_extended_blocks.json"),
+        help=(
+            "Path to round-3c extended-block JSON (base weights). Used by "
+            "--mode it-perplexity-bridge to fetch G's base r=8 reference "
+            "(G is not in round 3b). Default: "
+            "results/path_2_depth_recurrence/results_round3c_extended_blocks.json."
+        ),
+    )
     p.add_argument(
         "--only-diagnostic",
         action="store_true",
@@ -363,6 +389,15 @@ def main():
             sys.exit(1)
         print_env()
         run_reasoning_eval_r5_mode(args)
+        return
+
+    # Round 5c manages its own (IT) model load; the default model id flips
+    # to the IT variant only for this mode unless the caller explicitly
+    # overrode it via --model-id.
+    if args.mode == "it-perplexity-bridge":
+        if args.model_id == MODEL_ID:
+            args.model_id = "google/gemma-4-E2B-it"
+        run_it_perplexity_bridge(args)
         return
 
     print_env()

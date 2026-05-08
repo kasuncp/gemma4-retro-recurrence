@@ -1,0 +1,39 @@
+# Experiment config for path 2 / plan 5c: IT-weight perplexity bridge.
+#
+# Re-runs the round 2c / 3b / 3c block-looping geometry on the
+# instruction-tuned model (google/gemma-4-E2B-it) using the same
+# Wikitext-2 raw-text sequences. ~22 cells, ~20 minutes on a single
+# 4090. Validates whether the architectural tolerance map carries
+# from base to IT before plan 6 measures reasoning on IT.
+#
+# Usage:
+#   ./scripts/runpod.sh go experiment_plan5c.yaml
+run:
+  flags: "--script probe-plan5c"
+  result_dir: "results/path_2_depth_recurrence/plan5c"
+  # local_result_dir defaults to result_dir when omitted.
+
+pod:
+  # 4090 sized for fast bf16 inference of E2B-it (~5 GB weights, plus
+  # activations for max_length=512). 3090 also works but is slower.
+  gpu_types: "NVIDIA GeForce RTX 4090"
+  gpu_count: 1
+  cloud_type: SECURE
+  container_disk_gb: 30
+  volume_gb: 50
+
+git:
+  url: "https://github.com/kasuncp/gemma4-retro-recurrence.git"
+  ref: "path_2_plan_5c"
+
+budget:
+  # Sweep itself is ~20 min; cap leaves headroom for the IT model
+  # download (~5 GB) on a fresh pod and any one-off retry.
+  cap_usd: 3
+  emergency_usd: 0.50
+  max_hours: 2
+
+watch:
+  # 5-minute tick is fine: the sweep is short and crash-tolerance
+  # comes from the partial-state JSON written on regression failure.
+  tick_seconds: 300
