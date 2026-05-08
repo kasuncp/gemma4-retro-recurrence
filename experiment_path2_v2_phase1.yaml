@@ -26,7 +26,7 @@ pod:
 
 git:
   url: "https://github.com/kasuncp/gemma4-retro-recurrence.git"
-  ref: "path_2_v2"
+  ref: "path_2_phase_1"
 
 budget:
   # Phase 1 is small and slow-to-fail: every cell has a numeric gate;
