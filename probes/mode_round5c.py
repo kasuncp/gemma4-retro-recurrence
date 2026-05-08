@@ -37,6 +37,7 @@ not pay the download/load cost twice. See ``run_it_perplexity_bridge``.
 import json
 import math
 import sys
+import time
 from pathlib import Path
 
 import torch
@@ -94,6 +95,36 @@ R1_DRIFT_TOL = 1e-4
 L17_RATIO_LO = 2.5
 L17_RATIO_HI = 5.0
 F_CATASTROPHIC_THRESHOLD = 100.0
+
+
+def _prepare_inputs_with_retry(tokenizer, num_sequences, max_length,
+                               *, retries=4, base_delay=10.0):
+    """Wrap ``prepare_inputs`` with a backoff retry on transient HF API errors.
+
+    The ``Salesforce/wikitext`` repo's tree listing has been observed
+    returning HTTP 500s during dataset resolution (the resolver walks
+    every config directory recursively, so a hiccup on the unrelated
+    ``wikitext-103-raw-v1`` config blocks ``wikitext-2-raw-v1``).
+    Retrying with backoff usually clears it within a minute or two.
+
+    Final failure re-raises so the caller sees the original error.
+    """
+    last_err = None
+    for attempt in range(retries + 1):
+        try:
+            return prepare_inputs(tokenizer, num_sequences, max_length)
+        except Exception as e:  # HfHubHTTPError, ConnectionError, etc.
+            last_err = e
+            if attempt >= retries:
+                break
+            delay = base_delay * (2 ** attempt)
+            print(
+                f"WARNING: prepare_inputs failed (attempt {attempt + 1}/"
+                f"{retries + 1}): {type(e).__name__}: {e}. "
+                f"Retrying in {delay:.0f}s ..."
+            )
+            time.sleep(delay)
+    raise last_err
 
 
 def _resolve_round2c_path(path):
@@ -519,7 +550,9 @@ def run_it_perplexity_bridge(args):
     except Exception as e:  # network / cache miss --- don't abort
         print(f"WARNING: tokenizer parity check skipped ({e}).")
 
-    inputs = prepare_inputs(tokenizer, args.num_sequences, args.max_length)
+    inputs = _prepare_inputs_with_retry(
+        tokenizer, args.num_sequences, args.max_length,
+    )
 
     # Range-check every block before any compute.
     blocks = [dict(b) for b in DEFAULT_BLOCKS_5C]
