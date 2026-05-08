@@ -1,0 +1,40 @@
+# Path 2 v2 — default to Phase 1 sanity gate.
+#
+# Phase 1 cells (override --config / --benchmark / --n via flags):
+#   --config baseline-C2  --benchmark gsm8k  --n 50    # gate band [0.65, 0.82]
+#   --config baseline-8shot-control --benchmark gsm8k --n 50   # band [0.44, 0.64]
+#   --config W5-r1        --benchmark gsm8k  --n 20    # token-match vs baseline-C2
+#   --config W5-r8        --benchmark gsm8k  --n 10    # smoke: loop_rate < 0.95
+#
+# All cells write to a shared output dir under
+# results/path_2_depth_recurrence_v2/<phase>/, so partials interleave
+# safely across cells (one JSONL per cell name).
+#
+# Usage:
+#   ./scripts/runpod.sh go experiment_path2_v2.yaml
+
+run:
+  flags: "--script path2-v2"
+  result_dir: "results/path_2_depth_recurrence_v2"
+
+pod:
+  # Phase 1 fits comfortably on a 4090 (50-problem cell takes ~5-10
+  # minutes with use_cache=False). Phase 2-3 will need bigger budgets;
+  # bump cap_usd / max_hours when you point this yaml at those phases.
+  gpu_types: "NVIDIA GeForce RTX 4090"
+  gpu_count: 1
+  cloud_type: SECURE
+  container_disk_gb: 30
+  volume_gb: 50
+
+git:
+  url: "https://github.com/kasuncp/gemma4-retro-recurrence.git"
+  ref: "path_2_v2"
+
+budget:
+  cap_usd: 4
+  emergency_usd: 0.50
+  max_hours: 3
+
+watch:
+  tick_seconds: 300

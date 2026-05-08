@@ -1,0 +1,346 @@
+{
+  "config": {
+    "mode": "it-perplexity-bridge",
+    "model_id": "google/gemma-4-E2B-it",
+    "dtype": "bf16",
+    "n_sequences": 50,
+    "max_length": 512,
+    "ple_kwarg": "per_layer_input",
+    "round2c_json": "results/results_round2c_full_map.json",
+    "round3b_json": "results/path_2_depth_recurrence/results_round3b_blocks.json",
+    "round3c_json": "results/path_2_depth_recurrence/results_round3c_extended_blocks.json",
+    "block_r_values": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "overlay_layers": [
+      0,
+      5,
+      10,
+      15,
+      17,
+      20,
+      25,
+      30,
+      33
+    ],
+    "overlay_r": 8
+  },
+  "inspection": {
+    "strategy": "A",
+    "layer_class": "Gemma4TextDecoderLayer",
+    "source_file": "/usr/local/lib/python3.11/dist-packages/transformers/models/gemma4/modeling_gemma4.py",
+    "start_lineno": 1381,
+    "signature": "(self, hidden_states: torch.Tensor, per_layer_input: torch.Tensor = None, shared_kv_states: dict[str, tuple[torch.Tensor, torch.Tensor]] | None = None, position_embeddings: torch.Tensor = None, attention_mask: torch.Tensor | None = None, position_ids: torch.LongTensor | None = None, past_key_values: transformers.cache_utils.Cache | None = None, **kwargs) -> torch.Tensor",
+    "ple_kwarg": "per_layer_input"
+  },
+  "baselines": {
+    "it_baseline_ppl": 50974.88494931024,
+    "it_baseline_mean_nll": 10.839088338437858,
+    "base_baseline_ppl_round1": 12.53165455614523,
+    "it_vs_base_ratio": 4067.6899224223625
+  },
+  "regression_checks": {
+    "A_r1_no_op": {
+      "ppl": 50974.88494931024,
+      "drift": 0.0,
+      "passed": true
+    },
+    "D_r1_no_op": {
+      "ppl": 50974.88494931024,
+      "drift": 0.0,
+      "passed": true
+    },
+    "G_r1_no_op": {
+      "ppl": 50974.88494931024,
+      "drift": 0.0,
+      "passed": true
+    },
+    "L17_r8_in_valley": {
+      "ratio": 0.04178853996842482,
+      "tolerance_lo": 2.5,
+      "tolerance_hi": 5.0,
+      "passed": false
+    },
+    "F_r8_catastrophic": {
+      "ratio": 11.398195146444158,
+      "threshold": 100.0,
+      "passed": false
+    }
+  },
+  "tokenizer_parity": {
+    "it_vocab_size": 262144,
+    "base_vocab_size": 262144
+  },
+  "block_cells": [
+    {
+      "name": "A",
+      "label": "valley-core",
+      "start": 15,
+      "end": 19,
+      "width": 5,
+      "r": 1,
+      "ppl": 50974.88494931024,
+      "mean_nll": 10.839088338437858,
+      "it_ratio": 1.0,
+      "base_ratio": NaN,
+      "transfer_ratio": NaN
+    },
+    {
+      "name": "D",
+      "label": "valley-extend-up",
+      "start": 15,
+      "end": 22,
+      "width": 8,
+      "r": 1,
+      "ppl": 50974.88494931024,
+      "mean_nll": 10.839088338437858,
+      "it_ratio": 1.0,
+      "base_ratio": NaN,
+      "transfer_ratio": NaN
+    },
+    {
+      "name": "G",
+      "label": "valley-extend-up-10",
+      "start": 15,
+      "end": 24,
+      "width": 10,
+      "r": 1,
+      "ppl": 50974.88494931024,
+      "mean_nll": 10.839088338437858,
+      "it_ratio": 1.0,
+      "base_ratio": NaN,
+      "transfer_ratio": NaN
+    },
+    {
+      "name": "A",
+      "label": "valley-core",
+      "start": 15,
+      "end": 19,
+      "width": 5,
+      "r": 2,
+      "ppl": 12185.333285229364,
+      "mean_nll": 9.407988317776288,
+      "base_ratio": 2.1763351791360988,
+      "it_ratio": 0.2390458222190504,
+      "transfer_ratio": 0.10983869787646414
+    },
+    {
+      "name": "A",
+      "label": "valley-core",
+      "start": 15,
+      "end": 19,
+      "width": 5,
+      "r": 4,
+      "ppl": 13500.520000812621,
+      "mean_nll": 9.510483482263412,
+      "base_ratio": 2.371694276871327,
+      "it_ratio": 0.2648465026304155,
+      "transfer_ratio": 0.11166974816829832
+    },
+    {
+      "name": "A",
+      "label": "valley-core",
+      "start": 15,
+      "end": 19,
+      "width": 5,
+      "r": 8,
+      "ppl": 13268.604708888222,
+      "mean_nll": 9.493155975519791,
+      "base_ratio": 2.3989516037132197,
+      "it_ratio": 0.26029690350616014,
+      "transfer_ratio": 0.10850444131647312
+    },
+    {
+      "name": "D",
+      "label": "valley-extend-up",
+      "start": 15,
+      "end": 22,
+      "width": 8,
+      "r": 2,
+      "ppl": 11240.411263799244,
+      "mean_nll": 9.327270712084292,
+      "base_ratio": 2.6897524404518913,
+      "it_ratio": 0.2205088108580683,
+      "transfer_ratio": 0.08198108031868605
+    },
+    {
+      "name": "D",
+      "label": "valley-extend-up",
+      "start": 15,
+      "end": 22,
+      "width": 8,
+      "r": 4,
+      "ppl": 10573.189595561216,
+      "mean_nll": 9.266076792621424,
+      "base_ratio": 2.609932548440893,
+      "it_ratio": 0.2074195872354644,
+      "transfer_ratio": 0.07947316008583116
+    },
+    {
+      "name": "D",
+      "label": "valley-extend-up",
+      "start": 15,
+      "end": 22,
+      "width": 8,
+      "r": 8,
+      "ppl": 10818.952455545108,
+      "mean_nll": 9.289054732144699,
+      "base_ratio": 2.655159186213441,
+      "it_ratio": 0.21224084107896557,
+      "transfer_ratio": 0.07993526044728232
+    },
+    {
+      "name": "G",
+      "label": "valley-extend-up-10",
+      "start": 15,
+      "end": 24,
+      "width": 10,
+      "r": 2,
+      "ppl": 3887.124100807348,
+      "mean_nll": 8.265424857486208,
+      "base_ratio": 3.008728680011618,
+      "it_ratio": 0.07625567187984299,
+      "transfer_ratio": 0.025344815033154975
+    },
+    {
+      "name": "G",
+      "label": "valley-extend-up-10",
+      "start": 15,
+      "end": 24,
+      "width": 10,
+      "r": 4,
+      "ppl": 3480.642428653592,
+      "mean_nll": 8.154972161665881,
+      "base_ratio": 2.821285854972692,
+      "it_ratio": 0.06828151612533831,
+      "transfer_ratio": 0.024202267914464566
+    },
+    {
+      "name": "G",
+      "label": "valley-extend-up-10",
+      "start": 15,
+      "end": 24,
+      "width": 10,
+      "r": 8,
+      "ppl": 3427.939045118733,
+      "mean_nll": 8.139714498088964,
+      "base_ratio": 2.8724759997143385,
+      "it_ratio": 0.06724760729774079,
+      "transfer_ratio": 0.023411024950052994
+    }
+  ],
+  "control_cell": {
+    "name": "F",
+    "label": "late-block",
+    "start": 25,
+    "end": 32,
+    "width": 8,
+    "r": 8,
+    "ppl": 581021.6862197773,
+    "mean_nll": 13.272543360816941,
+    "base_ratio": 27002.337351051345,
+    "it_ratio": 11.398195146444158,
+    "transfer_ratio": 0.0004221188335757299
+  },
+  "single_layer_cells": [
+    {
+      "layer": 0,
+      "r": 8,
+      "ppl": 78138.87491148167,
+      "mean_nll": 11.266242970136856,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false,
+      "it_ratio": 1.5328896767336206,
+      "base_ratio": 87.65774189745535
+    },
+    {
+      "layer": 5,
+      "r": 8,
+      "ppl": 6465.719772843251,
+      "mean_nll": 8.774269618781938,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false,
+      "it_ratio": 0.1268412823152579,
+      "base_ratio": 61.748768245453434
+    },
+    {
+      "layer": 10,
+      "r": 8,
+      "ppl": 69262.04746943219,
+      "mean_nll": 11.145652379596163,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": false,
+      "it_ratio": 1.3587484805175494,
+      "base_ratio": 416.2359487470142
+    },
+    {
+      "layer": 15,
+      "r": 8,
+      "ppl": 9010.897756417815,
+      "mean_nll": 9.106189985640626,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true,
+      "it_ratio": 0.1767713211197693,
+      "base_ratio": 2.8146115515222396
+    },
+    {
+      "layer": 17,
+      "r": 8,
+      "ppl": 2130.1660170901077,
+      "mean_nll": 7.663955197961953,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true,
+      "it_ratio": 0.04178853996842482,
+      "base_ratio": 3.397200757256659
+    },
+    {
+      "layer": 20,
+      "r": 8,
+      "ppl": 9681.4422585676,
+      "mean_nll": 9.177966162825848,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true,
+      "it_ratio": 0.18992573044931618,
+      "base_ratio": 33.25742524685476
+    },
+    {
+      "layer": 25,
+      "r": 8,
+      "ppl": 106702.6875388048,
+      "mean_nll": 11.577801624777743,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true,
+      "it_ratio": 2.093240379942214,
+      "base_ratio": 91.14814700401689
+    },
+    {
+      "layer": 30,
+      "r": 8,
+      "ppl": 749647.3337065073,
+      "mean_nll": 13.527358153198932,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true,
+      "it_ratio": 14.706209429446709,
+      "base_ratio": 39.07951154505813
+    },
+    {
+      "layer": 33,
+      "r": 8,
+      "ppl": 1.505238148159445e+17,
+      "mean_nll": 39.552897704561005,
+      "attention_type": "sliding_attention",
+      "is_kv_consumer": true,
+      "it_ratio": 2952901511511.5293,
+      "base_ratio": 435513391.20416766
+    }
+  ],
+  "interpretation": {
+    "bucket": "Bucket 5 --- F-r8 not catastrophic on IT (late-layer drift damped by instruction tuning)",
+    "exit_action": "PROCEED to plan 6 with existing blocks; queue a follow-on to retest wider blocks (H/I past layer 24) on IT specifically.",
+    "valley_layers_ok": true,
+    "drift_layers_ok": false
+  }
+}
