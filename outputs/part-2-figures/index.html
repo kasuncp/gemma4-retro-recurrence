@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Path 1 — Experiments 2–5 figures</title>
+<title>Path 1 — Experiments 2–9 figures</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600&display=swap" rel="stylesheet">
@@ -270,11 +270,12 @@
 <main>
   <header class="page">
     <p class="eyebrow">Towards Local-First Mobile AI Assistance · Part 2</p>
-    <h1>Experiments 2–5: figures &amp; tables</h1>
+    <h1>Experiments 2–9: figures &amp; tables</h1>
     <p>
       Static figures and result tables for the Part 2 blog post.
-      Gemma 4 E2B-it, bfloat16, single 3090. n = 500 GSM8K problems unless stated.
-      Wilson 95% confidence intervals throughout.
+      Gemma 4 E2B-it, bfloat16, single 3090 unless stated. n = 500 GSM8K
+      problems unless stated. Wilson 95% confidence intervals throughout.
+      Experiment 8 reports Snapdragon 8 Gen 3 Elite at Q4_K_M, n = 50.
     </p>
   </header>
 
@@ -450,6 +451,186 @@
       p = 8.24 × 10⁻⁴ (C2 > C1). Both zero-shot cells use
       <code>tokenizer.apply_chat_template</code>; A3 uses the raw 8-shot text prompt from
       Experiment 1.
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- FIGURE 5 — Experiment 6: plateau survives on C2                    -->
+  <!-- ============================================================ -->
+  <section class="figure" id="figure-5">
+    <p class="figure__eyebrow">Figure 5 · Experiment 6</p>
+    <h2 class="figure__title">The plateau survives on C2.</h2>
+    <p class="figure__dek">
+      Re-running the length and self-consistency sweeps on top of the new C2 prompt format.
+      The length axis now shows a real curve below 256 tokens — but saturates at 512. The
+      self-consistency axis is flat. More inference compute, on top of the right prompt,
+      still does not buy meaningful accuracy.
+    </p>
+    <svg id="fig5" class="figure__chart" viewBox="0 0 820 460" width="820" height="460" aria-label="Experiment 6 plateau on C2"></svg>
+
+    <div class="table-wrap">
+      <table class="results">
+        <thead>
+          <tr>
+            <th>Cell</th>
+            <th>Decode</th>
+            <th>Tokens</th>
+            <th>k</th>
+            <th>Accuracy</th>
+            <th>95% CI</th>
+            <th>FLOPs/problem</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>C2_A1</td><td>greedy</td><td>128</td><td>1</td><td>11.4%</td><td>(8.9, 14.5)</td><td>9.07×10¹¹</td></tr>
+          <tr><td>C2_A2</td><td>greedy</td><td>256</td><td>1</td><td>48.2%</td><td>(43.9, 52.6)</td><td>1.36×10¹²</td></tr>
+          <tr class="reference"><td>C2_A3 (reference)</td><td>greedy</td><td>512</td><td>1</td><td>71.6%</td><td>(67.5, 75.4)</td><td>1.60×10¹²</td></tr>
+          <tr><td>C2_A4</td><td>greedy</td><td>1024</td><td>1</td><td>72.8%</td><td>(68.7, 76.5)</td><td>1.66×10¹²</td></tr>
+          <tr><td>C2_B1</td><td>sampled</td><td>512</td><td>1</td><td>70.2%</td><td>(66.0, 74.0)</td><td>1.61×10¹²</td></tr>
+          <tr><td>C2_B2</td><td>sampled</td><td>512</td><td>3</td><td>71.8%</td><td>(67.7, 75.6)</td><td>4.84×10¹²</td></tr>
+          <tr><td>C2_B3</td><td>sampled</td><td>512</td><td>5</td><td>72.2%</td><td>(68.1, 75.9)</td><td>8.10×10¹²</td></tr>
+          <tr><td>C2_B4</td><td>sampled</td><td>512</td><td>10</td><td>72.4%</td><td>(68.3, 76.1)</td><td>1.62×10¹³</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="figure__source">
+      <strong>n = 500</strong> GSM8K problems per cell. Sampling cells use temperature 0.7,
+      top-p 0.95, majority vote on parsed integer answer. C2_A3 (the 71.6% reference) is
+      reused from Experiment 5. Length panel uses log<sub>2</sub> token spacing.
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- FIGURE 6 — Experiment 7: cross-benchmark inversion                 -->
+  <!-- ============================================================ -->
+  <section class="figure" id="figure-6">
+    <p class="figure__eyebrow">Figure 6 · Experiment 7</p>
+    <h2 class="figure__title">The cross-benchmark inversion.</h2>
+    <p class="figure__dek">
+      Three benchmarks, three different stories. C2 dominates ARC-Challenge by 62 points.
+      MATH floors at zero across every condition — a model-capability ceiling, not a prompt
+      ceiling. On BBH-lite the prompt-format ranking <em>reverses</em>: Direct prompting
+      beats C2 by 29 percentage points. Path 1's representative cell is task-shaped, not
+      universal.
+    </p>
+    <svg id="fig6" class="figure__chart" viewBox="0 0 820 480" width="820" height="480" aria-label="Experiment 7 cross-benchmark inversion"></svg>
+
+    <div class="table-wrap">
+      <table class="results">
+        <thead>
+          <tr>
+            <th>Benchmark</th>
+            <th>Cell</th>
+            <th>n</th>
+            <th>Accuracy</th>
+            <th>95% CI</th>
+            <th>Mean gen tokens</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>ARC-Challenge</td><td>C2 greedy</td><td>500</td><td>75.6%</td><td>(71.6, 79.2)</td><td>257</td></tr>
+          <tr><td>ARC-Challenge</td><td>Direct (8-shot)</td><td>500</td><td>33.2%</td><td>(29.2, 37.4)</td><td>12</td></tr>
+          <tr><td>ARC-Challenge</td><td>A3-style (8-shot CoT)</td><td>500</td><td>13.6%</td><td>(10.9, 16.9)</td><td>16</td></tr>
+          <tr><td>MATH</td><td>C2 greedy</td><td>200</td><td>0.0%</td><td>(0.0, 1.9)</td><td>466</td></tr>
+          <tr><td>MATH</td><td>Direct (8-shot)</td><td>200</td><td>0.0%</td><td>(0.0, 1.9)</td><td>9</td></tr>
+          <tr><td>MATH</td><td>A3-style (8-shot CoT)</td><td>200</td><td>0.0%</td><td>(0.0, 1.9)</td><td>16</td></tr>
+          <tr><td>BBH-lite</td><td>Direct (8-shot)</td><td>500</td><td>49.8%</td><td>(45.4, 54.2)</td><td>15</td></tr>
+          <tr><td>BBH-lite</td><td>A3-style (8-shot CoT)</td><td>500</td><td>34.0%</td><td>(30.0, 38.3)</td><td>16</td></tr>
+          <tr><td>BBH-lite</td><td>C2 greedy</td><td>500</td><td>20.6%</td><td>(17.3, 24.4)</td><td>299</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="figure__source">
+      C2 = zero-shot plain via chat template, max 512 tokens, greedy. A3-style = 8-shot
+      CoT with handcrafted exemplars per benchmark, max 16 tokens (letter answer).
+      Direct = 8-shot direct, max 16 tokens. MATH is out of scope for E2B-it at this
+      sample size — no prompt format recovers from a 0% floor.
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- FIGURE 7 — Experiment 8: phone-class measurement                   -->
+  <!-- ============================================================ -->
+  <section class="figure" id="figure-7">
+    <p class="figure__eyebrow">Figure 7 · Experiment 8</p>
+    <h2 class="figure__title">Phone-class translation.</h2>
+    <p class="figure__dek">
+      Snapdragon 8 Gen 3 Elite, Q4_K_M quantization, n = 50 GSM8K problems each.
+      Quantization costs ~5–6 percentage points relative to desktop bf16. Surprisingly,
+      A3 is <em>faster</em> and cheaper than C2 on-device — generation length, not
+      prompt length, dominates phone latency.
+    </p>
+    <svg id="fig7" class="figure__chart" viewBox="0 0 820 360" width="820" height="360" aria-label="Experiment 8 on-device measurement"></svg>
+
+    <div class="table-wrap">
+      <table class="results">
+        <thead>
+          <tr>
+            <th>Cell</th>
+            <th>n</th>
+            <th>Accuracy</th>
+            <th>Wall-clock</th>
+            <th>Energy</th>
+            <th>Peak SoC temp</th>
+            <th>Mean gen tokens</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>C2_SD</td><td>50</td><td>66.0%</td><td>16.69 s</td><td>2,471 J</td><td>49.5 °C</td><td>293</td></tr>
+          <tr><td>A3_SD</td><td>44</td><td>65.9%</td><td>13.38 s</td><td>1,990 J</td><td>51.1 °C</td><td>231</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="figure__source">
+      Reference device under sustained-load conditions. A3_SD completed 44 of 50 problems
+      before hitting unrelated runtime errors; accuracy reported on completed subset.
+      <strong>Interactive p95 latency target</strong> for a phone assistant is ~2 s — neither
+      cell is shipping-ready on this hardware.
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- FIGURE 8 — Experiment 9: extractor ceiling                         -->
+  <!-- ============================================================ -->
+  <section class="figure" id="figure-8">
+    <p class="figure__eyebrow">Figure 8 · Experiment 9</p>
+    <h2 class="figure__title">The extractor ceiling.</h2>
+    <p class="figure__dek">
+      Of C2's 500 GSM8K completions, the model reasons its way to the gold integer in
+      <strong>454 (90.8%)</strong>. The original last-integer regex scores only
+      <strong>358 (71.6%)</strong> as correct — leaving 96 reasoning-correct answers on the
+      floor. A prose-aware extractor recovers 32 of them at zero compute cost, lifting C2
+      to <strong>78.0%</strong>.
+    </p>
+    <svg id="fig8" class="figure__chart" viewBox="0 0 820 320" width="820" height="320" aria-label="Experiment 9 extractor recovery"></svg>
+
+    <div class="table-wrap">
+      <table class="results">
+        <thead>
+          <tr>
+            <th>Layer</th>
+            <th>Count / 500</th>
+            <th>Implied accuracy</th>
+            <th>Δ vs original</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Original last-integer regex</td><td>358</td><td>71.6%</td><td>—</td></tr>
+          <tr class="highlight"><td>Smart_v2 prose-aware extractor</td><td>390</td><td class="num-bold">78.0%</td><td>+6.4 pp</td></tr>
+          <tr><td>Gold integer present in completion text</td><td>454</td><td>90.8%</td><td>+19.2 pp</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="figure__source">
+      Smart_v2 extractor: prefer the last <code>**bold**</code> number, then
+      <code>Answer: N</code>, then end-of-line <code>= N</code>, then last-integer fallback.
+      Of the <strong>26 problems</strong> where A3 (8-shot) is correct and C2 is scored
+      wrong, <strong>24 (92.3%)</strong> contain the gold integer in C2's completion text —
+      they are extractor failures, not reasoning failures.
     </p>
   </section>
 
@@ -1042,6 +1223,646 @@ function drawXGridlines(g, scale, y0, y1, ticks) {
     .style("font-style", "italic")
     .style("font-size", "12px")
     .text("less compute");
+})();
+
+// =====================================================================
+// FIGURE 5 — Plateau survives on C2 (two panels: length curve + SC plateau)
+// =====================================================================
+(function drawFigure5() {
+  const dataLen = [
+    { tokens: 128,  acc: 0.114, lo: 0.089, hi: 0.145, label: "C2_A1" },
+    { tokens: 256,  acc: 0.482, lo: 0.439, hi: 0.526, label: "C2_A2" },
+    { tokens: 512,  acc: 0.716, lo: 0.675, hi: 0.754, label: "C2_A3", ref: true },
+    { tokens: 1024, acc: 0.728, lo: 0.687, hi: 0.765, label: "C2_A4" }
+  ];
+  const dataSC = [
+    { k: 1,  acc: 0.702, lo: 0.660, hi: 0.740, label: "C2_B1" },
+    { k: 3,  acc: 0.718, lo: 0.677, hi: 0.756, label: "C2_B2" },
+    { k: 5,  acc: 0.722, lo: 0.681, hi: 0.759, label: "C2_B3" },
+    { k: 10, acc: 0.724, lo: 0.683, hi: 0.761, label: "C2_B4" }
+  ];
+
+  const svg = d3.select("#fig5");
+  const W = 820, H = 460;
+  const margin = { top: 56, right: 24, bottom: 70, left: 24 };
+  const panelGap = 60;
+  const panelW = (W - margin.left - margin.right - panelGap) / 2;
+  const innerH = H - margin.top - margin.bottom;
+  const labelLeft = 60;
+
+  const yDomain = [0, 0.85];
+  const yTicks = [0, 0.20, 0.40, 0.60, 0.80];
+  const refAcc = 0.716;
+
+  // ---- LEFT PANEL: length axis ----
+  (function drawLenPanel() {
+    const px = margin.left;
+    const panel = svg.append("g").attr("transform", `translate(${px},${margin.top})`);
+
+    panel.append("text")
+      .attr("class", "panel-title")
+      .attr("x", labelLeft).attr("y", -22)
+      .attr("text-anchor", "start")
+      .text("Length axis (greedy)");
+    panel.append("text")
+      .attr("class", "panel-subtitle")
+      .attr("x", labelLeft).attr("y", -6)
+      .attr("text-anchor", "start")
+      .text("max_new_tokens ∈ {128, 256, 512, 1024}");
+
+    const x = d3.scaleLog().base(2).domain([100, 1100]).range([labelLeft, panelW]);
+    const y = d3.scaleLinear().domain(yDomain).range([innerH, 18]);
+
+    // Y gridlines
+    yTicks.forEach(t => {
+      panel.append("line")
+        .attr("class", "gridline")
+        .attr("x1", labelLeft).attr("x2", panelW)
+        .attr("y1", y(t)).attr("y2", y(t));
+    });
+
+    // Y axis (left)
+    panel.append("g")
+      .attr("class", "axis y-axis")
+      .attr("transform", `translate(${labelLeft},0)`)
+      .call(d3.axisLeft(y).tickValues(yTicks).tickFormat(d3.format(".0%")).tickSizeOuter(0).tickSize(4));
+
+    // X axis with custom ticks
+    panel.append("g")
+      .attr("class", "axis x-axis")
+      .attr("transform", `translate(0,${innerH})`)
+      .call(d3.axisBottom(x).tickValues([128, 256, 512, 1024]).tickFormat(d3.format("d")).tickSizeOuter(0).tickSize(4));
+
+    panel.append("text")
+      .attr("class", "axis-label")
+      .attr("x", (labelLeft + panelW) / 2).attr("y", innerH + 44)
+      .attr("text-anchor", "middle")
+      .text("max_new_tokens");
+
+    // Reference line at 71.6%
+    panel.append("line")
+      .attr("class", "ref-line")
+      .attr("x1", labelLeft).attr("x2", panelW)
+      .attr("y1", y(refAcc)).attr("y2", y(refAcc))
+      .attr("stroke", COLOR.wine);
+
+    // Connecting line through dots
+    const line = d3.line()
+      .x(d => x(d.tokens))
+      .y(d => y(d.acc))
+      .curve(d3.curveMonotoneX);
+    panel.append("path")
+      .datum(dataLen)
+      .attr("fill", "none")
+      .attr("stroke", COLOR.ink2)
+      .attr("stroke-width", 1.6)
+      .attr("d", line);
+
+    // CI bars (vertical)
+    panel.selectAll(".ci-bar")
+      .data(dataLen)
+      .enter().append("line")
+      .attr("x1", d => x(d.tokens)).attr("x2", d => x(d.tokens))
+      .attr("y1", d => y(d.lo)).attr("y2", d => y(d.hi))
+      .attr("stroke", d => d.ref ? COLOR.wine : COLOR.inkMuted)
+      .attr("stroke-width", 1.4)
+      .attr("opacity", 0.7);
+
+    // Dots
+    panel.selectAll(".dot")
+      .data(dataLen)
+      .enter().append("circle")
+      .attr("cx", d => x(d.tokens))
+      .attr("cy", d => y(d.acc))
+      .attr("r", d => d.ref ? 6 : 5)
+      .attr("fill", d => d.ref ? COLOR.wine : COLOR.ink2)
+      .attr("stroke", COLOR.cream)
+      .attr("stroke-width", 1.5);
+
+    // Value labels above dots
+    panel.selectAll(".val")
+      .data(dataLen)
+      .enter().append("text")
+      .attr("class", "data-label")
+      .attr("x", d => x(d.tokens))
+      .attr("y", d => y(d.acc) - 14)
+      .attr("text-anchor", "middle")
+      .style("fill", d => d.ref ? COLOR.wine : COLOR.ink)
+      .style("font-weight", d => d.ref ? "600" : "500")
+      .text(d => (d.acc * 100).toFixed(1) + "%");
+
+    // Annotation: "cap binding" arrow on the leftmost point
+    panel.append("text")
+      .attr("class", "annotation-note")
+      .attr("x", x(128) + 12)
+      .attr("y", y(0.114) + 4)
+      .attr("text-anchor", "start")
+      .text("cap binding");
+  })();
+
+  // ---- RIGHT PANEL: SC axis ----
+  (function drawSCPanel() {
+    const px = margin.left + panelW + panelGap;
+    const panel = svg.append("g").attr("transform", `translate(${px},${margin.top})`);
+
+    panel.append("text")
+      .attr("class", "panel-title")
+      .attr("x", labelLeft).attr("y", -22)
+      .attr("text-anchor", "start")
+      .text("Self-consistency (T = 0.7)");
+    panel.append("text")
+      .attr("class", "panel-subtitle")
+      .attr("x", labelLeft).attr("y", -6)
+      .attr("text-anchor", "start")
+      .text("k ∈ {1, 3, 5, 10}, max 512 tokens");
+
+    const x = d3.scaleLog().domain([0.85, 12]).range([labelLeft, panelW]);
+    const y = d3.scaleLinear().domain(yDomain).range([innerH, 18]);
+
+    // Y gridlines (no Y axis labels — left panel carries them)
+    yTicks.forEach(t => {
+      panel.append("line")
+        .attr("class", "gridline")
+        .attr("x1", labelLeft).attr("x2", panelW)
+        .attr("y1", y(t)).attr("y2", y(t));
+    });
+    panel.append("g")
+      .attr("class", "axis y-axis")
+      .attr("transform", `translate(${labelLeft},0)`)
+      .call(d3.axisLeft(y).tickValues(yTicks).tickFormat(d3.format(".0%")).tickSizeOuter(0).tickSize(4));
+
+    panel.append("g")
+      .attr("class", "axis x-axis")
+      .attr("transform", `translate(0,${innerH})`)
+      .call(d3.axisBottom(x).tickValues([1, 3, 5, 10]).tickFormat(d3.format("d")).tickSizeOuter(0).tickSize(4));
+
+    panel.append("text")
+      .attr("class", "axis-label")
+      .attr("x", (labelLeft + panelW) / 2).attr("y", innerH + 44)
+      .attr("text-anchor", "middle")
+      .text("k (chains voted)");
+
+    // Reference line at 71.6%
+    panel.append("line")
+      .attr("class", "ref-line")
+      .attr("x1", labelLeft).attr("x2", panelW)
+      .attr("y1", y(refAcc)).attr("y2", y(refAcc))
+      .attr("stroke", COLOR.wine);
+    panel.append("text")
+      .attr("class", "annotation-note")
+      .attr("x", panelW - 6).attr("y", y(refAcc) - 6)
+      .attr("text-anchor", "end")
+      .style("fill", COLOR.wine)
+      .text("C2 greedy (71.6%)");
+
+    // CI bars + dots
+    panel.selectAll(".ci-bar")
+      .data(dataSC)
+      .enter().append("line")
+      .attr("x1", d => x(d.k)).attr("x2", d => x(d.k))
+      .attr("y1", d => y(d.lo)).attr("y2", d => y(d.hi))
+      .attr("stroke", COLOR.inkMuted)
+      .attr("stroke-width", 1.4)
+      .attr("opacity", 0.7);
+    panel.selectAll(".dot")
+      .data(dataSC)
+      .enter().append("circle")
+      .attr("cx", d => x(d.k))
+      .attr("cy", d => y(d.acc))
+      .attr("r", 5)
+      .attr("fill", COLOR.ink2)
+      .attr("stroke", COLOR.cream)
+      .attr("stroke-width", 1.5);
+
+    // Value labels
+    panel.selectAll(".val")
+      .data(dataSC)
+      .enter().append("text")
+      .attr("class", "data-label")
+      .attr("x", d => x(d.k))
+      .attr("y", d => y(d.acc) - 14)
+      .attr("text-anchor", "middle")
+      .style("font-weight", "500")
+      .text(d => (d.acc * 100).toFixed(1) + "%");
+  })();
+
+  // Caption strip below both panels
+  svg.append("text")
+    .attr("x", W / 2)
+    .attr("y", H - 12)
+    .attr("text-anchor", "middle")
+    .style("font-family", "Spectral, serif")
+    .style("font-style", "italic")
+    .style("font-size", "13px")
+    .style("fill", COLOR.inkMuted)
+    .text("Length curve saturates at 512 tokens. Self-consistency adds ≤0.8 pp at up to 10× compute.");
+})();
+
+// =====================================================================
+// FIGURE 6 — Cross-benchmark inversion (three panels)
+// =====================================================================
+(function drawFigure6() {
+  const data = {
+    "ARC-Challenge": {
+      subtitle: "Multi-step inference · 4-way MC",
+      footnote: "C2 wins +62 pp",
+      rows: [
+        { cell: "C2 greedy",       acc: 0.756, lo: 0.716, hi: 0.792, accent: "win" },
+        { cell: "Direct (8-shot)", acc: 0.332, lo: 0.292, hi: 0.374 },
+        { cell: "A3-style CoT",    acc: 0.136, lo: 0.109, hi: 0.169 }
+      ]
+    },
+    "MATH": {
+      subtitle: "Symbolic competition math",
+      footnote: "Capability ceiling (n = 200)",
+      rows: [
+        { cell: "C2 greedy",       acc: 0.000, lo: 0.000, hi: 0.019, accent: "floor" },
+        { cell: "Direct (8-shot)", acc: 0.000, lo: 0.000, hi: 0.019, accent: "floor" },
+        { cell: "A3-style CoT",    acc: 0.000, lo: 0.000, hi: 0.019, accent: "floor" }
+      ]
+    },
+    "BBH-lite": {
+      subtitle: "Mixed format · recognition-heavy",
+      footnote: "Direct wins +29 pp (inversion)",
+      rows: [
+        { cell: "Direct (8-shot)", acc: 0.498, lo: 0.454, hi: 0.542, accent: "win" },
+        { cell: "A3-style CoT",    acc: 0.340, lo: 0.300, hi: 0.383 },
+        { cell: "C2 greedy",       acc: 0.206, lo: 0.173, hi: 0.244 }
+      ]
+    }
+  };
+
+  const svg = d3.select("#fig6");
+  const W = 820, H = 480;
+  const margin = { top: 60, right: 16, bottom: 70, left: 16 };
+  const panelGap = 22;
+  const panelW = (W - margin.left - margin.right - 2 * panelGap) / 3;
+  const innerH = H - margin.top - margin.bottom;
+  const labelLeft = 110;
+
+  const benches = Object.keys(data);
+  benches.forEach((bench, idx) => {
+    const px = margin.left + idx * (panelW + panelGap);
+    const panel = svg.append("g").attr("transform", `translate(${px},${margin.top})`);
+
+    panel.append("text")
+      .attr("class", "panel-title")
+      .attr("x", labelLeft).attr("y", -32)
+      .attr("text-anchor", "start")
+      .text(bench);
+    panel.append("text")
+      .attr("class", "panel-subtitle")
+      .attr("x", labelLeft).attr("y", -16)
+      .attr("text-anchor", "start")
+      .text(data[bench].subtitle);
+
+    const x = d3.scaleLinear().domain([0, 1]).range([labelLeft, panelW]);
+    const y = d3.scaleBand().domain(data[bench].rows.map(d => d.cell)).range([18, innerH - 24]).padding(0.4);
+
+    const xTicks = [0, 0.25, 0.50, 0.75, 1.0];
+    xTicks.forEach(t => {
+      panel.append("line")
+        .attr("class", "gridline")
+        .attr("x1", x(t)).attr("x2", x(t))
+        .attr("y1", 18).attr("y2", innerH - 24);
+    });
+
+    panel.append("g")
+      .attr("class", "axis x-axis")
+      .attr("transform", `translate(0,${innerH - 24})`)
+      .call(d3.axisBottom(x).tickValues(xTicks).tickFormat(d3.format(".0%")).tickSizeOuter(0).tickSize(4));
+
+    // Cell labels (left)
+    panel.selectAll(".cell-label")
+      .data(data[bench].rows)
+      .enter().append("text")
+      .attr("x", labelLeft - 12)
+      .attr("y", d => y(d.cell) + y.bandwidth() / 2 + 4)
+      .attr("text-anchor", "end")
+      .style("font-size", "12px")
+      .style("font-family", "Spectral, serif")
+      .style("fill", d => d.accent === "win" ? COLOR.wine : COLOR.ink)
+      .style("font-weight", d => d.accent === "win" ? "600" : "400")
+      .text(d => d.cell);
+
+    // Bars
+    panel.selectAll(".bar")
+      .data(data[bench].rows)
+      .enter().append("rect")
+      .attr("x", x(0))
+      .attr("y", d => y(d.cell))
+      .attr("width", d => Math.max(d.acc === 0 ? 1.5 : 0, x(d.acc) - x(0)))
+      .attr("height", y.bandwidth())
+      .attr("fill", d => d.accent === "win" ? COLOR.wine : (d.accent === "floor" ? COLOR.beige : COLOR.ink2));
+
+    // Numeric labels
+    panel.selectAll(".value-label")
+      .data(data[bench].rows)
+      .enter().append("text")
+      .attr("class", "data-label")
+      .attr("x", d => x(d.acc) + (d.acc === 0 ? 6 : 8))
+      .attr("y", d => y(d.cell) + y.bandwidth() / 2 + 4)
+      .attr("text-anchor", "start")
+      .style("fill", d => d.accent === "win" ? COLOR.wine : (d.accent === "floor" ? COLOR.inkMuted : COLOR.ink))
+      .style("font-weight", "600")
+      .text(d => (d.acc * 100).toFixed(1) + "%");
+
+    // Footnote under panel
+    panel.append("text")
+      .attr("class", "annotation")
+      .attr("x", labelLeft).attr("y", innerH + 6)
+      .attr("text-anchor", "start")
+      .style("fill", data[bench].footnote.includes("inversion") || data[bench].footnote.includes("+62")
+                       ? COLOR.wine : COLOR.inkMuted)
+      .text(data[bench].footnote);
+  });
+
+  // Caption strip
+  svg.append("text")
+    .attr("x", W / 2)
+    .attr("y", H - 18)
+    .attr("text-anchor", "middle")
+    .style("font-family", "Spectral, serif")
+    .style("font-style", "italic")
+    .style("font-size", "13px")
+    .style("fill", COLOR.inkMuted)
+    .text("On GSM8K and ARC-Challenge, C2 dominates. On BBH-lite, the ranking flips — Direct wins.");
+})();
+
+// =====================================================================
+// FIGURE 7 — On-device measurement (3 metric panels)
+// =====================================================================
+(function drawFigure7() {
+  // Each panel's x-domain hand-tuned per metric
+  const panels = [
+    {
+      title: "Accuracy",
+      subtitle: "GSM8K (n = 50; A3 n = 44)",
+      unit: "%",
+      domain: [0, 1.0],
+      ticks: [0, 0.25, 0.50, 0.75, 1.0],
+      tickFmt: d3.format(".0%"),
+      fmtVal: v => (v * 100).toFixed(1) + "%",
+      rows: [
+        { cell: "C2_SD", value: 0.660 },
+        { cell: "A3_SD", value: 0.659 }
+      ],
+      caption: "indistinguishable at n = 50"
+    },
+    {
+      title: "Wall-clock",
+      subtitle: "Seconds per problem",
+      unit: "s",
+      domain: [0, 20],
+      ticks: [0, 5, 10, 15, 20],
+      tickFmt: d => d + " s",
+      fmtVal: v => v.toFixed(1) + " s",
+      rows: [
+        { cell: "C2_SD", value: 16.69 },
+        { cell: "A3_SD", value: 13.38, accent: "win" }
+      ],
+      caption: "A3 generates fewer tokens"
+    },
+    {
+      title: "Energy",
+      subtitle: "Joules per problem",
+      unit: "J",
+      domain: [0, 3000],
+      ticks: [0, 1000, 2000, 3000],
+      tickFmt: d => (d / 1000).toFixed(0) + " kJ",
+      fmtVal: v => v.toLocaleString() + " J",
+      rows: [
+        { cell: "C2_SD", value: 2471 },
+        { cell: "A3_SD", value: 1990, accent: "win" }
+      ],
+      caption: "A3 saves 19% energy"
+    }
+  ];
+
+  const svg = d3.select("#fig7");
+  const W = 820, H = 360;
+  const margin = { top: 56, right: 16, bottom: 64, left: 16 };
+  const panelGap = 28;
+  const panelW = (W - margin.left - margin.right - 2 * panelGap) / 3;
+  const innerH = H - margin.top - margin.bottom;
+  const labelLeft = 70;
+
+  panels.forEach((p, idx) => {
+    const px = margin.left + idx * (panelW + panelGap);
+    const panel = svg.append("g").attr("transform", `translate(${px},${margin.top})`);
+
+    panel.append("text")
+      .attr("class", "panel-title")
+      .attr("x", labelLeft).attr("y", -28)
+      .attr("text-anchor", "start")
+      .text(p.title);
+    panel.append("text")
+      .attr("class", "panel-subtitle")
+      .attr("x", labelLeft).attr("y", -12)
+      .attr("text-anchor", "start")
+      .text(p.subtitle);
+
+    const x = d3.scaleLinear().domain(p.domain).range([labelLeft, panelW]);
+    const y = d3.scaleBand().domain(p.rows.map(d => d.cell)).range([18, innerH - 24]).padding(0.45);
+
+    p.ticks.forEach(t => {
+      panel.append("line")
+        .attr("class", "gridline")
+        .attr("x1", x(t)).attr("x2", x(t))
+        .attr("y1", 18).attr("y2", innerH - 24);
+    });
+
+    panel.append("g")
+      .attr("class", "axis x-axis")
+      .attr("transform", `translate(0,${innerH - 24})`)
+      .call(d3.axisBottom(x).tickValues(p.ticks).tickFormat(p.tickFmt).tickSizeOuter(0).tickSize(4));
+
+    // Cell labels
+    panel.selectAll(".cell-label")
+      .data(p.rows)
+      .enter().append("text")
+      .attr("x", labelLeft - 10)
+      .attr("y", d => y(d.cell) + y.bandwidth() / 2 + 4)
+      .attr("text-anchor", "end")
+      .style("font-size", "13px")
+      .style("font-family", "Spectral, serif")
+      .style("fill", d => d.accent === "win" ? COLOR.wine : COLOR.ink)
+      .style("font-weight", d => d.accent === "win" ? "600" : "400")
+      .text(d => d.cell);
+
+    // Bars
+    panel.selectAll(".bar")
+      .data(p.rows)
+      .enter().append("rect")
+      .attr("x", x(p.domain[0]))
+      .attr("y", d => y(d.cell))
+      .attr("width", d => Math.max(0, x(d.value) - x(p.domain[0])))
+      .attr("height", y.bandwidth())
+      .attr("fill", d => d.accent === "win" ? COLOR.wine : COLOR.ink2);
+
+    // Value labels
+    panel.selectAll(".value-label")
+      .data(p.rows)
+      .enter().append("text")
+      .attr("class", "data-label")
+      .attr("x", d => x(d.value) + 8)
+      .attr("y", d => y(d.cell) + y.bandwidth() / 2 + 4)
+      .attr("text-anchor", "start")
+      .style("fill", d => d.accent === "win" ? COLOR.wine : COLOR.ink)
+      .style("font-weight", "600")
+      .style("font-size", "12px")
+      .text(d => p.fmtVal(d.value));
+
+    // Caption under panel
+    panel.append("text")
+      .attr("class", "annotation")
+      .attr("x", labelLeft).attr("y", innerH + 6)
+      .attr("text-anchor", "start")
+      .style("fill", COLOR.inkMuted)
+      .text(p.caption);
+  });
+
+  // Caption strip at bottom
+  svg.append("text")
+    .attr("x", W / 2)
+    .attr("y", H - 14)
+    .attr("text-anchor", "middle")
+    .style("font-family", "Spectral, serif")
+    .style("font-style", "italic")
+    .style("font-size", "13px")
+    .style("fill", COLOR.inkMuted)
+    .text("Snapdragon 8 Gen 3 Elite, Q4_K_M. On-device, A3 wins on every dimension except prompt token count.");
+})();
+
+// =====================================================================
+// FIGURE 8 — Extractor ceiling (single horizontal stacked bar)
+// =====================================================================
+(function drawFigure8() {
+  // Out of 500 GSM8K problems
+  const segments = [
+    { key: "extracted", label: "Extracted by original regex",       count: 358, color: COLOR.ink2 },
+    { key: "smart",     label: "Recovered by smart_v2",             count: 32,  color: COLOR.wine },
+    { key: "ceiling",   label: "Reasoning-correct, format-suppressed", count: 64,  color: COLOR.winePale },
+    { key: "wrong",     label: "Genuinely wrong",                   count: 46,  color: COLOR.beige }
+  ];
+
+  const svg = d3.select("#fig8");
+  const W = 820, H = 320;
+  const margin = { top: 90, right: 32, bottom: 100, left: 32 };
+  const innerW = W - margin.left - margin.right;
+  const innerH = H - margin.top - margin.bottom;
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+  // Compute x positions for each segment
+  const total = 500;
+  const x = d3.scaleLinear().domain([0, total]).range([0, innerW]);
+  let cum = 0;
+  const placed = segments.map(s => {
+    const start = cum;
+    cum += s.count;
+    return { ...s, start, end: cum };
+  });
+
+  const barH = 56;
+  const barY = 12;
+
+  // Bar segments
+  g.selectAll(".seg")
+    .data(placed)
+    .enter().append("rect")
+    .attr("x", d => x(d.start))
+    .attr("y", barY)
+    .attr("width", d => x(d.end) - x(d.start))
+    .attr("height", barH)
+    .attr("fill", d => d.color)
+    .attr("stroke", COLOR.cream)
+    .attr("stroke-width", 1.5);
+
+  // In-segment count labels (only where wide enough)
+  g.selectAll(".seg-label")
+    .data(placed)
+    .enter().append("text")
+    .attr("x", d => (x(d.start) + x(d.end)) / 2)
+    .attr("y", barY + barH / 2 + 5)
+    .attr("text-anchor", "middle")
+    .style("font-family", "Spectral, serif")
+    .style("font-size", "13px")
+    .style("font-weight", "600")
+    .style("fill", d => (d.key === "extracted" || d.key === "smart") ? COLOR.cream : COLOR.ink)
+    .text(d => (x(d.end) - x(d.start)) > 36 ? d.count : "");
+
+  // Boundary annotations above bar (at 358, 390, 454)
+  const boundaries = [
+    { at: 358, label: "71.6%",            sub: "original",         color: COLOR.ink },
+    { at: 390, label: "78.0%",            sub: "smart_v2",         color: COLOR.wine },
+    { at: 454, label: "90.8%",            sub: "ceiling (in text)", color: COLOR.wineSoft }
+  ];
+
+  boundaries.forEach(b => {
+    g.append("line")
+      .attr("x1", x(b.at)).attr("x2", x(b.at))
+      .attr("y1", barY - 24).attr("y2", barY)
+      .attr("stroke", b.color).attr("stroke-width", 1.4);
+    g.append("text")
+      .attr("x", x(b.at))
+      .attr("y", barY - 28)
+      .attr("text-anchor", "middle")
+      .style("font-family", "Lora, serif")
+      .style("font-size", "16px")
+      .style("font-weight", "600")
+      .style("fill", b.color)
+      .text(b.label);
+    g.append("text")
+      .attr("x", x(b.at))
+      .attr("y", barY - 46)
+      .attr("text-anchor", "middle")
+      .style("font-family", "Spectral, serif")
+      .style("font-style", "italic")
+      .style("font-size", "11px")
+      .style("fill", COLOR.inkMuted)
+      .text(b.sub);
+  });
+
+  // X-axis showing absolute counts
+  const axisY = barY + barH + 14;
+  g.append("g")
+    .attr("class", "axis x-axis")
+    .attr("transform", `translate(0,${axisY})`)
+    .call(d3.axisBottom(x).tickValues([0, 100, 200, 300, 400, 500]).tickSizeOuter(0).tickSize(4));
+  g.append("text")
+    .attr("class", "axis-label")
+    .attr("x", innerW / 2).attr("y", axisY + 42)
+    .attr("text-anchor", "middle")
+    .text("Problems out of 500");
+
+  // Legend (below bar, left-aligned, in two rows)
+  const legendY = axisY + 64;
+  const legendItems = [
+    { color: COLOR.ink2,     label: "Extracted by original regex (358)" },
+    { color: COLOR.wine,     label: "Recovered by smart_v2 (+32)" },
+    { color: COLOR.winePale, label: "Reasoning-correct, format-suppressed (+64)" },
+    { color: COLOR.beige,    label: "Genuinely wrong (46)" }
+  ];
+
+  let lx = 0;
+  let ly = 0;
+  legendItems.forEach((it, i) => {
+    if (i === 2) { lx = 0; ly = 22; }
+    const grp = g.append("g").attr("transform", `translate(${lx},${legendY + ly})`);
+    grp.append("rect")
+      .attr("x", 0).attr("y", -10)
+      .attr("width", 12).attr("height", 12)
+      .attr("fill", it.color)
+      .attr("stroke", COLOR.cream)
+      .attr("stroke-width", 0.5);
+    grp.append("text")
+      .attr("x", 18).attr("y", 0)
+      .style("font-family", "Spectral, serif")
+      .style("font-size", "12px")
+      .style("fill", COLOR.ink)
+      .text(it.label);
+    lx += it.label.length * 6.7 + 36;
+  });
 })();
 </script>
 </body>
