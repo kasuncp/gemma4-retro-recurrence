@@ -1,0 +1,31 @@
+{
+  "config": {
+    "mode": "original",
+    "model_id": "google/gemma-4-E2B",
+    "target_layer": 17,
+    "r_values": [
+      1
+    ],
+    "num_sequences": 50,
+    "max_length": 512,
+    "dtype": "bf16"
+  },
+  "unmodified": {
+    "mean_nll": 2.5282578077678957,
+    "ppl": 12.53165455614523
+  },
+  "results": {
+    "1": {
+      "mean_nll": 2.5282578077678957,
+      "ppl": 12.53165455614523
+    }
+  },
+  "summary": [
+    {
+      "r": 1,
+      "ppl": 12.53165455614523,
+      "ratio": 1.0
+    }
+  ],
+  "hook_drift": 0.0
+}

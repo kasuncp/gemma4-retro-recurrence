@@ -49,11 +49,16 @@ def _gsm8k_row(idx, *, completion="answer is 16", n_tok=120,
 
 
 def _seed_phase1_dir(d: Path, *,
-                      acc_1A=0.72, acc_legacy_1B=0.55, acc_smart_1B=0.30,
-                      loop_1B=0.10,
+                      acc_1A=0.72,
+                      acc_smart_1Bp=0.30, acc_legacy_1Bp=0.38, loop_1Bp=0.0,
+                      acc_legacy_1Br=0.548, acc_smart_1Br=0.50,
+                      loop_1Br=0.05,
                       tokens_match=True, loop_1D=0.30, drift_1E=1e-6):
     """Lay down a complete set of fixtures that should make every
     gate pass. Override individual fields to flip a single gate.
+
+    1B is now two cells: the path1 prompt (smart_v2 anchor) and the
+    round5 prompt (legacy anchor). Both have separate fixtures.
     """
     d = Path(d); d.mkdir(parents=True, exist_ok=True)
 
@@ -63,19 +68,35 @@ def _seed_phase1_dir(d: Path, *,
     rows_1A = [_gsm8k_row(i, correct_smart=(i < n_correct)) for i in range(n)]
     _write_jsonl(d / "gsm8k__baseline-C2.jsonl", rows_1A)
 
-    # 1B: 50 rows, with separate smart/legacy + a loop_rate
-    n_legacy_correct = int(round(acc_legacy_1B * n))
-    n_smart_correct = int(round(acc_smart_1B * n))
-    n_loop = int(round(loop_1B * n))
-    rows_1B = []
-    for i in range(n):
-        rows_1B.append(_gsm8k_row(
+    # 1B-path1: smart_v2 anchored on Path 1 plan 5 (~30 %).
+    n_smart_p = int(round(acc_smart_1Bp * n))
+    n_legacy_p = int(round(acc_legacy_1Bp * n))
+    n_loop_p = int(round(loop_1Bp * n))
+    rows_1Bp = [
+        _gsm8k_row(
             i,
-            correct_smart=(i < n_smart_correct),
-            correct_legacy=(i < n_legacy_correct),
-            loop=(i < n_loop),
-        ))
-    _write_jsonl(d / "gsm8k__baseline-8shot-control.jsonl", rows_1B)
+            correct_smart=(i < n_smart_p),
+            correct_legacy=(i < n_legacy_p),
+            loop=(i < n_loop_p),
+        )
+        for i in range(n)
+    ]
+    _write_jsonl(d / "gsm8k__baseline-8shot-control.jsonl", rows_1Bp)
+
+    # 1B-round5: legacy anchored on round 5 (~54.8 %).
+    n_smart_r = int(round(acc_smart_1Br * n))
+    n_legacy_r = int(round(acc_legacy_1Br * n))
+    n_loop_r = int(round(loop_1Br * n))
+    rows_1Br = [
+        _gsm8k_row(
+            i,
+            correct_smart=(i < n_smart_r),
+            correct_legacy=(i < n_legacy_r),
+            loop=(i < n_loop_r),
+        )
+        for i in range(n)
+    ]
+    _write_jsonl(d / "gsm8k__baseline-8shot-round5.jsonl", rows_1Br)
 
     # 1C: W5-r1, 20 rows that match (or don't) the first 20 of 1A
     rows_1C = []
@@ -93,15 +114,23 @@ def _seed_phase1_dir(d: Path, *,
     ]
     _write_jsonl(d / "gsm8k__W5-r8.jsonl", rows_1D)
 
-    # 1E: 1E_wikitext_smoke.json mimicking ple_sanity_check --mode original
+    # 1E: 1E_wikitext_smoke.json mimicking probes.mode_round1's actual
+    # output schema (results keyed by str(r) + summary list + drift).
     unmod = 12.5366
     r1_ppl = unmod * (1.0 + drift_1E)
     smoke = {
-        "config": {"mode": "original", "model_id": "google/gemma-4-E2B"},
-        "unmodified": {"ppl": unmod},
-        "cells": [
-            {"layer": 17, "r": 1, "ppl": r1_ppl}
-        ],
+        "config": {
+            "mode": "original",
+            "model_id": "google/gemma-4-E2B",
+            "target_layer": 17,
+            "r_values": [1],
+        },
+        "unmodified": {"mean_nll": 2.528, "ppl": unmod},
+        "results": {
+            "1": {"mean_nll": 2.528 * (1.0 + drift_1E), "ppl": r1_ppl},
+        },
+        "summary": [{"r": 1, "ppl": r1_ppl, "ratio": r1_ppl / unmod}],
+        "hook_drift": drift_1E,
     }
     (d / "1E_wikitext_smoke.json").write_text(json.dumps(smoke, indent=2))
 
@@ -131,7 +160,9 @@ class TestPhase1RunnerHealthy(unittest.TestCase):
             summary = json.loads((Path(d) / "phase1_summary.json").read_text())
             self.assertTrue(summary["all_gates_passed"])
             self.assertEqual(set(summary["cells"]),
-                             {"1A_baseline_C2", "1B_baseline_8shot",
+                             {"1A_baseline_C2",
+                              "1B_baseline_8shot_path1",
+                              "1B_baseline_8shot_round5",
                               "1C_token_match", "1D_W5_r8_smoke",
                               "1E_base_ppl_smoke"})
 

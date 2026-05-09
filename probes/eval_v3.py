@@ -73,7 +73,24 @@ CONFIGS: dict[str, dict] = {
         "block": None,
         "r": 1,
         "ple_strategy": "every-iter",
-        "notes": "Bridges to Path 2 round 5 (54.8%); gate band [0.44, 0.64].",
+        "notes": (
+            "Path 1 plan 5 anchor: smart_v2 ~ 30 %. Single-turn + "
+            "'#### N' exemplar marker. NOT the round-5 bridge --- "
+            "round 5 used multi-turn + 'The answer is N.' (see "
+            "baseline-8shot-round5)."
+        ),
+    },
+    "baseline-8shot-round5": {
+        "prompt": "8shot-CoT-r5",
+        "block": None,
+        "r": 1,
+        "ple_strategy": "every-iter",
+        "stop_strings": ["\nQ:", "\nQuestion:"],
+        "notes": (
+            "Round 5 anchor: legacy ~ 54.8 %. Multi-turn alternating "
+            "exemplars + 'The answer is N.' marker + stop_strings. "
+            "Mirrors probes.mode_round5._format_gsm8k_prompt_chat."
+        ),
     },
     "W5-r1": {
         "prompt": "C2",

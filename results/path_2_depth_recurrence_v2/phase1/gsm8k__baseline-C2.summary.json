@@ -1,0 +1,38 @@
+{
+  "phase": "sanity",
+  "config": "baseline-C2",
+  "config_dict": {
+    "prompt": "C2",
+    "block": null,
+    "r": 1,
+    "ple_strategy": "every-iter",
+    "notes": "Path 1 anchor 71.6% on N=500 GSM8K; gate band [0.65, 0.82]."
+  },
+  "benchmark": "gsm8k",
+  "n_requested": 50,
+  "model_id": "google/gemma-4-E2B-it",
+  "dtype": "bf16",
+  "max_new_tokens": 512,
+  "seed": 42,
+  "summary": {
+    "n_problems": 50,
+    "accuracy_smart_v2": 0.7,
+    "accuracy_smart_v2_ci95": [
+      0.562493877226366,
+      0.8089661091039063
+    ],
+    "accuracy_legacy": 0.7,
+    "accuracy_legacy_ci95": [
+      0.562493877226366,
+      0.8089661091039063
+    ],
+    "extractor_lift": 0.0,
+    "truncation_rate": 0.06,
+    "loop_rate": 0.0,
+    "parse_rate": 1.0,
+    "mean_gen_tokens": 270.32,
+    "total_gen_seconds": 724.903135061264,
+    "mean_t_gen_seconds": 14.498062701225281,
+    "pathology_flag": false
+  }
+}

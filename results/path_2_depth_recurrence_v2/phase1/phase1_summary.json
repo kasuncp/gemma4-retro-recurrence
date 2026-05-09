@@ -1,0 +1,107 @@
+{
+  "phase": "phase1-hook-sanity",
+  "model_ids": {
+    "it": "google/gemma-4-E2B-it",
+    "base": "google/gemma-4-E2B"
+  },
+  "cells": {
+    "1A_baseline_C2": {
+      "summary": {
+        "n_problems": 50,
+        "accuracy_smart_v2": 0.7,
+        "accuracy_smart_v2_ci95": [
+          0.562493877226366,
+          0.8089661091039063
+        ],
+        "accuracy_legacy": 0.7,
+        "accuracy_legacy_ci95": [
+          0.562493877226366,
+          0.8089661091039063
+        ],
+        "extractor_lift": 0.0,
+        "truncation_rate": 0.06,
+        "loop_rate": 0.0,
+        "parse_rate": 1.0,
+        "mean_gen_tokens": 270.32,
+        "total_gen_seconds": 724.903135061264,
+        "mean_t_gen_seconds": 14.498062701225281,
+        "pathology_flag": false
+      },
+      "gate_passed": false,
+      "gate_message": "truncation_rate=0.060 > 0.05; EOS firing wrong, or max_new_tokens too small."
+    },
+    "1B_baseline_8shot_path1": {
+      "summary": {
+        "n_problems": 50,
+        "accuracy_smart_v2": 0.28,
+        "accuracy_smart_v2_ci95": [
+          0.17474014357680362,
+          0.4166538714598967
+        ],
+        "accuracy_legacy": 0.38,
+        "accuracy_legacy_ci95": [
+          0.2586259584257722,
+          0.5184980497760643
+        ],
+        "extractor_lift": -0.1,
+        "truncation_rate": 0.16,
+        "loop_rate": 0.0,
+        "parse_rate": 1.0,
+        "mean_gen_tokens": 199.82,
+        "total_gen_seconds": 568.5004470348358,
+        "mean_t_gen_seconds": 11.370008940696716,
+        "pathology_flag": false
+      },
+      "gate_passed": true,
+      "gate_message": "acc_smart=0.280 acc_legacy=0.380 loop=0.000 trunc=0.160"
+    },
+    "1B_baseline_8shot_round5": {
+      "summary": {
+        "n_problems": 0
+      },
+      "gate_passed": false,
+      "gate_message": "no rows"
+    },
+    "1C_token_match": {
+      "info": {
+        "shared": 20,
+        "matches": 20,
+        "exit_code": 0
+      },
+      "gate_passed": true,
+      "gate_message": "matches=20/20"
+    },
+    "1D_W5_r8_smoke": {
+      "summary": {
+        "n_problems": 10,
+        "accuracy_smart_v2": 0.0,
+        "accuracy_smart_v2_ci95": [
+          0.0,
+          0.2775401687666166
+        ],
+        "accuracy_legacy": 0.0,
+        "accuracy_legacy_ci95": [
+          0.0,
+          0.2775401687666166
+        ],
+        "extractor_lift": 0.0,
+        "truncation_rate": 1.0,
+        "loop_rate": 0.8,
+        "parse_rate": 0.8,
+        "mean_gen_tokens": 512.0,
+        "total_gen_seconds": 486.2685308456421,
+        "mean_t_gen_seconds": 48.62685308456421,
+        "pathology_flag": true
+      },
+      "gate_passed": true,
+      "gate_message": "n=10 loop=0.800 mean_tok=512"
+    },
+    "1E_base_ppl_smoke": {
+      "unmodified_ppl": 12.53165455614523,
+      "r1_ppl": 12.53165455614523,
+      "gate_passed": true,
+      "gate_message": "unmod_ppl=12.5317 r1_ppl=12.5317 drift=0.00e+00"
+    }
+  },
+  "all_gates_passed": false
+}

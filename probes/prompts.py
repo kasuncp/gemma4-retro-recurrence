@@ -150,11 +150,17 @@ EXEMPLAR_SET_ID = "wei-et-al-2022-hashformat"  # recorded in result JSON
 
 
 def build_8shot_cot_gsm8k(tokenizer, question: str) -> str:
-    """Wei et al. 8-shot CoT, chat-templated.
+    """Wei et al. 8-shot CoT in single-user-turn form, ``#### N`` marker.
 
-    Use as the ``baseline-8shot-control`` cell ONLY --- the bridge
-    to Path 2 round 5's 54.8% headline. Reproducing 54.8 +/- 2 pp on
-    N=500 confirms harness equivalence with round 5.
+    This is the Path 1 plan 5 prompt: every exemplar is concatenated as
+    ``Q: ... \\nA: ... \\n#### N`` text inside a single user message,
+    then chat-templated. Path 1 plan 5 measured smart_v2 = 30.0 % on
+    N=500 with this exact wrapping; the ``baseline-8shot-control`` cell
+    is the cross-round bridge to that anchor.
+
+    NOT a faithful reproduction of round 5's 54.8 % legacy headline ---
+    round 5 used multi-turn alternating exemplars + ``The answer is N.``
+    + stop_strings. ``build_8shot_cot_gsm8k_round5`` covers that path.
     """
     pre = "\n\n".join(
         f"Q: {q}\nA: {a}" for (q, a) in WEI_8SHOT_EXEMPLARS
@@ -166,6 +172,35 @@ def build_8shot_cot_gsm8k(tokenizer, question: str) -> str:
     )
 
 
+# Round 5's exemplars are byte-identical to Wei et al. but end in
+# "The answer is N." instead of "\n#### N". Round 5 emitted
+# 54.8 % legacy on this variant; the round-5 cell exists only to
+# reproduce that bridge number in Phase 1.
+WEI_8SHOT_EXEMPLARS_ROUND5: Tuple[Tuple[str, str], ...] = tuple(
+    (q, a.replace("\n#### ", " The answer is ") + ".")
+    for (q, a) in WEI_8SHOT_EXEMPLARS
+)
+
+
+def build_8shot_cot_gsm8k_round5(tokenizer, question: str) -> str:
+    """Round 5 8-shot CoT: alternating user/assistant turns, "The answer
+    is N." marker. Mirrors ``probes.mode_round5._format_gsm8k_prompt_chat``
+    so the round 5 anchor (legacy = 54.8 %) is reproducible from Phase 1.
+
+    Pair this with ``stop_strings=["\\nQ:", "\\nQuestion:"]`` at generation
+    time --- without those, the IT model continues past its answer into
+    a fresh ``Q:`` exemplar turn and the truncation rate spikes.
+    """
+    msgs = []
+    for (q, a) in WEI_8SHOT_EXEMPLARS_ROUND5:
+        msgs.append({"role": "user", "content": f"Q: {q}"})
+        msgs.append({"role": "assistant", "content": f"A: {a}"})
+    msgs.append({"role": "user", "content": f"Q: {question}"})
+    return tokenizer.apply_chat_template(
+        msgs, tokenize=False, add_generation_prompt=True,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Prompt registry (used by eval_v3 / path2_v2_eval)
 # ---------------------------------------------------------------------------
@@ -173,6 +208,7 @@ def build_8shot_cot_gsm8k(tokenizer, question: str) -> str:
 PROMPT_BUILDERS = {
     ("gsm8k", "C2"): lambda tok, row: build_c2_gsm8k(tok, row["question"]),
     ("gsm8k", "8shot-CoT"): lambda tok, row: build_8shot_cot_gsm8k(tok, row["question"]),
+    ("gsm8k", "8shot-CoT-r5"): lambda tok, row: build_8shot_cot_gsm8k_round5(tok, row["question"]),
     ("arc-c", "C2"): lambda tok, row: build_c2_arc(tok, row["question"], row["choices"]),
     ("bbh-lite", "C2"): lambda tok, row: build_c2_bbh(
         tok, row["question"], row.get("task"),

@@ -1,13 +1,14 @@
 """Path 2 v2 Phase 1 runner --- hook sanity gates.
 
-Sequentially runs five cells, each as its own subprocess so a crash
+Sequentially runs six cells, each as its own subprocess so a crash
 in one cell doesn't blow away results from earlier ones:
 
-  1A  baseline-C2     N=50 GSM8K  IT model
-  1B  baseline-8shot  N=50 GSM8K  IT model
-  1C  W5-r1 + token-match vs 1A (N=20)
-  1D  W5-r8           N=10 GSM8K  IT model
-  1E  base perplexity smoke (Wikitext-2 r=1 vs unmodified)
+  1A     baseline-C2          N=50 GSM8K  IT model
+  1B-p1  baseline-8shot-control  N=50 GSM8K  IT model (Path 1 plan 5)
+  1B-r5  baseline-8shot-round5   N=50 GSM8K  IT model (round 5 bridge)
+  1C     W5-r1 + token-match vs 1A (N=20)
+  1D     W5-r8                N=10 GSM8K  IT model
+  1E     base perplexity smoke (Wikitext-2 r=1 vs unmodified)
 
 After all cells, applies the gates from probes.phase1_gates and
 emits ``phase1_summary.json`` + a console table. Exit non-zero on
@@ -51,20 +52,33 @@ BASE_MODEL = "google/gemma-4-E2B"
 # Cells in execution order. Each cell is a dict; the runner translates
 # it to a subprocess argv.
 CELLS = [
-    # --- 1A ---
+    # --- 1A: N=200 disambiguates the N=50 truncation rate (was 3/50 =
+    # 6 %, just over the < 5 % threshold; Wilson 95 % CI [0.013, 0.165]
+    # was wide enough at N=50 to be small-sample noise). At N=200 the
+    # CI tightens to about ±2.5 pp, so a real 6 % rate would clearly
+    # fail and a noise-around-1 % rate would clearly pass.
     {
         "name": "1A_baseline_C2",
         "kind": "eval",
         "config": "baseline-C2",
         "benchmark": "gsm8k",
+        "n": 200,
+        "model_id": IT_MODEL,
+    },
+    # --- 1B-path1: bridges Path 1 plan 5's smart_v2 = 30 % anchor ---
+    {
+        "name": "1B_baseline_8shot_path1",
+        "kind": "eval",
+        "config": "baseline-8shot-control",
+        "benchmark": "gsm8k",
         "n": 50,
         "model_id": IT_MODEL,
     },
-    # --- 1B ---
+    # --- 1B-round5: bridges round 5's legacy = 54.8 % anchor ---
     {
-        "name": "1B_baseline_8shot",
+        "name": "1B_baseline_8shot_round5",
         "kind": "eval",
-        "config": "baseline-8shot-control",
+        "config": "baseline-8shot-round5",
         "benchmark": "gsm8k",
         "n": 50,
         "model_id": IT_MODEL,
@@ -198,18 +212,32 @@ def _summary_for_eval_cell(*, output_dir: Path, cell: dict) -> dict:
 
 
 def _ppl_smoke_results(output_dir: Path) -> tuple[Optional[float], Optional[float]]:
-    """Read 1E_wikitext_smoke.json and return (unmodified_ppl, r1_ppl)."""
+    """Read 1E_wikitext_smoke.json and return (unmodified_ppl, r1_ppl).
+
+    Schema source: probes.mode_round1.run_original_mode emits
+    ``{"unmodified": {"ppl": ...}, "results": {"<r>": {"ppl": ...}},
+    "summary": [{"r": ..., "ppl": ..., "ratio": ...}], ...}``. Phase 1
+    only invokes ``--r-values 1`` so ``results["1"]`` is the single
+    looped pass we care about; ``summary`` is a redundant tolerated
+    fallback so test fixtures that omit ``results`` still work.
+    """
     p = output_dir / "1E_wikitext_smoke.json"
     if not p.is_file():
         return None, None
     d = json.loads(p.read_text())
     unmod = d.get("unmodified", {}).get("ppl")
-    r1_ppl = None
-    for cell in d.get("cells", []):
-        if cell.get("r") == 1 and cell.get("layer") == 17:
-            r1_ppl = cell.get("ppl")
-            break
-    return unmod, r1_ppl
+
+    results = d.get("results")
+    if isinstance(results, dict):
+        r1_ppl = results.get("1", {}).get("ppl")
+        if r1_ppl is not None:
+            return unmod, r1_ppl
+
+    for entry in d.get("summary", []):
+        if entry.get("r") == 1:
+            return unmod, entry.get("ppl")
+
+    return unmod, None
 
 
 def _token_match_info(*, output_dir: Path) -> dict:
@@ -244,10 +272,16 @@ def evaluate_all_gates(args, *, summaries: dict, ppl_pair: tuple,
         "summary": s_1A, "gate_passed": p, "gate_message": m,
     }
 
-    s_1B = summaries.get("1B_baseline_8shot", {})
-    p, m = gates.gate_1B(s_1B) if s_1B.get("n_problems") else (False, "no rows")
-    cells_report["1B_baseline_8shot"] = {
-        "summary": s_1B, "gate_passed": p, "gate_message": m,
+    s_1Bp = summaries.get("1B_baseline_8shot_path1", {})
+    p, m = gates.gate_1B_path1(s_1Bp) if s_1Bp.get("n_problems") else (False, "no rows")
+    cells_report["1B_baseline_8shot_path1"] = {
+        "summary": s_1Bp, "gate_passed": p, "gate_message": m,
+    }
+
+    s_1Br = summaries.get("1B_baseline_8shot_round5", {})
+    p, m = gates.gate_1B_round5(s_1Br) if s_1Br.get("n_problems") else (False, "no rows")
+    cells_report["1B_baseline_8shot_round5"] = {
+        "summary": s_1Br, "gate_passed": p, "gate_message": m,
     }
 
     p, m = gates.gate_1C(token_match)
@@ -307,19 +341,40 @@ def print_table(report: dict) -> None:
         print(_row("1A baseline-C2", "n_problems", "0", "= 50",
                    _ok(cells["1A_baseline_C2"])))
 
-    # 1B
-    s = cells["1B_baseline_8shot"]["summary"]
+    # 1B-path1 (Path 1 plan 5 anchor on smart_v2)
+    s = cells["1B_baseline_8shot_path1"]["summary"]
     if s.get("n_problems", 0) > 0:
-        print(_row("1B baseline-8shot", "accuracy_legacy",
-                   f"{s['accuracy_legacy']:.3f}",
-                   f"{gates.CELL_1B_LEGACY_BAND}", _ok(cells["1B_baseline_8shot"])))
-        print(_row("", "accuracy_smart_v2", f"{s['accuracy_smart_v2']:.3f}",
-                   f"{gates.CELL_1B_SMART_BAND}", ""))
+        print(_row("1B-p1 8shot-path1", "accuracy_smart_v2",
+                   f"{s['accuracy_smart_v2']:.3f}",
+                   f"{gates.CELL_1B_SMART_BAND}",
+                   _ok(cells["1B_baseline_8shot_path1"])))
+        print(_row("", "accuracy_legacy", f"{s['accuracy_legacy']:.3f}",
+                   "(informational)", ""))
         print(_row("", "loop_rate", f"{s['loop_rate']:.3f}",
-                   f"{gates.CELL_1B_LOOP_BAND}", ""))
+                   f"< {gates.CELL_1B_PATH1_LOOP_MAX}", ""))
+        print(_row("", "truncation_rate", f"{s['truncation_rate']:.3f}",
+                   f"< {gates.CELL_1B_PATH1_TRUNC_MAX}", ""))
     else:
-        print(_row("1B baseline-8shot", "n_problems", "0", "= 50",
-                   _ok(cells["1B_baseline_8shot"])))
+        print(_row("1B-p1 8shot-path1", "n_problems", "0", "= 50",
+                   _ok(cells["1B_baseline_8shot_path1"])))
+
+    # 1B-round5 (round 5 anchor on legacy)
+    s = cells["1B_baseline_8shot_round5"]["summary"]
+    if s.get("n_problems", 0) > 0:
+        print(_row("1B-r5 8shot-round5", "accuracy_legacy",
+                   f"{s['accuracy_legacy']:.3f}",
+                   f"{gates.CELL_1B_LEGACY_BAND}",
+                   _ok(cells["1B_baseline_8shot_round5"])))
+        print(_row("", "accuracy_smart_v2",
+                   f"{s['accuracy_smart_v2']:.3f}",
+                   "(informational)", ""))
+        print(_row("", "loop_rate", f"{s['loop_rate']:.3f}",
+                   f"< {gates.CELL_1B_ROUND5_LOOP_MAX}", ""))
+        print(_row("", "truncation_rate", f"{s['truncation_rate']:.3f}",
+                   f"< {gates.CELL_1B_ROUND5_TRUNC_MAX}", ""))
+    else:
+        print(_row("1B-r5 8shot-round5", "n_problems", "0", "= 50",
+                   _ok(cells["1B_baseline_8shot_round5"])))
 
     # 1C
     info = cells["1C_token_match"]["info"]

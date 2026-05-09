@@ -243,6 +243,15 @@ def _run_one_cell(args, cfg: dict) -> int:
             use_cache=False,  # structural; required by the loop hook
             pad_token_id=tokenizer.eos_token_id,
         )
+        stop_strings = cfg.get("stop_strings")
+        if stop_strings:
+            # HF generate accepts stop_strings + the tokenizer directly.
+            # Used by baseline-8shot-round5 to mirror round 5's
+            # generation contract: without stop_strings the IT model
+            # rolls past its answer into a fresh "Q:" exemplar turn.
+            gen_kwargs["stop_strings"] = list(stop_strings)
+            gen_kwargs["tokenizer"] = tokenizer
+            print(f"stop_strings={list(stop_strings)!r}")
         for i, row in enumerate(rows_to_run, 1):
             prompt = _build_prompt(
                 tokenizer,

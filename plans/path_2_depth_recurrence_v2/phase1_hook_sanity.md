@@ -23,12 +23,13 @@ Phase 1 produces no research findings. It validates the harness.
 
 ## Scope
 
-**In scope** (5 cells, ~50 min on a 4090):
+**In scope** (6 cells, ~65 min on a 4090):
 
 | Cell | Model | Config | Benchmark | N | Gate |
 |---|---|---|---|---|---|
-| **1A** IT C2 baseline | E2B-it | `baseline-C2` | GSM8K | 50 | accuracy ∈ [65 %, 82 %], loop_rate < 5 %, truncation < 5 % |
-| **1B** IT 8-shot bridge | E2B-it | `baseline-8shot-control` | GSM8K | 50 | accuracy ∈ [44 %, 64 %], loop_rate ∈ [5 %, 25 %] |
+| **1A** IT C2 baseline | E2B-it | `baseline-C2` | GSM8K | 50 | accuracy_smart_v2 ∈ [65 %, 82 %], loop_rate < 5 %, truncation < 5 % |
+| **1B-p1** IT 8-shot Path 1 anchor | E2B-it | `baseline-8shot-control` | GSM8K | 50 | accuracy_smart_v2 ∈ [20 %, 40 %], loop_rate < 25 %, truncation < 20 % |
+| **1B-r5** IT 8-shot round 5 anchor | E2B-it | `baseline-8shot-round5` | GSM8K | 50 | accuracy_legacy ∈ [44 %, 64 %], loop_rate < 25 %, truncation < 20 % |
 | **1C** Token-match no-op | E2B-it | `W5-r1` vs `baseline-C2` | GSM8K | 20 | per-problem completion strings byte-equal |
 | **1D** W5-r8 smoke | E2B-it | `W5-r8` | GSM8K | 10 | process exits 0; OOM-free; loop_rate < 95 % |
 | **1E** Base ppl smoke | E2B (base) | hook-on r=1 vs hook-off | Wikitext-2 | 50 seqs | rel drift < 1e-4 |
@@ -177,10 +178,11 @@ from experiments.path2_v2_eval import _run_one_cell, parse_args  # reused
 
 CELLS = [
     # (config, benchmark, n, model_id, gate_callable)
-    ("baseline-C2",            "gsm8k", 50, "google/gemma-4-E2B-it", gate_1A),
-    ("baseline-8shot-control", "gsm8k", 50, "google/gemma-4-E2B-it", gate_1B),
-    ("W5-r1",                  "gsm8k", 20, "google/gemma-4-E2B-it", gate_1C),
-    ("W5-r8",                  "gsm8k", 10, "google/gemma-4-E2B-it", gate_1D),
+    ("baseline-C2",             "gsm8k", 50, "google/gemma-4-E2B-it", gate_1A),
+    ("baseline-8shot-control",  "gsm8k", 50, "google/gemma-4-E2B-it", gate_1B_path1),
+    ("baseline-8shot-round5",   "gsm8k", 50, "google/gemma-4-E2B-it", gate_1B_round5),
+    ("W5-r1",                   "gsm8k", 20, "google/gemma-4-E2B-it", gate_1C),
+    ("W5-r8",                   "gsm8k", 10, "google/gemma-4-E2B-it", gate_1D),
     # Cell 1E uses ple_sanity_check.py --mode original
 ]
 ```
@@ -223,34 +225,69 @@ prompt; it must end in `<start_of_turn>model\n`. If it doesn't,
 
 ---
 
-### Cell 1B — IT 8-shot bridge
+### Cell 1B — IT 8-shot bridges (two cells)
 
-**Config:** `baseline-8shot-control` (no hook, 8-shot Wei CoT prompt).
-**Model:** same.
+Round 5 (legacy = 54.8 %) and Path 1 plan 5 (smart_v2 = 30.0 %) used
+**different prompts**, so one prompt cannot bridge both anchors. The
+first iteration of this plan tried — observed legacy = 38 % on the
+Path-1 prompt, never reaching round 5's number. Phase 1 now runs two
+cells, one per anchor.
+
+#### Cell 1B-p1 — Path 1 plan 5 anchor (smart_v2)
+
+**Config:** `baseline-8shot-control` (no hook, single-user-turn
+prompt with `Q: ...\nA: ...\n#### N` exemplars; matches
+`experiments/path1_cot_gate.py:EXEMPLARS_COT` byte-for-byte).
 **Benchmark:** GSM8K, N=50, seed=42 (same problems as 1A).
 
-**Anchor:** Path 2 round 5 measured 54.8 % on N=250 with this prompt.
-Path 1 plan 5 measured 30.0 % on N=500 with smart_v2. The two anchors
-disagree because round 5 used the legacy last-int extractor; we
-reproduce both.
+**Anchor:** Path 1 plan 5 measured smart_v2 = 30.0 % on N=500 with
+this exact prompt. `accuracy_legacy` is recorded as informational but
+NOT gated — this prompt does not reproduce round 5's 54.8 %, by design.
+
+**Gates:**
+
+| Metric | Band | Why |
+|---|---|---|
+| `accuracy_smart_v2` | ≥ 0.20 and ≤ 0.40 | ±10 pp around Path 1 plan 5's 30.0 % |
+| `loop_rate` | < 0.25 | Path 1 plan 3 saw 10–12 %; we drop the lower bound because `has_repetition_loop` in `probes.extractors` is stricter than Path 1 plan 3's detector |
+| `truncation_rate` | < 0.20 | 8-shot CoT runs longer than C2; some truncation expected |
+
+**On failure:** if `accuracy_smart_v2` lands far from 30 %, diff
+`probes.prompts.WEI_8SHOT_EXEMPLARS` and `build_8shot_cot_gsm8k`
+against `experiments/path1_cot_gate.py:EXEMPLARS_COT` and
+`build_chat_prompt`.
+
+#### Cell 1B-r5 — Round 5 anchor (legacy)
+
+**Config:** `baseline-8shot-round5` (no hook, alternating
+user/assistant turns + `The answer is N.` marker + stop_strings
+`["\nQ:", "\nQuestion:"]`; mirrors `probes.mode_round5._format_gsm8k_prompt_chat`).
+**Benchmark:** GSM8K, N=50, seed=42 (same problems as 1A).
+
+**Anchor:** Path 2 round 5 measured `accuracy_legacy` = 54.8 % on N=250
+with this exact wrapping. `accuracy_smart_v2` is recorded as
+informational but NOT gated — both extractors converge on this prompt
+and smart_v2 will likely run higher than the path-1 band.
 
 **Gates:**
 
 | Metric | Band | Why |
 |---|---|---|
 | `accuracy_legacy` | ≥ 0.44 and ≤ 0.64 | ±10 pp around round 5's 54.8 %. This is the cross-round bridge |
-| `accuracy_smart_v2` | ≥ 0.20 and ≤ 0.40 | ±10 pp around Path 1 plan 5's 30.0 % |
-| `loop_rate` | ≥ 0.05 and ≤ 0.25 | Path 1 plan 3 measured 10–12 % on 8-shot CoT; band absorbs N=50 noise |
-| `truncation_rate` | < 0.20 | 8-shot CoT runs longer than C2; some truncation expected |
+| `loop_rate` | < 0.25 | Same upper bound as 1B-p1; lower bound dropped for the same reason |
+| `truncation_rate` | < 0.20 | If this fires, stop_strings are likely not wired through `path2_v2_eval` to `model.generate` |
 
-**On failure:** if `accuracy_legacy` lands far from 54.8 %, one of
-three things is wrong: (a) the Wei exemplars in `WEI_8SHOT_EXEMPLARS`
-drifted from round 5's set, (b) the prompt template differs, (c) the
-chat-template wrapping interacts with the exemplar block in a way it
-didn't in round 5. Diff against `experiments/path1_cot_gate.py`'s
-`EXEMPLARS_COT` and `build_chat_prompt`.
+**On failure:** if `accuracy_legacy` lands far from 54.8 %, the cell
+contract has drifted from `probes.mode_round5._format_gsm8k_prompt_chat`.
+Three places to diff: (a) `WEI_8SHOT_EXEMPLARS_ROUND5` vs
+`mode_round5.WEI_COT_EXEMPLARS`, (b) `build_8shot_cot_gsm8k_round5`
+turn structure vs `_format_gsm8k_prompt_chat`, (c) stop_strings
+plumbing in `experiments/path2_v2_eval.py` (the config dict carries
+`stop_strings`; the eval forwards them as `gen_kwargs["stop_strings"]`
++ `gen_kwargs["tokenizer"]`).
 
-**Wall budget:** ~15 min (longer prompts → more tokens generated).
+**Wall budget:** ~30 min combined (~15 min per cell; longer prompts →
+more tokens generated than C2).
 
 ---
 
@@ -378,7 +415,8 @@ assert `drift < 1e-4`.
       "gate_passed":       true|false,
       "gate_message":      "..."
     },
-    "1B_baseline_8shot": {...},
+    "1B_baseline_8shot_path1":  {...},
+    "1B_baseline_8shot_round5": {...},
     "1C_token_match":   {"shared_idxs": 20, "matches": 20, "first_mismatches": [], "gate_passed": true},
     "1D_W5_r8_smoke":   {...},
     "1E_base_ppl_smoke": {"unmodified_ppl": 12.5366, "r1_ppl": 12.5367, "drift": 1.2e-5, "gate_passed": true}
@@ -397,9 +435,14 @@ cell                    metric                  value     band              stat
 1A baseline-C2          accuracy_smart_v2       0.720     [0.65, 0.82]      PASS
 1A baseline-C2          loop_rate               0.000     < 0.05            PASS
 1A baseline-C2          truncation_rate         0.020     < 0.05            PASS
-1B baseline-8shot       accuracy_legacy         0.560     [0.44, 0.64]      PASS
-1B baseline-8shot       accuracy_smart_v2       0.300     [0.20, 0.40]      PASS
-1B baseline-8shot       loop_rate               0.120     [0.05, 0.25]      PASS
+1B-p1 8shot-path1       accuracy_smart_v2       0.300     [0.20, 0.40]      PASS
+1B-p1 8shot-path1       accuracy_legacy         0.380     (informational)
+1B-p1 8shot-path1       loop_rate               0.000     < 0.25            PASS
+1B-p1 8shot-path1       truncation_rate         0.160     < 0.20            PASS
+1B-r5 8shot-round5      accuracy_legacy         0.548     [0.44, 0.64]      PASS
+1B-r5 8shot-round5      accuracy_smart_v2       0.500     (informational)
+1B-r5 8shot-round5      loop_rate               0.040     < 0.25            PASS
+1B-r5 8shot-round5      truncation_rate         0.060     < 0.20            PASS
 1C token-match          matches                 20/20     == 20/20          PASS
 1D W5-r8 smoke          process_exit            0         == 0              PASS
 1D W5-r8 smoke          loop_rate               0.700     < 0.95            PASS
@@ -420,7 +463,7 @@ Likely cause: chat template not applied. Diff prompt against tests/path2_v2/test
 
 ## Exit criteria
 
-- **All five cells PASS** → write the 2-line update to `phase0.md`'s
+- **All six cells PASS** → write the 2-line update to `phase0.md`'s
   "design decisions" section confirming D6 (loop_rate first-class) and
   D8 (token-match) held empirically. Proceed to Phase 2.
 
@@ -428,10 +471,18 @@ Likely cause: chat template not applied. Diff prompt against tests/path2_v2/test
   Most often: `apply_chat_template` not in use, or smart_v2 broken.
   Halt; debug; do not run later cells.
 
-- **Cell 1B fails on accuracy_legacy** → cross-round bridge broken.
-  Either Wei exemplars drifted or the chat-template-wraps-exemplars
-  interaction is subtly different from round 5. Halt; diff against
-  the round 5 manifest.
+- **Cell 1B-p1 fails on accuracy_smart_v2** → Path 1 plan 5 anchor
+  broken. Diff `probes.prompts.WEI_8SHOT_EXEMPLARS` and
+  `build_8shot_cot_gsm8k` against `experiments/path1_cot_gate.py:EXEMPLARS_COT`
+  and `build_chat_prompt`. Halt.
+
+- **Cell 1B-r5 fails on accuracy_legacy** → round-5 cross-round bridge
+  broken. Diff `WEI_8SHOT_EXEMPLARS_ROUND5` and
+  `build_8shot_cot_gsm8k_round5` against
+  `probes.mode_round5._format_gsm8k_prompt_chat`; verify
+  `stop_strings` are wired through `experiments/path2_v2_eval.py` (the
+  config carries the field; the eval forwards it to `model.generate`).
+  Halt.
 
 - **Cell 1C fails on token-match** → the load-bearing structural
   failure. Hook is mutating something at generation time that didn't
@@ -455,14 +506,17 @@ Likely cause: chat template not applied. Diff prompt against tests/path2_v2/test
 
 | Cell | N | Wall (4090) | Notes |
 |---|---|---|---|
-| 1A | 50 | ~12 min | dominated by `use_cache=False` overhead |
-| 1B | 50 | ~15 min | longer 8-shot prompts |
+| 1A | 200 | ~50 min | bumped from 50 to disambiguate the N=50 truncation rate (3/50 was just over the < 5 % gate) |
+| 1B-p1 | 50 | ~15 min | longer 8-shot prompts |
+| 1B-r5 | 50 | ~15 min | round-5 prompt is even longer (16 turns) |
 | 1C | 20 | ~5 min  | re-runs 20 problems, baseline already cached |
 | 1D | 10 | ~10 min | r=8 → 8× per-token compute, plus possible truncation to cap |
 | 1E | 50 seqs | ~1 min  | perplexity is cheap |
-| **Total** | | **~45 min** | budget 1 h with overhead |
+| **Total** | | **~95 min** | budget 1.75 h with overhead |
 
-Cost: ~$0.50–0.75 on a 4090 spot at $0.69/h.
+Cost: ~$1.10–1.40 on a 4090 spot at $0.69/h.
+
+If 1A passes cleanly at N=200, drop it back to N=50 in the runner so future Phase 1 reruns stay cheap.
 
 ---
 
@@ -471,7 +525,7 @@ Cost: ~$0.50–0.75 on a 4090 spot at $0.69/h.
 | Question | Decision |
 |---|---|
 | Should we test on base E2B beyond Cell 1E? | **No.** Base has no chat template; reasoning eval on base would require the round 4 raw-text-continuation prompt that we already know is broken. The architectural-correctness check is Cell 1E's perplexity drift. |
-| What if smart_v2 disagrees with legacy on Cell 1B? | **Both numbers are reported.** Cell 1B's gate uses `accuracy_legacy` for the round-5 bridge; `accuracy_smart_v2` is informational. They will disagree by ~5–10 pp; that's expected. |
+| Why two 8-shot cells (1B-p1 and 1B-r5)? | **Path 1 plan 5 and round 5 used different prompts.** Path 1 single-turn + `#### N` gave smart_v2 ≈ 30 %; round 5 multi-turn + "The answer is N." + stop_strings gave legacy ≈ 54.8 %. Trying to bridge both with one prompt fails (first iteration produced legacy = 38 %). Each cell anchors against its own prompt and gates only the metric that prompt was tuned for. |
 | Do we also run Cell 1D with `iter1-only` PLE? | **No.** That's a Phase 3 ablation. Cell 1D's only job is "hook at r=8 doesn't crash." |
 | What N for Cell 1D? | **10.** Lower bound for ≥1 minute of compute (so OOM has time to manifest), upper bound for "still 10 min". Smaller N risks missing rare crash modes that depend on a specific prompt. |
 | Can we run Phase 1 on a 3090 instead? | **Yes, slightly slower** — budget ~70 min instead of ~45 min. The 4090 is preferred only because Phases 2/3 will need 4090 throughput anyway. |

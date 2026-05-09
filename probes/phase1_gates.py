@@ -49,23 +49,37 @@ def gate_1A(s: dict) -> Tuple[bool, str]:
     )
 
 
-# --- Cell 1B: IT 8-shot bridge gate -----------------------------------------
-CELL_1B_LEGACY_BAND = (0.44, 0.64)      # Round 5 anchor 54.8 %
-CELL_1B_SMART_BAND = (0.20, 0.40)       # Path 1 plan 5 anchor 30.0 %
-CELL_1B_LOOP_BAND = (0.05, 0.25)
-CELL_1B_TRUNC_MAX = 0.20
+# --- Cell 1B: IT 8-shot bridges -------------------------------------------
+#
+# Round 5 (legacy = 54.8 %) and Path 1 plan 5 (smart_v2 = 30.0 %) used
+# DIFFERENT prompts; one prompt cannot bridge both anchors. Phase 1
+# therefore runs two cells, one per anchor:
+#
+#   * baseline-8shot-control   --- Path 1 plan 5 prompt (single user
+#       turn + "#### N" marker) --- gate_1B_path1 checks smart_v2.
+#   * baseline-8shot-round5    --- Round 5 prompt (alternating turns +
+#       "The answer is N." marker + stop_strings) --- gate_1B_round5
+#       checks accuracy_legacy.
+#
+# Loop_rate band has no lower bound: Path 1 plan 3's 10-12 % loop rate
+# was measured with a stricter detector than has_repetition_loop in
+# probes.extractors. We keep the upper bound to catch real pathology.
+
+CELL_1B_SMART_BAND = (0.20, 0.40)        # Path 1 plan 5 anchor 30.0 %
+CELL_1B_PATH1_LOOP_MAX = 0.25
+CELL_1B_PATH1_TRUNC_MAX = 0.20
+
+CELL_1B_LEGACY_BAND = (0.44, 0.64)       # Round 5 anchor 54.8 %
+CELL_1B_ROUND5_LOOP_MAX = 0.25
+CELL_1B_ROUND5_TRUNC_MAX = 0.20
 
 
-def gate_1B(s: dict) -> Tuple[bool, str]:
+def gate_1B_path1(s: dict) -> Tuple[bool, str]:
+    """Bridges to Path 1 plan 5's smart_v2 anchor (30.0 %, single-turn,
+    ``#### N`` exemplars). Legacy is recorded but not gated --- this
+    prompt does not reproduce round 5's 54.8 %, by design."""
     if s.get("n_problems", 0) == 0:
         return False, "no rows"
-    legacy = s["accuracy_legacy"]
-    if not (CELL_1B_LEGACY_BAND[0] <= legacy <= CELL_1B_LEGACY_BAND[1]):
-        return False, (
-            f"accuracy_legacy={legacy:.3f} outside band {CELL_1B_LEGACY_BAND}; "
-            "cross-round bridge to round 5 (54.8 %) broken --- diff Wei "
-            "exemplars + chat-template wrapping against round 5 manifest."
-        )
     smart = s["accuracy_smart_v2"]
     if not (CELL_1B_SMART_BAND[0] <= smart <= CELL_1B_SMART_BAND[1]):
         return False, (
@@ -73,19 +87,58 @@ def gate_1B(s: dict) -> Tuple[bool, str]:
             "Path 1 plan 5 anchor was 30.0 %."
         )
     loop = s["loop_rate"]
-    if not (CELL_1B_LOOP_BAND[0] <= loop <= CELL_1B_LOOP_BAND[1]):
+    if loop > CELL_1B_PATH1_LOOP_MAX:
         return False, (
-            f"loop_rate={loop:.3f} outside band {CELL_1B_LOOP_BAND}; "
-            "Path 1 plan 3 measured 10-12 % on 8-shot CoT cells."
+            f"loop_rate={loop:.3f} > {CELL_1B_PATH1_LOOP_MAX}; "
+            "harness regressed --- 8-shot CoT should not pathologically loop "
+            "more than a quarter of the time on the IT model."
         )
-    if s["truncation_rate"] > CELL_1B_TRUNC_MAX:
+    if s["truncation_rate"] > CELL_1B_PATH1_TRUNC_MAX:
         return False, (
-            f"truncation_rate={s['truncation_rate']:.3f} > {CELL_1B_TRUNC_MAX}"
+            f"truncation_rate={s['truncation_rate']:.3f} > {CELL_1B_PATH1_TRUNC_MAX}"
         )
     return True, (
-        f"acc_legacy={legacy:.3f} acc_smart={smart:.3f} "
+        f"acc_smart={smart:.3f} acc_legacy={s['accuracy_legacy']:.3f} "
         f"loop={loop:.3f} trunc={s['truncation_rate']:.3f}"
     )
+
+
+def gate_1B_round5(s: dict) -> Tuple[bool, str]:
+    """Bridges to Path 2 round 5's legacy anchor (54.8 %, multi-turn,
+    'The answer is N.' marker, stop_strings). Smart_v2 is recorded but
+    not gated --- it will likely run higher than this band, since the
+    round 5 prompt produces well-formed answers both extractors hit."""
+    if s.get("n_problems", 0) == 0:
+        return False, "no rows"
+    legacy = s["accuracy_legacy"]
+    if not (CELL_1B_LEGACY_BAND[0] <= legacy <= CELL_1B_LEGACY_BAND[1]):
+        return False, (
+            f"accuracy_legacy={legacy:.3f} outside band {CELL_1B_LEGACY_BAND}; "
+            "cross-round bridge to round 5 (54.8 %) broken --- diff Wei "
+            "exemplars + chat-template wrapping against round 5 manifest "
+            "(probes.mode_round5._format_gsm8k_prompt_chat)."
+        )
+    loop = s["loop_rate"]
+    if loop > CELL_1B_ROUND5_LOOP_MAX:
+        return False, (
+            f"loop_rate={loop:.3f} > {CELL_1B_ROUND5_LOOP_MAX}; "
+            "harness regressed."
+        )
+    if s["truncation_rate"] > CELL_1B_ROUND5_TRUNC_MAX:
+        return False, (
+            f"truncation_rate={s['truncation_rate']:.3f} > "
+            f"{CELL_1B_ROUND5_TRUNC_MAX}; stop_strings may not be wired."
+        )
+    return True, (
+        f"acc_legacy={legacy:.3f} acc_smart={s['accuracy_smart_v2']:.3f} "
+        f"loop={loop:.3f} trunc={s['truncation_rate']:.3f}"
+    )
+
+
+# Compatibility alias so external callers / older tests can still import
+# gate_1B; defaults to the path1 (smart_v2) variant since that's the
+# anchor the original gate prioritised after the legacy check.
+gate_1B = gate_1B_path1
 
 
 # --- Cell 1C: token-match gate ----------------------------------------------

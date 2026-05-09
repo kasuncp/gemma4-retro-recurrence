@@ -10,42 +10,63 @@ Experiment 8 answers the on-device half of the equation:
 
 This is the experiment that turns a datacenter-FLOP plateau number into a deployment claim.
 
+## Available hardware
+
+This run uses two Apple-silicon devices already in hand:
+
+- **MacBook Pro M3** — actively cooled, gives clean joules via `powermetrics`. Acts as the **upper-bound / irreducible-compute measurement** (no thermal throttling, full memory bandwidth).
+- **iPhone 13 Pro Max** — A15 Bionic (2021), 6 GB RAM, passively cooled. Acts as the **realistic phone-class deployment measurement**.
+
+Snapdragon / Android measurement is **deferred** to a follow-up; it requires hardware not currently available. The Apple-only run is sufficient to answer the core question — *can C2 run on a phone* — and provides one of the two platform points the original plan called for.
+
+### Caveats (must appear in the writeup, not buried)
+
+1. **iPhone 13 PM is 2021 silicon (A15), not 2026 flagship.** A current-gen iPhone (A18 Pro) or Snapdragon 8 Elite would be ~2× faster on inference and have a more generous thermal envelope. iPhone-13-PM numbers should be read as a **conservative lower bound** on what a current flagship achieves — not as the modal phone experience in 2026.
+2. **iOS does not expose joules to apps.** No `/sys/class/power_supply/` analog; no per-component power API without private entitlements. Energy on iPhone is measured indirectly (battery-delta over a fixed run, or via a tethered USB-C power meter if available). Mac is the clean joules number; iPhone is the *realistic-thermal* number with a coarser energy estimate.
+3. **iOS thermal telemetry is discrete.** `ProcessInfo.thermalState` returns four levels (`.nominal / .fair / .serious / .critical`) — enough for throttle detection but not for a continuous temperature curve. Mac gets continuous SMC-sampled temperatures via `powermetrics`.
+4. **MacBook Pro M3 is actively cooled.** This is a *feature* for the irreducible-compute number but means the Mac is NOT phone-thermal-representative. The "phone-thermal" reading comes from iPhone alone; the Mac is the "compute floor without thermal interference" number.
+5. **6 GB RAM on iPhone 13 PM is tight.** Gemma-3 E2B at MLX 4-bit fits, but Q5/Q6 may OOM under iOS memory pressure. If Q4 fails the accuracy parity gate, Q5 may not be reachable on this device — escalate to a fresher iPhone or accept the accuracy loss.
+
 ## Scope — what this plan is and isn't
 
 **In scope:**
-- Two reference devices, covering the dominant 2026 phone SoC families:
-  - **Snapdragon 8 Gen 3 / 8 Elite** (Android, recent flagship). Most portable for Gemma deployment via MLC-LLM or llama.cpp Vulkan.
-  - **Apple M2/M3** (iPad or Mac mini — phone-adjacent compute envelope, MLX backend). Apple Silicon GPU is the cleanest "phone-class but measurable" platform.
+- Two Apple-silicon devices (above).
 - Two cells per device, mirroring the four-paths comparison axes:
   - **C2 cell** (zero-shot plain prompt, chat template, greedy, max_new_tokens = 512) — the deployment-target cell.
   - **A3 cell** (8-shot Wei et al. CoT, greedy, max_new_tokens = 512) — for reference, to see how the prompt-token difference matters on-device.
 - Three measurements per cell:
   - **Wall-clock per problem** (median + p95 over 50 problems).
-  - **Energy per problem** (joules — average power × duration).
-  - **Thermal envelope** (peak SoC temperature during sustained 5-minute generation; throttle behavior).
-- Quantization: **Q4_K_M GGUF** for llama.cpp / Vulkan path; **MLX 4-bit** for Apple. Same model weights both sides; same C2 / A3 prompts.
+  - **Energy per problem** — clean joules on Mac, battery-delta-derived approximation on iPhone.
+  - **Thermal envelope** — continuous SMC temperature on Mac; `ProcessInfo.thermalState` transitions on iPhone; sustained 5-min throttle probe on both.
+- Quantization: **MLX 4-bit** for both. Same model weights both sides; same C2 / A3 prompts.
 
 **Explicitly out of scope:**
-- No iPhone or Pixel measurement *in this plan* (smaller battery + harder thermal constraints; merits its own follow-up if Experiment 8 looks promising).
-- No accuracy re-validation on quantized weights — that's a separate question (does Q4_K_M preserve C2's 71.6%?). Pin a small accuracy parity check (n=50 GSM8K) in the sanity gate.
+- No Android / Snapdragon measurement. Deferred to a follow-up plan (plan8b) once hardware is accessible.
+- No accuracy re-validation on quantized weights as the main goal — that's a separate question (does MLX 4-bit preserve C2's 71.6 %?). Pin a small accuracy parity check (n = 50 GSM8K) in the sanity gate.
 - No multi-modal probes. Text-only.
-- No Path 2/3/4 measurements. This plan benchmarks Path 1 only; the four-paths comparison rig adds the others later.
+- No Path 2/3/4 measurements. This plan benchmarks Path 1 only.
+- No older-iPhone or older-Mac sweep. Two device points, period.
 
 ## Environment
 
-**Snapdragon device:**
-- OS: Android 14+
-- Runner: MLC-LLM (preferred — Vulkan + Gemma support is mature) or llama.cpp Vulkan backend. Pin git SHA.
-- Quantization: Q4_K_M GGUF of `gemma-4-E2B-it`. Pin the GGUF file SHA-256.
-- Power: Android Battery Historian + on-device perf counters (`/sys/class/power_supply/battery/current_now` × `voltage_now`).
-- Temperature: `/sys/class/thermal/thermal_zone*/temp` polled at 1 Hz.
+**MacBook Pro M3:**
+- OS: macOS 14+ (Sonoma or later).
+- Runner: MLX-LM with 4-bit quantization. Pin the `mlx-lm` and `mlx` package versions.
+- Quantization: MLX 4-bit conversion of `gemma-4-E2B-it`. Pin the converted weight directory hash.
+- Power: `sudo powermetrics --samplers cpu_power,gpu_power,ane_power -i 100` (10 Hz). Capture CPU / GPU / ANE separately.
+- Temperature: `powermetrics --samplers smc -i 1000` (1 Hz). Records per-die temperatures.
+- Power source: device on AC; capture power-source state in metadata so the run is reproducible. (Battery-vs-AC changes the M3's frequency caps.)
 
-**Apple device:**
-- OS: macOS 14+ (Mac mini M2 / M3 — closest to phone thermal envelope) or iPadOS 17+ (M2/M4 iPad, fanless).
-- Runner: MLX-LM with 4-bit quantization. Pin git SHA.
-- Quantization: MLX 4-bit conversion of `gemma-4-E2B-it`.
-- Power: `powermetrics` (macOS) — sample at 1 Hz, capture CPU/GPU/ANE power separately.
-- Temperature: `pmset -g thermlog` and `powermetrics --samplers smc`.
+**iPhone 13 Pro Max:**
+- OS: iOS 17+.
+- Runner: **MLX Swift** in a small benchmark app, sideloaded via Xcode. Free Apple Developer account = 7-day signing (re-sign weekly), paid $99/yr account = normal signing. MLX-Swift supports Gemma; same 4-bit quantized weights as the Mac.
+- Quantization: MLX 4-bit (same artifact as Mac).
+- Power (best-effort, in priority order):
+  - **Primary:** Battery-percentage delta across a fixed-duration sustained run. Calibrate against an idle baseline.
+  - **Secondary (if available):** Tethered USB-C / Lightning power meter (e.g. ChargerLAB KM003C) measuring draw at the connector while phone is held at ≥ 95 % charge so charging current is small and stable. Subtract idle baseline.
+  - **Tertiary:** Xcode Instruments → Energy Log "energy impact" score. Coarse, not in joules; used only as a directional cross-check.
+- Thermals: `ProcessInfo.processInfo.thermalState` polled every 1 s via `NotificationCenter.default.addObserver(forName: ProcessInfo.thermalStateDidChangeNotification...)`. Record state-transition timestamps.
+- Run conditions: airplane mode on, screen brightness fixed at 50 %, all background app refresh disabled, app holds idle timer disabled (`UIApplication.shared.isIdleTimerDisabled = true`). Document whether the phone is in a case (cases change thermal mass significantly).
 
 ## Protocol
 
@@ -53,87 +74,95 @@ This is the experiment that turns a datacenter-FLOP plateau number into a deploy
 
 | Device | Cell | Prompt | Decode | n |
 |---|---|---|---|---|
-| SD 8 Gen 3 | **C2-SD** | C2 plain | greedy, 512 tok | 50 |
-| SD 8 Gen 3 | **A3-SD** | 8-shot Wei et al. | greedy, 512 tok | 50 |
-| Apple M2/M3 | **C2-M** | C2 plain | greedy, 512 tok | 50 |
-| Apple M2/M3 | **A3-M** | 8-shot Wei et al. | greedy, 512 tok | 50 |
+| MacBook Pro M3 | **C2-Mac** | C2 plain | greedy, 512 tok | 50 |
+| MacBook Pro M3 | **A3-Mac** | 8-shot Wei et al. | greedy, 512 tok | 50 |
+| iPhone 13 PM | **C2-iPhone** | C2 plain | greedy, 512 tok | 50 |
+| iPhone 13 PM | **A3-iPhone** | 8-shot Wei et al. | greedy, 512 tok | 50 |
 
-n = 50 chosen to give tight median / p95 estimates without taking days of phone time. The same 50 problems on every device (deterministic head of the GSM8K test split).
+Same 50 problems on every device (deterministic head of the GSM8K test split).
 
 ### Per-problem measurement
 
 For each problem:
 
-1. Cold start a fresh inference session.
+1. Cold start a fresh inference session (model resident in RAM, generation state reset).
 2. Tokenize prompt; record `prompt_tokens`.
 3. Start timer + power sampler.
-4. Generate up to 512 tokens (or until `<eos>`); record `gen_tokens`, wall-clock, and accumulated joules.
-5. Stop timers; record peak SoC temperature reached during generation.
-6. Pause 30s before next problem to allow thermal recovery (otherwise problem 2 onwards reports throttled numbers).
+4. Generate up to 512 tokens (or until `<eos>`); record `gen_tokens`, wall-clock, and power samples over the duration.
+5. Stop timers; record peak `thermalState` (iPhone) or peak SoC die temperature (Mac).
+6. Pause 30 s before next problem to allow thermal recovery.
 
 ### Sustained-thermal probe
 
 After the 50-problem batch, run one **sustained 5-minute generation** (continuous queries with no cooldown). Record:
-- Tokens/sec curve over 5 minutes (1-Hz sampling) — does throttling kick in?
-- Peak temperature.
-- Time-to-throttle if throttling occurs.
+- Tokens/sec curve over 5 minutes (1 Hz sampling).
+- Peak temperature (Mac) / max thermalState reached and timestamps of each transition (iPhone).
+- Time-to-throttle if it occurs.
 
-This distinguishes "fine for one query" from "fine for sustained assistant use."
+This distinguishes "fine for one query" from "fine for sustained assistant use." The contrast between Mac (cooled) and iPhone (passive) is the point: the Mac shows the irreducible compute curve, the iPhone shows what passive cooling does to it.
 
 ## Budget
 
 | Step | Time |
 |---|---|
-| Quantize + load to each device | ~2 hours per device |
-| 50 problems × 4 cells × ~5 min each | ~17 hours device-time, but parallelizable across devices (~9 hours each) |
+| MLX 4-bit conversion + load to each device | ~1 hour total (single artifact, copy to both) |
+| iOS app scaffolding (Xcode project, MLX Swift integration, JSONL logger, file-export) | ~4–6 hours one-time |
+| 50 problems × 4 cells × ~5 min each | ~17 hours device-time, parallelizable across the two devices (~9 hours each) |
 | Sustained-thermal probe (10 min × 4 cells) | ~40 min device-time |
 | Analysis + plot | ~3 hours |
 
-**Total: ~2 days of device time + 1 day of engineering**, assuming both devices are accessible.
-
-If only one device is available, halve the cells and budget — but the cross-platform comparison is then deferred.
+**Total: ~1 day device time + 1–1.5 days engineering** (the iOS app is the new cost relative to the Mac-only path).
 
 ## Sanity checks
 
-1. **Quantization accuracy parity gate.** Before measuring latency, run the C2 cell on n = 50 GSM8K problems on each quantized model. Accuracy must be ≥ 65% (i.e., within ~10% of the bf16 71.6%). If lower, Q4_K_M is too aggressive for this model and a Q5/Q6 quantization is required. Document.
-2. **Cold-start vs warm-start.** Confirm that the second problem in a sequence has the same latency as the first ± 5%. If warm is much faster, the measurement is dominated by KV-cache reuse and the per-problem number isn't representative of an assistant's first-query experience. Either fix or report both.
-3. **Power-measurement floor.** Idle power for 30s before each problem to establish baseline; subtract baseline from per-problem joules.
-4. **Throttle detection.** Document the temperature threshold at which throttling kicks in for each device; if peak generation temperature is within 5°C of that threshold, flag the result as "near-throttle."
+1. **Quantization accuracy parity gate.** Before measuring latency, run the C2 cell on n = 50 GSM8K problems on each device's quantized model. Accuracy must be ≥ 65 % (within ~10 % of bf16's 71.6 %). If lower, MLX 4-bit is too aggressive and Q5 / Q6 is required — note this may not fit in iPhone 13 PM's 6 GB RAM under iOS memory pressure.
+2. **Cold-start vs warm-start.** Confirm the second problem in a sequence has the same latency as the first ± 5 %. If warm is much faster, the measurement is dominated by KV-cache reuse; report both numbers.
+3. **Power-measurement floor.** Idle for 30 s before each problem to establish baseline; subtract baseline from per-problem joules (Mac) or battery-delta (iPhone).
+4. **Throttle detection.**
+   - Mac: log peak die temperature; if within 5 °C of the M3's known throttle threshold, flag as "near-throttle."
+   - iPhone: any transition `.nominal → .fair` is a soft warning; `.serious` or `.critical` means real throttling — flag the affected problems and segment the median/p95 by thermal state.
 5. **Prompt-format byte-equivalence.** Confirm the C2 prompt sent to the on-device model byte-matches the C2 prompt from Experiment 5's jsonl. Off-by-one tokenization differences invalidate the comparison.
+6. **iPhone idle-power calibration.** Run a 5-minute idle baseline (app open, no inference) and subtract its battery-% drain rate from the inference run's drain rate. Without this, the iPhone joules estimate is meaningless.
+7. **Charge-state confounding (iPhone).** If using the USB-C power-meter approach, confirm battery is ≥ 95 % so charging current is small and stable; otherwise the power meter reads charging draw, not inference draw. If using battery-delta, run the test off-charger from a known starting %.
+8. **Mac power-source confounding.** Run on AC. Battery mode caps clocks differently and would underreport peak performance.
 
 ## Pre-registered interpretation
 
 Decide outcomes before measuring.
 
 ### Outcome A — C2 is comfortably on-device
-Median wall-clock < 3 s, p95 < 6 s, energy < 5 J per problem, no thermal throttling within 5 minutes. **C2 is a deployable assistant cell on a phone.** The four-paths comparison can use these numbers as the on-device budget envelope.
+Median wall-clock < 3 s on Mac and < 6 s on iPhone, p95 acceptable on both, no thermal throttling within 5 minutes. **C2 is a deployable assistant cell on Apple silicon.** The four-paths comparison can use these numbers as the on-device budget envelope.
 
-### Outcome B — C2 works for one query but throttles on sustained use
-Median latency acceptable, but the 5-minute sustained probe shows tokens/sec dropping > 30% within 60 seconds. **C2 is fine for occasional queries, not for chat-style sustained interaction.** Document the sustainable rate; the four-paths comparison is at the sustainable rate, not the cold-start rate.
+### Outcome B — Mac fine, iPhone throttles on sustained use
+Mac runs cleanly; iPhone hits `.serious` thermalState within 60 s of sustained generation, tokens/sec drops > 30 %. **C2 works on a phone for occasional queries, not for chat-style sustained interaction on this generation of phone.** Document the sustainable rate; the four-paths comparison is at the sustainable rate.
 
-### Outcome C — C2 is too slow at p95
-p95 wall-clock > 10 s. **C2 fails the < 2 s time-to-first-token user-experience threshold for an assistant.** Mitigations: smaller quantization (which lowers accuracy — measure), speculative decoding (separate plan), or move to a smaller model (which exits Path 1 entirely).
+### Outcome C — C2 is too slow at p95 on iPhone
+iPhone p95 wall-clock > 10 s. **C2 fails the < 2 s TTFT user-experience threshold on 2021 silicon.** Open question: would A18 Pro / SD 8 Elite clear it? Plan a follow-up on a fresher device. Mitigations: smaller quantization (re-check accuracy), speculative decoding (separate plan), or accept that "C2 on a current flagship" is the deployment claim, not "C2 on any 2021+ phone."
 
-### Outcome D — A3's prompt overhead matters
-On-device, A3 (with 747 prompt tokens) is significantly slower than C2 (with 69 prompt tokens) — say, by > 50% wall-clock. **The Experiment 5 prompt-format finding has a second-order benefit on phone**: the cheaper prompt isn't just more accurate, it's also dramatically faster TTFT on-device. Strengthens the Path 1 conclusion.
+### Outcome D — A3's prompt overhead matters more on iPhone than on Mac
+On iPhone, A3's 747 prompt tokens cost a much larger fraction of total wall-clock than on Mac, because prompt processing is more memory-bandwidth-bound and the iPhone is bandwidth-limited. **The Experiment 5 prompt-format finding has a stronger second-order benefit on phone**: the cheaper prompt is dramatically faster TTFT on-device.
 
-### Outcome E — Cross-platform divergence
-Apple and Snapdragon results differ by > 2× on either latency or energy. **The on-device story is platform-specific.** Document and flag for the four-paths comparison: which platform was assumed.
+### Outcome E — Mac and iPhone diverge by > 3×
+Beyond the expected 1.5–2× silicon gap. **Indicates iOS runtime overhead, memory pressure, or thermal dampening above what's explainable by raw silicon.** Document and investigate before drawing conclusions — could be a measurement artifact (charge-state confound, idle-power miscalibration) rather than a real platform difference.
+
+### Outcome F — Quantization gate fails
+MLX 4-bit accuracy < 65 % on either device. **Q4 is too aggressive for Gemma-3 E2B**. Re-quantize at Q5 / Q6, re-measure. If Q5 OOMs on iPhone, the deployment claim caveats to "current iPhone or larger-RAM Android device."
 
 ## Deliverables
 
-Two scripts (one per platform), shared analysis:
+1. `path1_phone_mac.py` — Mac side. Runs MLX-LM benchmark, captures `powermetrics` output, emits JSONL.
+2. `Path1Bench/` — iOS app (Xcode project). Embeds MLX Swift, runs benchmark on tap, writes JSONL to app sandbox; export via Files app / AirDrop / Xcode device download.
+3. `path1_phone_analyze.py` — merges per-device JSONLs, computes median / p95 latency, mean joules (Mac) / battery-delta (iPhone), peak thermal state; emits `results_plan8.json` and a Pareto plot of accuracy vs energy. Output goes to `results/path_1_cot_tokens/plan8/` per project convention; emit PNGs alongside the JSON.
 
-1. `path1_phone_snapdragon.py` — Android side. Connects via ADB, runs MLC-LLM benchmark, captures power/thermal logs.
-2. `path1_phone_apple.py` — Apple side. Runs MLX benchmark locally, captures `powermetrics` output.
-3. `path1_phone_analyze.py` — merges per-device JSONLs, computes median/p95 latency, mean joules, peak temp; emits `results_plan8.json` and a Pareto plot of accuracy vs energy.
-
-Per-cell JSONLs in `results/path_1_cot_tokens/plan8/cells/`. Each row records `{idx, gen_tokens, wallclock_ms, joules, peak_temp_c, correct}`.
+Per-cell JSONLs in `results/path_1_cot_tokens/plan8/cells/`. Each row records:
+```
+{idx, gen_tokens, prompt_tokens, wallclock_ms, joules_mac, battery_delta_pct_iphone, peak_temp_c_mac, peak_thermal_state_iphone, correct, device, cell}
+```
 
 ## Report back
 
-Paste the four-cell latency / energy / temp table and the per-device outcome label. Update the blog post's conclusion table with on-device numbers (replacing or augmenting the 3090 numbers).
+Paste the four-cell latency / energy / thermal table, plus the sustained-probe curves, plus the per-device outcome label. Update the blog post's conclusion table with on-device numbers — making explicit that the iPhone half is on 2021 silicon and a 2026 flagship would likely be ~2× faster.
 
 ## What this closes
 
-This is the last Path 1 experiment. Combined with Experiments 6 and 7, after this the four-paths head-to-head can be planned in earnest: a fixed on-device budget (latency, joules), a fixed benchmark suite, and Path 1's representative cell pinned with full per-platform measurement.
+This is the last Path 1 experiment **on the hardware currently available**. Combined with Experiments 6 and 7, after this the four-paths head-to-head can be planned with a fixed on-device budget (Apple-silicon-derived). A follow-up plan8b can add Snapdragon / Android when hardware is accessible; the methodology and analysis pipeline from this plan transfer directly.

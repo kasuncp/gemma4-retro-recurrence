@@ -1,0 +1,41 @@
+{
+  "phase": "sanity",
+  "config": "W5-r1",
+  "config_dict": {
+    "prompt": "C2",
+    "block": [
+      15,
+      19
+    ],
+    "r": 1,
+    "ple_strategy": "every-iter",
+    "notes": "r=1 must be a token-for-token no-op vs baseline-C2."
+  },
+  "benchmark": "gsm8k",
+  "n_requested": 20,
+  "model_id": "google/gemma-4-E2B-it",
+  "dtype": "bf16",
+  "max_new_tokens": 512,
+  "seed": 42,
+  "summary": {
+    "n_problems": 20,
+    "accuracy_smart_v2": 0.85,
+    "accuracy_smart_v2_ci95": [
+      0.6395767041130426,
+      0.9476322080405041
+    ],
+    "accuracy_legacy": 0.8,
+    "accuracy_legacy_ci95": [
+      0.5839782779742401,
+      0.9193436467288
+    ],
+    "extractor_lift": 0.05,
+    "truncation_rate": 0.0,
+    "loop_rate": 0.0,
+    "parse_rate": 1.0,
+    "mean_gen_tokens": 235.0,
+    "total_gen_seconds": 242.37443327903748,
+    "mean_t_gen_seconds": 12.118721663951874,
+    "pathology_flag": false
+  }
+}

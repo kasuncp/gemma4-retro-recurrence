@@ -17,7 +17,9 @@ from probes.prompts import (
     EXEMPLAR_SET_ID,
     PROMPT_BUILDERS,
     WEI_8SHOT_EXEMPLARS,
+    WEI_8SHOT_EXEMPLARS_ROUND5,
     build_8shot_cot_gsm8k,
+    build_8shot_cot_gsm8k_round5,
     build_c2_arc,
     build_c2_bbh,
     build_c2_gsm8k,
@@ -133,6 +135,53 @@ class TestEightShotCot(unittest.TestCase):
         self.assertEqual(len(WEI_8SHOT_EXEMPLARS), 8)
 
 
+class TestEightShotCotRound5(unittest.TestCase):
+    def setUp(self):
+        self.tok = _FakeGemmaTokenizer()
+
+    def test_round5_marker_replaces_hash(self):
+        # Round 5 exemplars must end "...= N. The answer is N." (no #### marker).
+        for q_orig, a_r5 in WEI_8SHOT_EXEMPLARS_ROUND5:
+            self.assertNotIn("####", a_r5,
+                             f"round-5 exemplar still has #### marker: {a_r5!r}")
+            self.assertTrue(a_r5.rstrip().endswith("."),
+                            f"round-5 exemplar must end in '.': {a_r5!r}")
+            self.assertIn("The answer is", a_r5)
+
+    def test_round5_exemplar_count_matches_wei(self):
+        self.assertEqual(len(WEI_8SHOT_EXEMPLARS_ROUND5), 8)
+        # Question text must be byte-identical to Wei exemplars.
+        for (q_w, _), (q_r, _) in zip(WEI_8SHOT_EXEMPLARS,
+                                       WEI_8SHOT_EXEMPLARS_ROUND5):
+            self.assertEqual(q_w, q_r)
+
+    def test_alternating_turns_not_stuffed_single_turn(self):
+        out = build_8shot_cot_gsm8k_round5(self.tok, "What is 12 + 7?")
+        # Each exemplar Q is in its own user turn; each A in its own
+        # assistant turn. The stuffed single-turn variant has only ONE
+        # 'user' header before the model header --- this builder must
+        # produce 9 user headers (8 exemplars + 1 target).
+        self.assertEqual(out.count("<start_of_turn>user"), 9,
+                         f"round-5 prompt should have 9 user turns; got {out!r}")
+        self.assertEqual(out.count("<start_of_turn>assistant"), 8)
+
+    def test_ends_in_model_header(self):
+        out = build_8shot_cot_gsm8k_round5(self.tok, "trivial")
+        self.assertTrue(
+            out.rstrip().endswith("<start_of_turn>model"),
+            f"round-5 prompt did not end in model header; got: {out!r}",
+        )
+
+    def test_includes_target_question(self):
+        out = build_8shot_cot_gsm8k_round5(self.tok, "What is 12 + 7?")
+        self.assertIn("What is 12 + 7?", out)
+
+    def test_includes_all_eight_exemplars(self):
+        out = build_8shot_cot_gsm8k_round5(self.tok, "trivial")
+        for q, _ in WEI_8SHOT_EXEMPLARS_ROUND5:
+            self.assertIn(q[:30], out)
+
+
 class TestDispatch(unittest.TestCase):
     def setUp(self):
         self.tok = _FakeGemmaTokenizer()
@@ -140,6 +189,7 @@ class TestDispatch(unittest.TestCase):
     def test_registered_pairs(self):
         self.assertIn(("gsm8k", "C2"), PROMPT_BUILDERS)
         self.assertIn(("gsm8k", "8shot-CoT"), PROMPT_BUILDERS)
+        self.assertIn(("gsm8k", "8shot-CoT-r5"), PROMPT_BUILDERS)
         self.assertIn(("arc-c", "C2"), PROMPT_BUILDERS)
         self.assertIn(("bbh-lite", "C2"), PROMPT_BUILDERS)
 

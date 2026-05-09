@@ -1,11 +1,16 @@
 # Path 2 v2 — Phase 1: hook sanity gate.
 #
-# Sequentially runs five cells (~45 min on a 4090):
-#   1A baseline-C2     (50 GSM8K, IT)         band [0.65, 0.82]
-#   1B baseline-8shot  (50 GSM8K, IT)         band [0.44, 0.64] (legacy)
-#   1C W5-r1           (20 GSM8K, IT)         token-match vs 1A
-#   1D W5-r8           (10 GSM8K, IT)         loop_rate < 0.95
-#   1E base ppl smoke  (Wikitext-2, base)     drift < 1e-4
+# Sequentially runs six cells (~95 min on a 4090):
+#   1A    baseline-C2            (200 GSM8K, IT) band [0.65, 0.82]
+#                                                 N bumped from 50 to
+#                                                 disambiguate trunc rate
+#   1B-p1 baseline-8shot-control  (50 GSM8K, IT) smart_v2 in [0.20, 0.40]
+#                                                 (Path 1 plan 5 anchor)
+#   1B-r5 baseline-8shot-round5   (50 GSM8K, IT) legacy   in [0.44, 0.64]
+#                                                 (round 5 bridge anchor)
+#   1C    W5-r1                   (20 GSM8K, IT) token-match vs 1A
+#   1D    W5-r8                   (10 GSM8K, IT) loop_rate < 0.95
+#   1E    base ppl smoke   (Wikitext-2, base)    drift < 1e-4
 #
 # All gates must pass before Phase 2 launches. The runner exits
 # non-zero on any failure and emits phase1_summary.json.
@@ -29,13 +34,13 @@ git:
   ref: "path_2_phase_1"
 
 budget:
-  # Phase 1 is small and slow-to-fail: every cell has a numeric gate;
-  # any failure halts the route. The cap_usd here matches the plan's
-  # ~$0.50-0.75 budget at 4090 spot pricing, with headroom for the
-  # one-off model download on a fresh pod.
-  cap_usd: 1.5
-  emergency_usd: 0.30
-  max_hours: 2
+  # Phase 1 is slow-to-fail: every cell has a numeric gate; any failure
+  # halts the route. After the 1A bump to N=200 + the new 1B-r5 cell,
+  # plan budget is ~$1.10-1.40 at 4090 spot. Cap leaves headroom for
+  # the one-off model download on a fresh pod.
+  cap_usd: 2.0
+  emergency_usd: 0.40
+  max_hours: 2.5
 
 watch:
   # Tighter than usual --- Phase 1 is short, so a 5-min tick would

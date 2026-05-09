@@ -78,32 +78,81 @@ class TestGate1A(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 1B
+# 1B-path1 (smart_v2 anchor on Path 1 plan 5 prompt)
 # ---------------------------------------------------------------------------
 
-class TestGate1B(unittest.TestCase):
-    def test_passes_at_round5_anchor(self):
-        s = _gsm8k_summary(acc=0.30, acc_legacy=0.548, loop=0.10, trunc=0.05)
-        ok, msg = g.gate_1B(s)
+class TestGate1BPath1(unittest.TestCase):
+    def test_passes_at_path1_anchor(self):
+        # Path 1 plan 5 measured smart_v2 = 0.300, legacy ~ 0.38, loop = 0.0
+        # on the IT model with the single-turn '#### N' prompt. Legacy
+        # is informational only --- the round-5 bridge has its own gate.
+        s = _gsm8k_summary(acc=0.30, acc_legacy=0.38, loop=0.0, trunc=0.06)
+        ok, msg = g.gate_1B_path1(s)
         self.assertTrue(ok, msg)
 
-    def test_fails_legacy_outside_band(self):
-        s = _gsm8k_summary(acc=0.30, acc_legacy=0.10, loop=0.10)
-        ok, msg = g.gate_1B(s)
-        self.assertFalse(ok)
-        self.assertIn("accuracy_legacy", msg)
+    def test_passes_with_zero_loop_rate(self):
+        # The current harness's has_repetition_loop reports 0% on this
+        # cell; the path1 gate must not require nonzero loops.
+        s = _gsm8k_summary(acc=0.28, acc_legacy=0.38, loop=0.0, trunc=0.16)
+        ok, msg = g.gate_1B_path1(s)
+        self.assertTrue(ok, msg)
 
     def test_fails_smart_outside_band(self):
         s = _gsm8k_summary(acc=0.05, acc_legacy=0.50, loop=0.10)
-        ok, msg = g.gate_1B(s)
+        ok, msg = g.gate_1B_path1(s)
         self.assertFalse(ok)
         self.assertIn("accuracy_smart_v2", msg)
 
-    def test_fails_loop_outside_band(self):
+    def test_fails_high_loop_rate(self):
         s = _gsm8k_summary(acc=0.30, acc_legacy=0.50, loop=0.40)
-        ok, msg = g.gate_1B(s)
+        ok, msg = g.gate_1B_path1(s)
         self.assertFalse(ok)
         self.assertIn("loop_rate", msg)
+
+    def test_fails_high_truncation(self):
+        s = _gsm8k_summary(acc=0.30, trunc=0.30)
+        ok, msg = g.gate_1B_path1(s)
+        self.assertFalse(ok)
+        self.assertIn("truncation_rate", msg)
+
+    def test_legacy_is_not_gated(self):
+        # Path 1 cell does NOT gate legacy --- the round-5 bridge
+        # belongs to gate_1B_round5. A poor legacy here must not fail
+        # this gate as long as smart_v2 lands on Path 1's anchor.
+        s = _gsm8k_summary(acc=0.30, acc_legacy=0.10)
+        ok, _ = g.gate_1B_path1(s)
+        self.assertTrue(ok)
+
+
+# ---------------------------------------------------------------------------
+# 1B-round5 (legacy anchor on round 5 prompt)
+# ---------------------------------------------------------------------------
+
+class TestGate1BRound5(unittest.TestCase):
+    def test_passes_at_round5_anchor(self):
+        s = _gsm8k_summary(acc=0.50, acc_legacy=0.548, loop=0.05, trunc=0.05)
+        ok, msg = g.gate_1B_round5(s)
+        self.assertTrue(ok, msg)
+
+    def test_fails_legacy_outside_band(self):
+        s = _gsm8k_summary(acc=0.30, acc_legacy=0.10, loop=0.0, trunc=0.05)
+        ok, msg = g.gate_1B_round5(s)
+        self.assertFalse(ok)
+        self.assertIn("accuracy_legacy", msg)
+
+    def test_fails_high_truncation(self):
+        s = _gsm8k_summary(acc=0.50, acc_legacy=0.548, trunc=0.30)
+        ok, msg = g.gate_1B_round5(s)
+        self.assertFalse(ok)
+        self.assertIn("truncation_rate", msg)
+        self.assertIn("stop_strings", msg)
+
+    def test_smart_is_not_gated(self):
+        # Round 5 cell does NOT gate smart_v2 --- both extractors will
+        # likely converge here, pushing smart_v2 above the path1 band.
+        s = _gsm8k_summary(acc=0.55, acc_legacy=0.548)
+        ok, _ = g.gate_1B_round5(s)
+        self.assertTrue(ok)
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,38 @@
+{
+  "phase": "sanity",
+  "config": "baseline-8shot-control",
+  "config_dict": {
+    "prompt": "8shot-CoT",
+    "block": null,
+    "r": 1,
+    "ple_strategy": "every-iter",
+    "notes": "Bridges to Path 2 round 5 (54.8%); gate band [0.44, 0.64]."
+  },
+  "benchmark": "gsm8k",
+  "n_requested": 50,
+  "model_id": "google/gemma-4-E2B-it",
+  "dtype": "bf16",
+  "max_new_tokens": 512,
+  "seed": 42,
+  "summary": {
+    "n_problems": 50,
+    "accuracy_smart_v2": 0.28,
+    "accuracy_smart_v2_ci95": [
+      0.17474014357680362,
+      0.4166538714598967
+    ],
+    "accuracy_legacy": 0.38,
+    "accuracy_legacy_ci95": [
+      0.2586259584257722,
+      0.5184980497760643
+    ],
+    "extractor_lift": -0.1,
+    "truncation_rate": 0.16,
+    "loop_rate": 0.0,
+    "parse_rate": 1.0,
+    "mean_gen_tokens": 199.82,
+    "total_gen_seconds": 568.5004470348358,
+    "mean_t_gen_seconds": 11.370008940696716,
+    "pathology_flag": false
+  }
+}
