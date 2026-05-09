@@ -122,6 +122,28 @@ CONFIGS: dict[str, dict] = {
 }
 
 
+# Phase 2: single-layer reasoning probes. One config per decoder layer
+# at r=8 with the C2 prompt; structural pre-flight uses L17-r1 instead.
+# Generated programmatically so we don't paste 35 near-identical dicts.
+for _L in range(35):
+    CONFIGS[f"L{_L:02d}-r8"] = {
+        "prompt": "C2",
+        "block": (_L, _L),                # start == end -> single layer
+        "r": 8,
+        "ple_strategy": "every-iter",
+        "notes": f"phase 2: single-layer r=8 probe at decoder layer {_L}",
+    }
+del _L
+
+CONFIGS["L17-r1"] = {                     # phase 2 pre-flight only
+    "prompt": "C2",
+    "block": (17, 17),
+    "r": 1,
+    "ple_strategy": "every-iter",
+    "notes": "phase 2 pre-flight: single-layer r=1 must token-match baseline-C2.",
+}
+
+
 def get_config(name: str) -> dict:
     if name not in CONFIGS:
         raise ValueError(

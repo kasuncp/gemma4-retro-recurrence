@@ -1,0 +1,46 @@
+# Path 2 v2 — Phase 2: per-layer reasoning map.
+#
+# Sequentially runs:
+#   P0_L17_r1_token_match  pre-flight (N=20)
+#   L00..L34               r=8 single-layer probes (N=50 GSM8K, IT)
+#
+# After all 36 cells finish, the runner buckets each layer
+# (preserved/degraded/broken), decides Phase 3's launch mode, and
+# emits phase2_summary.json + phase2_layer_map.{csv,png}.
+#
+# Wall budget ~8 h on a single 4090 (per plan section "Compute
+# budget"). With --shard <i>/<n> across 3 pods, ~2.5 h.
+#
+# Usage:
+#   ./scripts/runpod.sh go experiment_path2_v2_phase2.yaml
+
+run:
+  flags: "--script path2-v2-phase2"
+  result_dir: "results/path_2_depth_recurrence_v2/phase2"
+
+pod:
+  gpu_types: "NVIDIA GeForce RTX 4090"
+  gpu_count: 1
+  cloud_type: SECURE
+  container_disk_gb: 30
+  volume_gb: 50
+
+git:
+  url: "https://github.com/kasuncp/gemma4-retro-recurrence.git"
+  ref: "path_2_phase_2"
+
+budget:
+  # Plan budget ~$5.50 at 4090 spot ($0.69/h x ~8 h). Cap leaves
+  # headroom for the one-off model download on a fresh pod and for
+  # the optional --with-ppl-bridge bump (~3 h extra; we don't enable
+  # it by default — the round 2c bridge value is small once the 1E
+  # gate has passed).
+  cap_usd: 7.0
+  emergency_usd: 1.0
+  max_hours: 9
+
+watch:
+  # Phase 2 has 36 cells running ~12 min each; tick every 5 min so
+  # the watcher catches slow-build telemetry without spamming the
+  # rsync.
+  tick_seconds: 300

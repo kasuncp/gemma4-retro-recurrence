@@ -103,6 +103,26 @@ def parse_args():
         action="store_true",
         help="Wipe the cell's JSONL before running.",
     )
+    p.add_argument(
+        "--with-ppl-bridge",
+        action="store_true",
+        help=(
+            "After GSM8K generation, compute Wikitext-2 perplexity on "
+            "the same model+hook (Phase 2 base-ppl bridge). Records "
+            "base_ppl and (if a round-2c JSON sits at "
+            "results/path_2_depth_recurrence/results_round2c_full_map.json"
+            ") the delta vs that layer's vanilla-r=8 entry. Adds ~5 "
+            "min/cell; off by default."
+        ),
+    )
+    p.add_argument(
+        "--ppl-num-sequences", type=int, default=20,
+        help="Sequences for --with-ppl-bridge (Phase 0 D12: 20 is enough).",
+    )
+    p.add_argument(
+        "--ppl-max-length", type=int, default=256,
+        help="Token cap per sequence for --with-ppl-bridge.",
+    )
     return p.parse_args()
 
 
@@ -234,6 +254,7 @@ def _run_one_cell(args, cfg: dict) -> int:
             f"r={r}, ple_strategy={ple_strategy}"
         )
 
+    base_ppl_record = None
     try:
         gen_kwargs = dict(
             max_new_tokens=args.max_new_tokens,
@@ -285,15 +306,112 @@ def _run_one_cell(args, cfg: dict) -> int:
                     f"  [{i}/{len(rows_to_run)}] idx={row['idx']} "
                     f"n_tok={n_gen_tokens} t={t1 - t0:.1f}s"
                 )
+
+        if args.with_ppl_bridge:
+            base_ppl_record = _compute_ppl_bridge(
+                args=args, model=model, tokenizer=tokenizer, cfg=cfg,
+                torch=torch,
+            )
     finally:
         if uninstall is not None:
             uninstall()
 
-    _emit_summary(args, jsonl)
+    _emit_summary(args, jsonl, base_ppl_record=base_ppl_record)
     return 0
 
 
-def _emit_summary(args, jsonl: Path) -> None:
+def _compute_ppl_bridge(*, args, model, tokenizer, cfg, torch) -> dict:
+    """Phase 2 D12 bridge: compute Wikitext-2 perplexity with the same
+    model + hook still installed, and (if available) compare against
+    round 2c's vanilla-r=8 entry for this layer.
+
+    Returns a dict with ``base_ppl`` (always) and, when the round-2c
+    JSON is on disk and the cell is a single-layer probe at r=8,
+    ``round2c_base_ppl`` + ``delta_ppl``. ``warn`` is set when
+    ``|delta_ppl| > 1.0`` (Phase 2's harness-drift sentinel).
+    """
+    from probes.data import compute_perplexity, prepare_inputs
+    print(
+        f"\n--with-ppl-bridge: computing Wikitext-2 ppl "
+        f"(num_sequences={args.ppl_num_sequences}, "
+        f"max_length={args.ppl_max_length})"
+    )
+    inputs = prepare_inputs(
+        tokenizer, args.ppl_num_sequences, args.ppl_max_length,
+    )
+    with torch.no_grad():
+        mean_nll, ppl = compute_perplexity(model, inputs)
+    print(f"  base_ppl={ppl:.4f}  mean_nll={mean_nll:.4f}")
+
+    record = {
+        "base_ppl": float(ppl),
+        "mean_nll": float(mean_nll),
+        "ppl_num_sequences": args.ppl_num_sequences,
+        "ppl_max_length": args.ppl_max_length,
+    }
+
+    block = cfg.get("block")
+    r = cfg.get("r", 1)
+    if block is not None and block[0] == block[1] and r == 8:
+        # Single-layer r=8 probe -> look up round 2c's vanilla entry.
+        r2c_ppl = _round2c_ppl(layer=block[0], r=8, ple_mode="vanilla")
+        if r2c_ppl is not None:
+            delta = float(ppl) - float(r2c_ppl)
+            record["round2c_base_ppl"] = float(r2c_ppl)
+            record["delta_ppl"] = delta
+            if abs(delta) > 1.0:
+                record["warn"] = (
+                    f"|delta_ppl|={abs(delta):.2f} > 1.0 vs round 2c; "
+                    "harness drift suspected (transformers / weights / "
+                    "hook changed)."
+                )
+                print(f"  WARN: {record['warn']}")
+            else:
+                print(
+                    f"  bridge: round2c_base_ppl={r2c_ppl:.4f} "
+                    f"delta_ppl={delta:+.4f}"
+                )
+        else:
+            print(
+                "  bridge: no round-2c entry on disk for "
+                f"layer={block[0]}, r=8, vanilla; skipping delta."
+            )
+    return record
+
+
+def _round2c_ppl(*, layer: int, r: int, ple_mode: str = "vanilla"):
+    """Look up the (layer, r, ple_mode) cell from round 2c's full map.
+
+    The JSON lives at
+    ``results/path_2_depth_recurrence/results_round2c_full_map.json``
+    and stores ``cells: [{layer, ple_mode, r, mean_nll, ppl}, ...]``.
+    Returns the float ppl, or None if the file or row is absent.
+    """
+    import json as _json
+    repo_root = Path(__file__).resolve().parents[1]
+    p = (
+        repo_root
+        / "results"
+        / "path_2_depth_recurrence"
+        / "results_round2c_full_map.json"
+    )
+    if not p.is_file():
+        return None
+    try:
+        d = _json.loads(p.read_text())
+    except Exception:
+        return None
+    for cell in d.get("cells", []):
+        if (
+            cell.get("layer") == layer
+            and cell.get("r") == r
+            and cell.get("ple_mode") == ple_mode
+        ):
+            return cell.get("ppl")
+    return None
+
+
+def _emit_summary(args, jsonl: Path, *, base_ppl_record: dict | None = None) -> None:
     rows = read_jsonl(jsonl)
     summary = summarise(rows, args.benchmark)
     out = {
@@ -308,6 +426,8 @@ def _emit_summary(args, jsonl: Path) -> None:
         "seed": args.seed,
         "summary": summary,
     }
+    if base_ppl_record is not None:
+        out["base_ppl_bridge"] = base_ppl_record
     p = cell_summary_path(
         output_dir=Path(args.output_dir),
         benchmark=args.benchmark,
