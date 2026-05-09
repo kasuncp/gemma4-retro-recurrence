@@ -27,7 +27,7 @@ Phase 1 produces no research findings. It validates the harness.
 
 | Cell | Model | Config | Benchmark | N | Gate |
 |---|---|---|---|---|---|
-| **1A** IT C2 baseline | E2B-it | `baseline-C2` | GSM8K | 50 | accuracy_smart_v2 ∈ [65 %, 82 %], loop_rate < 5 %, truncation < 5 % |
+| **1A** IT C2 baseline | E2B-it | `baseline-C2` | GSM8K | 200 | accuracy_smart_v2 ∈ [65 %, 82 %], loop_rate < 5 %, truncation_rate < 5 % (truncation_rate = cap-hit AND extractor failed) |
 | **1B-p1** IT 8-shot Path 1 anchor | E2B-it | `baseline-8shot-control` | GSM8K | 50 | accuracy_smart_v2 ∈ [20 %, 40 %], loop_rate < 25 %, truncation < 20 % |
 | **1B-r5** IT 8-shot round 5 anchor | E2B-it | `baseline-8shot-round5` | GSM8K | 50 | accuracy_legacy ∈ [44 %, 64 %], loop_rate < 25 %, truncation < 20 % |
 | **1C** Token-match no-op | E2B-it | `W5-r1` vs `baseline-C2` | GSM8K | 20 | per-problem completion strings byte-equal |
@@ -198,7 +198,9 @@ The runner prints a final table and exits non-zero on any failure.
 
 **Config:** `baseline-C2` (no hook, C2 prompt).
 **Model:** `google/gemma-4-E2B-it`.
-**Benchmark:** GSM8K, N=50, seed=42.
+**Benchmark:** GSM8K, N=200, seed=42 (bumped from 50 on the
+N=50→N=200 disambiguation; can be reverted to 50 once the harness is
+known-good).
 **Generation:** `max_new_tokens=512`, greedy, `use_cache=False`,
 `pad_token_id=eos`.
 
@@ -210,9 +212,9 @@ extraction lifts that to 78.0 %.
 
 | Metric | Band | Why |
 |---|---|---|
-| `accuracy_smart_v2` | ≥ 0.65 and ≤ 0.82 | ±10 pp around 71.6 % anchor; N=50 95 % CI is roughly ±13 pp, so the band is generous and only catches structural breakage |
+| `accuracy_smart_v2` | ≥ 0.65 and ≤ 0.82 | ±10 pp around 71.6 % anchor; N=200 95 % CI is roughly ±6 pp, so the band is generous and only catches structural breakage |
 | `loop_rate` | < 0.05 | Path 1 measured 0.0 % on the same cell at N=500. Any nonzero means the prompt builder regressed |
-| `truncation_rate` | < 0.05 | Path 1 measured ~0 % at 512 tokens; any ≥10 % means EOS isn't firing |
+| `truncation_rate` | < 0.05 | "Truncation" here means *the harness couldn't surface an answer* — `n_tok ≥ max_new_tokens` AND `pred_smart_v2 is None`. Cap-hit-but-extracted rows go in the accuracy bucket, not here. The N=50→N=200 disambiguation showed 14/200 cap-hit rows but 0/200 unparseable, so this metric is what catches a real EOS regression |
 | `parse_rate` | ≥ 0.95 | smart_v2 returned non-None |
 
 **On failure:** the most likely cause is `apply_chat_template` not
@@ -220,8 +222,8 @@ being applied (Path 1 plan 5's first-hour bug). Inspect the first
 prompt; it must end in `<start_of_turn>model\n`. If it doesn't,
 `build_c2_gsm8k` regressed --- run `tests/path2_v2/test_prompts.py`.
 
-**Wall budget:** ~12 min on a 4090 with `use_cache=False` (50 problems
-× ~14 s each).
+**Wall budget:** ~50 min on a 4090 with `use_cache=False` (200 problems
+× ~15 s each, including the over-talkative tail).
 
 ---
 

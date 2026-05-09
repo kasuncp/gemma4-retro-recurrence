@@ -7,28 +7,28 @@
   "cells": {
     "1A_baseline_C2": {
       "summary": {
-        "n_problems": 50,
-        "accuracy_smart_v2": 0.7,
+        "n_problems": 200,
+        "accuracy_smart_v2": 0.755,
         "accuracy_smart_v2_ci95": [
-          0.562493877226366,
-          0.8089661091039063
+          0.6909563161285153,
+          0.809432220853141
         ],
-        "accuracy_legacy": 0.7,
+        "accuracy_legacy": 0.705,
         "accuracy_legacy_ci95": [
-          0.562493877226366,
-          0.8089661091039063
+          0.6384115802925058,
+          0.7638615572809827
         ],
-        "extractor_lift": 0.0,
-        "truncation_rate": 0.06,
+        "extractor_lift": 0.05,
+        "truncation_rate": 0.0,
         "loop_rate": 0.0,
         "parse_rate": 1.0,
-        "mean_gen_tokens": 270.32,
-        "total_gen_seconds": 724.903135061264,
-        "mean_t_gen_seconds": 14.498062701225281,
+        "mean_gen_tokens": 271.08,
+        "total_gen_seconds": 2802.081894159317,
+        "mean_t_gen_seconds": 14.010409470796585,
         "pathology_flag": false
       },
-      "gate_passed": false,
-      "gate_message": "truncation_rate=0.060 > 0.05; EOS firing wrong, or max_new_tokens too small."
+      "gate_passed": true,
+      "gate_message": "acc=0.755 loop=0.000 trunc=0.000 parse=1.000"
     },
     "1B_baseline_8shot_path1": {
       "summary": {
@@ -44,7 +44,7 @@
           0.5184980497760643
         ],
         "extractor_lift": -0.1,
-        "truncation_rate": 0.16,
+        "truncation_rate": 0.0,
         "loop_rate": 0.0,
         "parse_rate": 1.0,
         "mean_gen_tokens": 199.82,
@@ -53,14 +53,32 @@
         "pathology_flag": false
       },
       "gate_passed": true,
-      "gate_message": "acc_smart=0.280 acc_legacy=0.380 loop=0.000 trunc=0.160"
+      "gate_message": "acc_smart=0.280 acc_legacy=0.380 loop=0.000 trunc=0.000"
     },
     "1B_baseline_8shot_round5": {
       "summary": {
-        "n_problems": 0
+        "n_problems": 50,
+        "accuracy_smart_v2": 0.36,
+        "accuracy_smart_v2_ci95": [
+          0.24138562967182875,
+          0.49859237989698046
+        ],
+        "accuracy_legacy": 0.56,
+        "accuracy_legacy_ci95": [
+          0.4230578680014353,
+          0.6883801278976466
+        ],
+        "extractor_lift": -0.2,
+        "truncation_rate": 0.0,
+        "loop_rate": 0.0,
+        "parse_rate": 0.98,
+        "mean_gen_tokens": 205.38,
+        "total_gen_seconds": 683.4637944698334,
+        "mean_t_gen_seconds": 13.669275889396667,
+        "pathology_flag": false
       },
-      "gate_passed": false,
-      "gate_message": "no rows"
+      "gate_passed": true,
+      "gate_message": "acc_legacy=0.560 acc_smart=0.360 loop=0.000 trunc=0.000"
     },
     "1C_token_match": {
       "info": {
@@ -85,7 +103,7 @@
           0.2775401687666166
         ],
         "extractor_lift": 0.0,
-        "truncation_rate": 1.0,
+        "truncation_rate": 0.2,
         "loop_rate": 0.8,
         "parse_rate": 0.8,
         "mean_gen_tokens": 512.0,
@@ -103,5 +121,5 @@
       "gate_message": "unmod_ppl=12.5317 r1_ppl=12.5317 drift=0.00e+00"
     }
   },
-  "all_gates_passed": false
+  "all_gates_passed": true
 }

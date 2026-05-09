@@ -29,6 +29,19 @@ Per-config summary fields (GSM8K):
   truncation_rate, loop_rate, parse_rate (smart_v2 returned non-None),
   n_problems, mean_gen_tokens, total_gen_seconds, mean_t_gen_seconds,
   pathology_flag (truncation_rate>0.5 or loop_rate>0.5).
+
+``truncation_rate`` semantics (Phase 1, post-disambiguation):
+  ``n_tok >= max_new_tokens`` is the raw row-level fact recorded as
+  ``truncated``. The summary metric is the principled subset:
+  ``truncated AND pred_smart_v2 is None`` --- i.e., the model hit the
+  cap AND the harness couldn't extract any answer. A row that hits
+  the cap but yields a parseable (correct or wrong) number is an
+  *accuracy* observation, not truncation; the original definition
+  conflated those, which made gates fire on verbose-but-correct
+  generations (idx=314: model emits "Answer: 30" matching gold, then
+  continues into self-checking and trips the cap). Phase 1 N=200 1A
+  saw 14/200 = 7 % under the old definition vs 0/200 = 0 % under the
+  new one; all 14 had extractable numbers.
 """
 
 import json
@@ -178,7 +191,13 @@ def summarise_gsm8k(rows: Iterable[dict]) -> dict:
         return {"n_problems": 0}
     n_smart = sum(1 for r in rows if r["correct_smart_v2"])
     n_legacy = sum(1 for r in rows if r["correct_legacy"])
-    n_trunc = sum(1 for r in rows if r["truncated"])
+    # See module docstring: truncation = "harness couldn't surface an
+    # answer", not "model emitted 512 tokens". Cap-hit rows that still
+    # produce a parseable number belong in the accuracy bucket.
+    n_trunc = sum(
+        1 for r in rows
+        if r["truncated"] and r["pred_smart_v2"] is None
+    )
     n_loop = sum(1 for r in rows if r["loop_flag"])
     n_parsed = sum(1 for r in rows if r["pred_smart_v2"] is not None)
     mean_tokens = sum(r["n_gen_tokens"] for r in rows) / n

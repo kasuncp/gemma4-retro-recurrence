@@ -1,0 +1,42 @@
+{
+  "phase": "sanity",
+  "config": "baseline-8shot-round5",
+  "config_dict": {
+    "prompt": "8shot-CoT-r5",
+    "block": null,
+    "r": 1,
+    "ple_strategy": "every-iter",
+    "stop_strings": [
+      "\nQ:",
+      "\nQuestion:"
+    ],
+    "notes": "Round 5 anchor: legacy ~ 54.8 %. Multi-turn alternating exemplars + 'The answer is N.' marker + stop_strings. Mirrors probes.mode_round5._format_gsm8k_prompt_chat."
+  },
+  "benchmark": "gsm8k",
+  "n_requested": 50,
+  "model_id": "google/gemma-4-E2B-it",
+  "dtype": "bf16",
+  "max_new_tokens": 512,
+  "seed": 42,
+  "summary": {
+    "n_problems": 50,
+    "accuracy_smart_v2": 0.36,
+    "accuracy_smart_v2_ci95": [
+      0.24138562967182875,
+      0.49859237989698046
+    ],
+    "accuracy_legacy": 0.56,
+    "accuracy_legacy_ci95": [
+      0.4230578680014353,
+      0.6883801278976466
+    ],
+    "extractor_lift": -0.2,
+    "truncation_rate": 0.08,
+    "loop_rate": 0.0,
+    "parse_rate": 0.98,
+    "mean_gen_tokens": 205.38,
+    "total_gen_seconds": 683.4637944698334,
+    "mean_t_gen_seconds": 13.669275889396667,
+    "pathology_flag": false
+  }
+}

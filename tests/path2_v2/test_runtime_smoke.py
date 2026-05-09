@@ -99,11 +99,27 @@ class TestSummariseGsm8k(unittest.TestCase):
         self.assertAlmostEqual(s["extractor_lift"], 1/3)
 
     def test_pathology_flag_truncation(self):
-        rows = [self._row(i, True, True, trunc=True) for i in range(8)]
+        # Pathology = "harness couldn't surface an answer." The 8 trunc
+        # rows must also have parsed=False; otherwise they're verbose-
+        # but-extracted rows (accuracy concern, not pathology).
+        rows = [self._row(i, False, False, trunc=True, parsed=False)
+                for i in range(8)]
         rows += [self._row(i, True, True, trunc=False) for i in range(2)]
-        # 8/10 truncated -> > 50%, flag fires
         s = summarise(rows, "gsm8k")
         self.assertTrue(s["pathology_flag"])
+        self.assertAlmostEqual(s["truncation_rate"], 0.8)
+
+    def test_truncated_but_parsed_does_not_count(self):
+        # The Phase 1 disambiguation: a row that hit the cap but still
+        # produced a parseable answer is NOT a truncation pathology.
+        # All 10 rows hit the cap, all 10 have an extractable answer
+        # (correct or wrong) -> truncation_rate must be 0.
+        rows = [self._row(i, smart_correct=False, legacy_correct=False,
+                          trunc=True, parsed=True)
+                for i in range(10)]
+        s = summarise(rows, "gsm8k")
+        self.assertAlmostEqual(s["truncation_rate"], 0.0)
+        self.assertFalse(s["pathology_flag"])
 
     def test_pathology_flag_loop(self):
         rows = [self._row(i, True, True, loop=True) for i in range(6)]

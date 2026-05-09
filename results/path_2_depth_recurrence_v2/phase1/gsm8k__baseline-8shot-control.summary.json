@@ -6,7 +6,7 @@
     "block": null,
     "r": 1,
     "ple_strategy": "every-iter",
-    "notes": "Bridges to Path 2 round 5 (54.8%); gate band [0.44, 0.64]."
+    "notes": "Path 1 plan 5 anchor: smart_v2 ~ 30 %. Single-turn + '#### N' exemplar marker. NOT the round-5 bridge --- round 5 used multi-turn + 'The answer is N.' (see baseline-8shot-round5)."
   },
   "benchmark": "gsm8k",
   "n_requested": 50,
