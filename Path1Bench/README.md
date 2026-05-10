@@ -1,0 +1,119 @@
+# Path1Bench
+
+iOS app for the iPhone half of `plans/path_1_cot_tokens/plan8.md` (path 1 plan 8 v2 - phone-class on-device measurement).
+
+The Mac half lives in `experiments/path1_phone_mac.py`.
+Analysis lives in `experiments/path1_phone_analyze.py`.
+
+## What it does
+
+Runs C2-iPhone and A3-iPhone GSM8K cells with byte-equivalent prompts to the Mac side, captures per-problem wallclock + thermal-state + battery delta, and a 5-minute sustained-thermal probe.
+
+## Caveats (read these first)
+
+- **iPhone 13 PM is 2021 silicon (A15).** A 2026 flagship would be ~2x faster. Numbers from this app are a *conservative lower bound*.
+- **iOS does not expose joules to apps.** Energy is approximated from `UIDevice.batteryLevel` deltas across a fixed-duration run. Calibrate the idle baseline (5 min, app open, no inference) before reading any inference number.
+- **`ProcessInfo.thermalState` is discrete.** Four levels only (`nominal`/`fair`/`serious`/`critical`). No continuous temperature curve.
+- **6 GB RAM is tight.** If MLX-Q4 weights OOM under iOS memory pressure, escalate to a fresher iPhone or accept the accuracy loss; Q5/Q6 may not fit.
+
+## Once-only setup (Mac)
+
+```bash
+# 1) Convert weights (Mac, ~5 min, ~2 GB)
+python -m mlx_lm.convert \
+    --hf-path google/gemma-4-E2B-it -q --q-bits 4 \
+    --mlx-path ./mlx_models/gemma-4-E2B-it-mlx-q4
+
+# 2) Push to your own HF repo so the iPhone can download
+huggingface-cli upload <your-username>/gemma-4-E2B-it-4bit-mlx \
+    ./mlx_models/gemma-4-E2B-it-mlx-q4
+
+# 3) Emit prompts.jsonl (mirrors into Path1Bench/Path1Bench/Resources/)
+python experiments/path1_phone_mac.py --emit-prompts --n 50
+
+# 4) Sanity check 5: prompt-format byte-equivalence vs experiment 5
+python experiments/path1_phone_mac.py --byte-equivalence --n 50
+```
+
+## Building the iOS app
+
+The `.xcodeproj` is generated from `project.yml` via XcodeGen. The committed pbxproj is checked in so you can open the project without installing XcodeGen first.
+
+```bash
+# Optional: regenerate from project.yml (if you change deps or sources)
+brew install xcodegen
+cd Path1Bench
+xcodegen generate
+```
+
+Then in Xcode:
+
+1. Open `Path1Bench/Path1Bench.xcodeproj`.
+2. Select the Path1Bench target -> Signing & Capabilities -> pick your team. Free Apple Developer = 7-day signing (re-sign weekly); paid $99/yr = normal signing.
+3. Select your iPhone as the run destination.
+4. Wait for SwiftPM to resolve `mlx-swift` and `mlx-swift-examples` (first open only). After resolve completes, commit the refreshed `Path1Bench.xcodeproj/xcshareddata/swiftpm/Package.resolved` if you want pinned revisions.
+5. Build & Run (Cmd-R).
+
+If the build fails inside `ModelLoader.swift` on the `loadContainer` or `MLXLMCommon.generate` call, the mlx-swift-examples API has shifted. The file marks the adjustment point with `=== API ADJUSTMENT POINT ===`.
+
+## Run protocol on iPhone
+
+Per `plan8.md` "Run conditions":
+
+- Airplane mode: ON
+- Brightness: 50% (fixed)
+- Background app refresh: OFF for all apps
+- Document whether the phone is in a case (cases change thermal mass)
+- Plug in to ~95% charge and unplug; run battery delta from there. Or, if using a tethered USB-C power meter, hold at >= 95% so charging current is small and stable (sanity check 7).
+
+In the app:
+
+1. **Setup tab** -> set HF repo to `<your-username>/gemma-4-E2B-it-4bit-mlx` (or `mlx-community/...` if a community variant exists for Gemma-4 E2B). Save & Load. Wait for download (one-time, ~2 GB).
+2. **Setup tab** -> Calibrate idle baseline (5 min). Required for the analyze script to subtract idle drain from inference drain (sanity check 6).
+3. **Run tab** -> select C2-iPhone -> Run on 50 problems. ~10 min wall-clock with the 30 s cooldown between problems. Repeat with A3-iPhone.
+4. **Sustained tab** -> select C2-iPhone, duration 300 s -> Start. Repeat with A3-iPhone if desired.
+5. **Results tab** -> verify the JSONL files exist in Documents/cells_phone/.
+
+## Pulling JSONLs back to the Mac
+
+Two equivalent paths:
+
+**Files.app:** On the iPhone, Files -> On My iPhone -> Path1Bench. AirDrop the `cells_phone/` directory to your Mac, drop into `results/path_1_cot_tokens/plan8/cells_phone/`.
+
+**Xcode device download:** With the iPhone tethered, Xcode -> Window -> Devices and Simulators -> select device -> select Path1Bench -> gear icon -> Download Container. Right-click the `.xcappdata` -> Show Package Contents -> AppData/Documents/cells_phone/ -> drop those JSONLs into `results/path_1_cot_tokens/plan8/cells_phone/`.
+
+## Analyze
+
+```bash
+# Merge Mac + iPhone, score outcome A-F, emit Pareto + sustained PNGs
+python experiments/path1_phone_analyze.py
+```
+
+Writes `results/path_1_cot_tokens/plan8/results_plan8_phone.json` (the `_phone` suffix avoids clobbering the legacy GPU-proxy `results_plan8.json`; see plan section "Implementation decisions" item 2).
+
+## File map
+
+```
+Path1Bench/
+├── project.yml                                 # XcodeGen config (canonical)
+├── Path1Bench.xcodeproj/                       # generated by XcodeGen
+│   ├── project.pbxproj
+│   └── xcshareddata/swiftpm/Package.resolved   # pinned to main; refresh on first Xcode open
+├── Path1Bench/
+│   ├── Path1BenchApp.swift                     # @main, idle-timer + battery-monitoring init
+│   ├── ContentView.swift                       # 4 tabs: Setup / Run / Sustained / Results
+│   ├── ModelLoader.swift                       # MLX-Swift wrapper - API ADJUSTMENT POINT
+│   ├── Benchmark.swift                         # per-problem cold-start loop
+│   ├── SustainedProbe.swift                    # 5-min continuous gen probe
+│   ├── ThermalMonitor.swift                    # ProcessInfo.thermalState observer
+│   ├── BatteryMonitor.swift                    # UIDevice battery + idle calibration
+│   ├── PromptStore.swift                       # loads prompts.jsonl from bundle
+│   ├── RunResultWriter.swift                   # JSONL writer to Documents
+│   ├── Models/
+│   │   ├── PromptRow.swift                     # mirrors prompts.jsonl schema
+│   │   └── BenchmarkResult.swift               # mirrors per-problem JSONL schema
+│   ├── Resources/
+│   │   └── prompts.jsonl                       # placeholder; replaced by Mac --emit-prompts
+│   └── Info.plist                              # UIFileSharingEnabled + run-condition keys
+└── README.md                                   # this file
+```
