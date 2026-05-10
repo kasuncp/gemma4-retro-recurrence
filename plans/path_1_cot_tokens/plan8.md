@@ -25,7 +25,26 @@ Snapdragon / Android measurement is **deferred** to a follow-up; it requires har
 2. **iOS does not expose joules to apps.** No `/sys/class/power_supply/` analog; no per-component power API without private entitlements. Energy on iPhone is measured indirectly (battery-delta over a fixed run, or via a tethered USB-C power meter if available). Mac is the clean joules number; iPhone is the *realistic-thermal* number with a coarser energy estimate.
 3. **iOS thermal telemetry is discrete.** `ProcessInfo.thermalState` returns four levels (`.nominal / .fair / .serious / .critical`) — enough for throttle detection but not for a continuous temperature curve. Mac gets continuous SMC-sampled temperatures via `powermetrics`.
 4. **MacBook Pro M3 is actively cooled.** This is a *feature* for the irreducible-compute number but means the Mac is NOT phone-thermal-representative. The "phone-thermal" reading comes from iPhone alone; the Mac is the "compute floor without thermal interference" number.
-5. **6 GB RAM on iPhone 13 PM is tight.** Gemma-3 E2B at MLX 4-bit fits, but Q5/Q6 may OOM under iOS memory pressure. If Q4 fails the accuracy parity gate, Q5 may not be reachable on this device — escalate to a fresher iPhone or accept the accuracy loss.
+5. **6 GB RAM on iPhone 13 PM is tight.** Gemma-4 E2B at MLX 4-bit fits, but Q5/Q6 may OOM under iOS memory pressure. If Q4 fails the accuracy parity gate, Q5 may not be reachable on this device — escalate to a fresher iPhone or accept the accuracy loss.
+
+## Implementation decisions (locked)
+
+These were settled in the pre-implementation review on 2026-05-09. Recorded so the implementation pass doesn't re-litigate them.
+
+1. **Branch.** Implementation lands on a fresh branch `path_1_plan_8_v2`, cut from `main`. Not on the current `path_2_phase_2` branch (unrelated work in flight) and not on the legacy `path_1_plan_8` branch (carries the obsolete GPU-proxy attempt; mixing the two implementations in one history is confusing).
+2. **Coexistence with the legacy plan8 GPU-proxy artifacts.** A prior implementation of this plan number — a 3090 / GGUF / `llama.cpp` proxy of phone measurement — is on disk: `experiments/path1_plan8.py`, `experiment_plan8.yaml`, `results/path_1_cot_tokens/plan8/results_plan8.json`, `results/path_1_cot_tokens/plan8/cells/`. **Leave them in place untouched.** The new on-device deliverables use the names already given in *Deliverables* (`path1_phone_mac.py`, `Path1Bench/`, `path1_phone_analyze.py`) and do not collide. To avoid clobbering the legacy JSON, the new analyze script writes `results_plan8_phone.json` (not `results_plan8.json`) and per-cell files under `results/path_1_cot_tokens/plan8/cells_phone/` (not `cells/`).
+3. **iOS app delivery scope.** Full Xcode project committed under `Path1Bench/` — `Path1Bench.xcodeproj/project.pbxproj`, `Package.resolved`, Swift sources, `Info.plist`. The user's only manual setup is opening the project in Xcode and selecting a signing team. Building, signing, and deploying to the iPhone are user-driven Xcode steps; they cannot be automated from this CLI session, and the implementation must not pretend otherwise.
+4. **Model identifier.** `google/gemma-4-E2B-it` (the project's model — same as `experiments/path1_plan8.py` `MODEL_ID`). MLX 4-bit weights produced by:
+
+   ```bash
+   python -m mlx_lm.convert --hf-path google/gemma-4-E2B-it -q --q-bits 4 \
+       --mlx-path ./mlx_models/gemma-4-E2B-it-mlx-q4
+   ```
+
+   The same `mlx_models/gemma-4-E2B-it-mlx-q4/` directory is the source for both the Mac script and the iOS app's bundled resources. (Earlier mentions of "Gemma-3" in this doc were typos and have been corrected.)
+5. **Code reuse from the legacy script.** `path1_phone_mac.py` reuses the C2/A3 prompt builders, `EXEMPLARS_COT` / `EXEMPLARS_DIRECT`, the GSM8K loader, and the answer-extraction regex from `experiments/path1_plan8.py` — imported, not re-derived. This is what gives sanity check #5 (prompt-format byte-equivalence) any teeth. iOS-side prompts are not re-implemented in Swift; the Mac script emits a `prompts.jsonl` (one row per problem with the fully-assembled prompt string) that the iOS app loads as a bundled resource. Same bytes on both devices, by construction.
+6. **iOS SwiftPM dependencies.** MLX Swift via `https://github.com/ml-explore/mlx-swift` and the model loader from `https://github.com/ml-explore/mlx-swift-examples`. Pin both via `Package.resolved`. Before committing the resolved file, confirm the chosen tag supports Gemma-3/4 architecture; if not, pin to a `main` revision and note that choice in `Path1Bench/README.md`.
+7. **Execution timing.** Implementation must wait until the path 2 phase 2 measurement run currently using these devices completes. The implementation pass cannot reuse the in-flight working tree, must not compete for the model weights cache, and must not start the new branch until the user confirms the device is free.
 
 ## Scope — what this plan is and isn't
 
@@ -146,15 +165,15 @@ On iPhone, A3's 747 prompt tokens cost a much larger fraction of total wall-cloc
 Beyond the expected 1.5–2× silicon gap. **Indicates iOS runtime overhead, memory pressure, or thermal dampening above what's explainable by raw silicon.** Document and investigate before drawing conclusions — could be a measurement artifact (charge-state confound, idle-power miscalibration) rather than a real platform difference.
 
 ### Outcome F — Quantization gate fails
-MLX 4-bit accuracy < 65 % on either device. **Q4 is too aggressive for Gemma-3 E2B**. Re-quantize at Q5 / Q6, re-measure. If Q5 OOMs on iPhone, the deployment claim caveats to "current iPhone or larger-RAM Android device."
+MLX 4-bit accuracy < 65 % on either device. **Q4 is too aggressive for Gemma-4 E2B**. Re-quantize at Q5 / Q6, re-measure. If Q5 OOMs on iPhone, the deployment claim caveats to "current iPhone or larger-RAM Android device."
 
 ## Deliverables
 
 1. `path1_phone_mac.py` — Mac side. Runs MLX-LM benchmark, captures `powermetrics` output, emits JSONL.
 2. `Path1Bench/` — iOS app (Xcode project). Embeds MLX Swift, runs benchmark on tap, writes JSONL to app sandbox; export via Files app / AirDrop / Xcode device download.
-3. `path1_phone_analyze.py` — merges per-device JSONLs, computes median / p95 latency, mean joules (Mac) / battery-delta (iPhone), peak thermal state; emits `results_plan8.json` and a Pareto plot of accuracy vs energy. Output goes to `results/path_1_cot_tokens/plan8/` per project convention; emit PNGs alongside the JSON.
+3. `path1_phone_analyze.py` — merges per-device JSONLs, computes median / p95 latency, mean joules (Mac) / battery-delta (iPhone), peak thermal state; emits `results_plan8_phone.json` and a Pareto plot of accuracy vs energy. Output goes to `results/path_1_cot_tokens/plan8/` per project convention; emit PNGs alongside the JSON. The `_phone` suffix avoids clobbering the legacy GPU-proxy `results_plan8.json` already in that directory (see *Implementation decisions* §2).
 
-Per-cell JSONLs in `results/path_1_cot_tokens/plan8/cells/`. Each row records:
+Per-cell JSONLs in `results/path_1_cot_tokens/plan8/cells_phone/` (the legacy GPU-proxy run uses `cells/`; the two coexist). Each row records:
 ```
 {idx, gen_tokens, prompt_tokens, wallclock_ms, joules_mac, battery_delta_pct_iphone, peak_temp_c_mac, peak_thermal_state_iphone, correct, device, cell}
 ```

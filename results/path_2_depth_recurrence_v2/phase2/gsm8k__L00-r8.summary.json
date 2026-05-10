@@ -1,0 +1,41 @@
+{
+  "phase": "layer-map",
+  "config": "L00-r8",
+  "config_dict": {
+    "prompt": "C2",
+    "block": [
+      0,
+      0
+    ],
+    "r": 8,
+    "ple_strategy": "every-iter",
+    "notes": "phase 2: single-layer r=8 probe at decoder layer 0"
+  },
+  "benchmark": "gsm8k",
+  "n_requested": 50,
+  "model_id": "google/gemma-4-E2B-it",
+  "dtype": "bf16",
+  "max_new_tokens": 512,
+  "seed": 42,
+  "summary": {
+    "n_problems": 50,
+    "accuracy_smart_v2": 0.0,
+    "accuracy_smart_v2_ci95": [
+      0.0,
+      0.07135003417431873
+    ],
+    "accuracy_legacy": 0.0,
+    "accuracy_legacy_ci95": [
+      0.0,
+      0.07135003417431873
+    ],
+    "extractor_lift": 0.0,
+    "truncation_rate": 0.0,
+    "loop_rate": 0.0,
+    "parse_rate": 0.04,
+    "mean_gen_tokens": 2.34,
+    "total_gen_seconds": 8.71942400932312,
+    "mean_t_gen_seconds": 0.1743884801864624,
+    "pathology_flag": false
+  }
+}
