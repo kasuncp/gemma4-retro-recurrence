@@ -66,8 +66,12 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-# Plan 8 v2, section 5: import (do not re-derive) from the legacy script.
-from experiments.path1_plan8 import (  # noqa: E402
+# Plan 8 v2, section 5: import (do not re-derive) the prompt builders +
+# exemplars + GSM8K loader + answer-extraction regex from a torch-free
+# shared module. This shared module exists because the legacy
+# experiments/path1_plan8.py is RunPod-side and imports torch at module
+# top; on Mac with MLX-LM we don't want torch in the venv.
+from experiments.path1_plan8_shared import (  # noqa: E402
     EXEMPLARS_COT,
     EXEMPLARS_DIRECT,
     FALLBACK_RE,
@@ -121,13 +125,27 @@ def _epoch_from_powermetrics_timestamp(ts: Any) -> float | None:
     return None
 
 
+# macOS 14+ powermetrics removed absolute die temperatures from the
+# `thermal` sampler; we get an ordinal pressure state instead. Order matches
+# the iOS ProcessInfo.ThermalState enum so cross-device comparisons are
+# meaningful. Higher = worse. "Sleeping" is treated as the most extreme
+# state (the system has fully clamped to recover).
+_THERMAL_PRESSURE_ORDER = {
+    "Nominal": 0,
+    "Moderate": 1,
+    "Heavy": 2,
+    "Trapping": 3,
+    "Sleeping": 4,
+}
+
+
 @dataclass
 class PowerSample:
     t_epoch: float
     cpu_w: float
     gpu_w: float
     ane_w: float
-    peak_die_temp_c: float | None  # max across reported SMC sensors
+    thermal_pressure: str | None  # 'Nominal' | 'Moderate' | 'Heavy' | 'Trapping' | 'Sleeping'
 
 
 @dataclass
@@ -151,22 +169,32 @@ class PowerCapture:
             print("[power] not root - skipping power capture (rerun with `sudo -E`)")
             return False
         self.log_path.parent.mkdir(parents=True, exist_ok=True)
+        # `thermal` replaces the old `smc` sampler on modern macOS; the
+        # previous list silently failed (powermetrics exits with a bad-sampler
+        # error) on macOS 26.x, leaving a 0-byte plist.
         cmd = [
             "powermetrics",
-            "--samplers", "cpu_power,gpu_power,ane_power,smc",
+            "--samplers", "cpu_power,gpu_power,ane_power,thermal",
             "-i", str(POWERMETRICS_INTERVAL_MS),
             "-f", "plist",
         ]
+        stderr_path = self.log_path.with_suffix(".stderr")
         f = open(self.log_path, "wb")
+        err_f = open(stderr_path, "wb")
         try:
-            self.proc = subprocess.Popen(
-                cmd, stdout=f, stderr=subprocess.DEVNULL,
-            )
+            self.proc = subprocess.Popen(cmd, stdout=f, stderr=err_f)
         except Exception as exc:
             print(f"[power] failed to spawn powermetrics: {exc}")
             return False
-        # Give powermetrics a moment to spin up so the first samples are valid.
         time.sleep(1.0)
+        rc = self.proc.poll()
+        if rc is not None:
+            err_msg = stderr_path.read_text(errors="replace").strip() if stderr_path.exists() else ""
+            print(f"[power] powermetrics exited rc={rc} before sampling started.")
+            if err_msg:
+                print(f"[power] stderr:\n{err_msg}")
+            self.proc = None
+            return False
         self.available = True
         return True
 
@@ -198,25 +226,25 @@ class PowerCapture:
             ts_epoch = _epoch_from_powermetrics_timestamp(plist.get("timestamp"))
             if ts_epoch is None:
                 continue
-            cpu_mw = float(plist.get("processor", {}).get("package_power_mw", 0.0))
-            gpu_mw = float(plist.get("gpu", {}).get("package_power_mw", 0.0))
-            ane_mw = float(plist.get("processor", {}).get("ane_energy", 0.0)) or \
-                float(plist.get("processor", {}).get("ane_power_mw", 0.0))
-            # SMC peak die temp across all reported sensors (when available)
-            peak_temp: float | None = None
-            smc = plist.get("smc", {})
-            if isinstance(smc, dict):
-                for k, v in smc.items():
-                    if not isinstance(v, (int, float)):
-                        continue
-                    if "temperature" in k.lower() or k.lower().endswith("_c"):
-                        peak_temp = max(peak_temp or v, float(v))
+            # macOS 14+ schema: processor.{cpu,gpu,ane}_power in mW, already
+            # broken out by subsystem; the old `package_power_mw` keys are
+            # gone. We also accept the legacy keys for older macOS.
+            proc = plist.get("processor", {}) if isinstance(plist.get("processor"), dict) else {}
+            cpu_mw = float(proc.get("cpu_power", proc.get("package_power_mw", 0.0)))
+            gpu_mw = float(proc.get("gpu_power", 0.0))
+            if gpu_mw == 0.0:
+                # Old layout had GPU power under a top-level `gpu` key.
+                gpu_mw = float(plist.get("gpu", {}).get("package_power_mw", 0.0)) if isinstance(plist.get("gpu"), dict) else 0.0
+            ane_mw = float(proc.get("ane_power", proc.get("ane_power_mw", 0.0)))
+            pressure = plist.get("thermal_pressure")
+            if not isinstance(pressure, str):
+                pressure = None
             out.append(PowerSample(
                 t_epoch=ts_epoch,
                 cpu_w=cpu_mw / 1000.0,
                 gpu_w=gpu_mw / 1000.0,
                 ane_w=ane_mw / 1000.0,
-                peak_die_temp_c=peak_temp,
+                thermal_pressure=pressure,
             ))
         out.sort(key=lambda s: s.t_epoch)
         self.samples = out
@@ -239,9 +267,16 @@ class PowerCapture:
         return joules
 
     def peak_temp_in_window(self, t0_epoch: float, t1_epoch: float) -> float | None:
-        win = [s.peak_die_temp_c for s in self.samples
-               if t0_epoch <= s.t_epoch <= t1_epoch and s.peak_die_temp_c is not None]
-        return max(win) if win else None
+        # macOS 14+: absolute die temp is no longer exposed; callers should
+        # prefer worst_thermal_pressure_in_window. Kept for analyzer back-compat.
+        return None
+
+    def worst_thermal_pressure_in_window(self, t0_epoch: float, t1_epoch: float) -> str | None:
+        win = [s.thermal_pressure for s in self.samples
+               if t0_epoch <= s.t_epoch <= t1_epoch and s.thermal_pressure is not None]
+        if not win:
+            return None
+        return max(win, key=lambda p: _THERMAL_PRESSURE_ORDER.get(p, -1))
 
 
 # ---------------------------------------------------------------------------
@@ -376,7 +411,8 @@ def run_cell(
                 "wallclock_ms": wall_ms,
                 "gen_secs": gen_secs,
                 "joules_mac": None,
-                "peak_temp_c_mac": None,
+                "peak_temp_c_mac": None,  # macOS 14+: absent; superseded by thermal_pressure_mac
+                "thermal_pressure_mac": None,
                 "battery_delta_pct_iphone": None,
                 "peak_thermal_state_iphone": None,
                 "t_epoch_start": t_epoch_start,
@@ -401,7 +437,7 @@ def run_cell(
 
 
 def _backfill_power(jsonl_path: Path, power: PowerCapture) -> None:
-    """Read jsonl, fill joules_mac + peak_temp_c_mac per row using PowerCapture windows, rewrite."""
+    """Read jsonl, fill joules_mac + thermal_pressure_mac per row using PowerCapture windows, rewrite."""
     if not jsonl_path.exists():
         return
     rows = []
@@ -416,7 +452,8 @@ def _backfill_power(jsonl_path: Path, power: PowerCapture) -> None:
         if t0 is None or t1 is None:
             continue
         r["joules_mac"] = power.joules_in_window(t0, t1)
-        r["peak_temp_c_mac"] = power.peak_temp_in_window(t0, t1)
+        r["peak_temp_c_mac"] = power.peak_temp_in_window(t0, t1)  # None on macOS 14+
+        r["thermal_pressure_mac"] = power.worst_thermal_pressure_in_window(t0, t1)
     with open(jsonl_path, "w") as f:
         for r in rows:
             f.write(json.dumps(r) + "\n")
@@ -449,45 +486,64 @@ def run_sustained(
             power = None
 
     print(f"[{cell}] sustained probe: {duration_s:.0f}s")
-    bucket_start = time.perf_counter()
-    bucket_token_count = 0
-    bucket_idx = 0
+    overall_start = time.perf_counter()
     total_tokens = 0
-    overall_start = bucket_start
+    # Buffer each generation as (rel_start, rel_end, n_gen) where rel_* is
+    # seconds since overall_start. We bucketize at probe end so the tokens
+    # of a single greedy_generate() call get distributed proportionally
+    # across the seconds it actually ran in - the previous code lumped
+    # all tokens into the bucket that *finished* the call and flushed
+    # empty buckets for the rest of the wall-clock window.
+    calls: list[tuple[float, float, int]] = []
     pi = 0
     try:
         while time.perf_counter() - overall_start < duration_s:
             prob = problems[pi % len(problems)]
             prompt = _build_prompt(runner.tokenizer, cell, prob["question"])
-            t_epoch_start = time.time()
+            t_call_start = time.perf_counter()
             _, n_gen, _, gen_secs = runner.greedy_generate(prompt, MAX_NEW_TOKENS)
-            t_epoch_end = time.time()
+            t_call_end = time.perf_counter()
             total_tokens += n_gen
-            bucket_token_count += n_gen
-            now = time.perf_counter()
-            while now - bucket_start >= SUSTAINED_TPS_BUCKET_S:
-                # flush a bucket point
-                _append_jsonl(out_path, {
-                    "cell": cell,
-                    "device": DEVICE_TAG,
-                    "bucket_idx": bucket_idx,
-                    "elapsed_s": bucket_idx * SUSTAINED_TPS_BUCKET_S,
-                    "tokens_in_bucket": bucket_token_count,
-                    "total_tokens": total_tokens,
-                    "tokens_per_sec": bucket_token_count / SUSTAINED_TPS_BUCKET_S,
-                    "t_epoch_start": t_epoch_start,
-                    "t_epoch_end": t_epoch_end,
-                })
-                bucket_idx += 1
-                bucket_start += SUSTAINED_TPS_BUCKET_S
-                bucket_token_count = 0
+            calls.append((t_call_start - overall_start, t_call_end - overall_start, n_gen))
             pi += 1
     finally:
+        # Bucketize: distribute each call's n_gen tokens proportionally to
+        # the time-overlap between [call_start, call_end] and each 1-second
+        # bucket. Within a single call we assume a uniform generation rate
+        # (good enough for throttle/trend analysis; per-token timing would
+        # require hooking stream_generate).
+        import math as _math
+        actual_duration = max(duration_s, calls[-1][1] if calls else duration_s)
+        n_buckets = _math.ceil(actual_duration / SUSTAINED_TPS_BUCKET_S)
+        bucket_tokens = [0.0] * max(n_buckets, 1)
+        for c_start, c_end, c_n in calls:
+            dt = c_end - c_start
+            if dt <= 0:
+                continue
+            rate = c_n / dt
+            first_b = max(0, int(c_start / SUSTAINED_TPS_BUCKET_S))
+            last_b = min(len(bucket_tokens) - 1, int(c_end / SUSTAINED_TPS_BUCKET_S))
+            for b in range(first_b, last_b + 1):
+                b_lo = b * SUSTAINED_TPS_BUCKET_S
+                b_hi = b_lo + SUSTAINED_TPS_BUCKET_S
+                overlap = max(0.0, min(c_end, b_hi) - max(c_start, b_lo))
+                bucket_tokens[b] += overlap * rate
+        cumulative = 0.0
+        for b, ntok in enumerate(bucket_tokens):
+            cumulative += ntok
+            _append_jsonl(out_path, {
+                "cell": cell,
+                "device": DEVICE_TAG,
+                "bucket_idx": b,
+                "elapsed_s": b * SUSTAINED_TPS_BUCKET_S,
+                "tokens_in_bucket": ntok,
+                "tokens_per_sec": ntok / SUSTAINED_TPS_BUCKET_S,
+                "total_tokens": cumulative,
+            })
+
         if power is not None:
             power.stop()
             power.parse_log()
-            # Append a single trailing summary row with peak temp + total joules.
-            t0 = overall_start
             # Convert perf_counter delta back to wall epoch:
             t_overall_epoch_start = time.time() - (time.perf_counter() - overall_start)
             t_overall_epoch_end = time.time()
@@ -496,9 +552,12 @@ def run_sustained(
                 "device": DEVICE_TAG,
                 "summary": True,
                 "duration_s": duration_s,
+                "actual_duration_s": actual_duration,
                 "total_tokens": total_tokens,
+                "mean_tokens_per_sec": total_tokens / actual_duration if actual_duration > 0 else None,
                 "joules_total_mac": power.joules_in_window(t_overall_epoch_start, t_overall_epoch_end),
                 "peak_temp_c_mac": power.peak_temp_in_window(t_overall_epoch_start, t_overall_epoch_end),
+                "worst_thermal_pressure_mac": power.worst_thermal_pressure_in_window(t_overall_epoch_start, t_overall_epoch_end),
             })
 
     print(f"[{cell}] sustained probe done: {total_tokens} total tokens in {duration_s:.0f}s")
@@ -549,6 +608,10 @@ def byte_equivalence_check(runner: MLXRunner, n: int) -> int:
     (same output across two builds), which still catches non-determinism."""
     problems, _ = load_problems(0, n, n)
     legacy_paths = [
+        # Where --emit-prompts actually writes the pinned reference (this
+        # session's source-of-truth post-`enable_thinking=False` change).
+        CELLS_PHONE_DIR / "prompts.jsonl",
+        # Older locations kept for back-compat with legacy plan-5 / plan-8 runs.
         _PROJECT_ROOT / "results" / "path_1_cot_tokens" / "plan5" / "prompts.jsonl",
         _PROJECT_ROOT / "results" / "path_1_cot_tokens" / "plan8" / "prompts.jsonl",
     ]

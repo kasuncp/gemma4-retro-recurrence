@@ -1,0 +1,89 @@
+{
+  "plan": "path_1_cot_tokens/plan8_v2_phone",
+  "model_id": "google/gemma-4-E2B-it (MLX 4-bit)",
+  "outcome": {
+    "label": "AMBIGUOUS",
+    "rationale": "no outcome predicate matched cleanly; see per-cell numbers"
+  },
+  "per_cell": {
+    "C2-Mac": {
+      "cell": "C2-Mac",
+      "n": 50,
+      "accuracy": 0.54,
+      "correct": 27,
+      "median_wallclock_s": 4.315317833446898,
+      "p95_wallclock_s": 7.165375954163027,
+      "min_wallclock_s": 1.2960363749880344,
+      "max_wallclock_s": 7.853877499932423,
+      "mean_gen_tokens": 313.14,
+      "mean_prompt_tokens": 68.4,
+      "mean_joules": 63.345453500000005,
+      "peak_die_temp_c": null,
+      "worst_thermal_pressure_mac": null,
+      "n_with_power": 50
+    },
+    "A3-Mac": {
+      "cell": "A3-Mac",
+      "n": 50,
+      "accuracy": 0.62,
+      "correct": 31,
+      "median_wallclock_s": 3.369770562450867,
+      "p95_wallclock_s": 6.663429101993094,
+      "min_wallclock_s": 1.1354648750275373,
+      "max_wallclock_s": 7.46667274995707,
+      "mean_gen_tokens": 220.26,
+      "mean_prompt_tokens": 783.4,
+      "mean_joules": 44.995473000000004,
+      "peak_die_temp_c": null,
+      "worst_thermal_pressure_mac": null,
+      "n_with_power": 50
+    },
+    "C2-iPhone": {
+      "cell": "C2-iPhone",
+      "n": 0
+    },
+    "A3-iPhone": {
+      "cell": "A3-iPhone",
+      "n": 0
+    }
+  },
+  "sustained": {
+    "C2-Mac": {
+      "summary": {
+        "cell": "C2-Mac",
+        "device": "mac_m3",
+        "summary": true,
+        "duration_s": 300,
+        "total_tokens": 21201,
+        "joules_total_mac": 6098.189352250003,
+        "peak_temp_c_mac": null,
+        "worst_thermal_pressure_mac": "Nominal",
+        "actual_duration_s": 304.28232073783875,
+        "mean_tokens_per_sec": 69.67542494283195
+      },
+      "tps_first_quarter": 70.98422657180899,
+      "tps_last_quarter": 68.97529208522343,
+      "tps_drop_pct": 0.02830113933203573,
+      "time_to_throttle_s": null
+    }
+  },
+  "accuracy_parity": [
+    {
+      "cell": "C2-Mac",
+      "n": 500,
+      "correct": 341,
+      "accuracy": 0.682,
+      "verdict": "PASS"
+    }
+  ],
+  "accuracy_parity_best_per_cell": {
+    "C2-Mac": {
+      "cell": "C2-Mac",
+      "n": 500,
+      "correct": 341,
+      "accuracy": 0.682,
+      "verdict": "PASS",
+      "source": "accuracy_parity.json"
+    }
+  }
+}

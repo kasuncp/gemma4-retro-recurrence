@@ -100,7 +100,15 @@ def _load_cell_rows(cell: str) -> list[dict]:
 def _thermal_priority(s: str | None) -> int:
     if not s:
         return 0
-    return {"nominal": 0, "fair": 1, "serious": 2, "critical": 3}.get(s, 0)
+    # iPhone ProcessInfo.ThermalState: nominal/fair/serious/critical.
+    # Mac powermetrics thermal_pressure (macOS 14+): Nominal/Moderate/Heavy/Trapping/Sleeping.
+    # Mapped to a shared 0..4 severity scale; max() over rows gives "worst seen."
+    return {
+        # iOS
+        "nominal": 0, "fair": 1, "serious": 2, "critical": 3,
+        # macOS thermal_pressure
+        "Nominal": 0, "Moderate": 1, "Heavy": 2, "Trapping": 3, "Sleeping": 4,
+    }.get(s, 0)
 
 
 def _summarize_cell(cell: str) -> dict:
@@ -117,9 +125,17 @@ def _summarize_cell(cell: str) -> dict:
     if cell.endswith("Mac"):
         joules = [r.get("joules_mac") for r in rows if r.get("joules_mac") is not None]
         peak_temps = [r.get("peak_temp_c_mac") for r in rows if r.get("peak_temp_c_mac") is not None]
+        # macOS 14+: absolute die temp is gone; use the thermal_pressure ordinal
+        # as the throttle signal (parallel to iPhone's ProcessInfo.thermalState).
+        worst_pressure = None
+        for r in rows:
+            s = r.get("thermal_pressure_mac")
+            if _thermal_priority(s) > _thermal_priority(worst_pressure):
+                worst_pressure = s
         energy_summary = {
             "mean_joules": _safe_mean(joules),
             "peak_die_temp_c": max(peak_temps) if peak_temps else None,
+            "worst_thermal_pressure_mac": worst_pressure,
             "n_with_power": len(joules),
         }
     else:
@@ -164,15 +180,17 @@ def _load_sustained(cell: str) -> dict:
         return {"cell": cell, "buckets": [], "summary": None}
     summary = next((r for r in rows if r.get("summary")), None)
     buckets = [r for r in rows if not r.get("summary")]
-    # Compute time-to-throttle (Mac: peak_temp_c_mac > 90 if available;
-    # iPhone: first transition into "serious" or "critical").
+    # Compute time-to-throttle. Pre-macOS-14 used peak_temp_c_mac >= 90C; macOS
+    # 14+ exposes thermal_pressure ordinal instead (Heavy/Trapping = throttle).
+    # iPhone uses ProcessInfo.thermalState (serious/critical = throttle).
     time_to_throttle: float | None = None
     if cell.endswith("Mac") and summary:
-        # Mac sustained doesn't carry per-bucket temperature; we only know
-        # the run-wide peak. If peak exceeds 90C, we mark the run as
-        # near-throttle but cannot pinpoint the second.
         peak = summary.get("peak_temp_c_mac")
         if peak is not None and peak >= 90:
+            time_to_throttle = 0.0
+        elif _thermal_priority(summary.get("worst_thermal_pressure_mac")) >= 2:
+            # We only know the run-wide worst pressure; can't pinpoint the
+            # exact second within the probe.
             time_to_throttle = 0.0
     else:
         for b in buckets:
@@ -206,19 +224,58 @@ def _load_sustained(cell: str) -> dict:
     }
 
 
-def _label_outcome(per_cell: dict, sustained: dict) -> tuple[str, str]:
+def _load_accuracy_parity() -> dict:
+    """Scan CELLS_PHONE_DIR/accuracy_parity*.json. For each cell, return the
+    entry from whichever file has the largest N. Per-cell JSONLs hold only
+    N=50; the larger-N files (e.g. accuracy_parity_q4_nothink_n500.json) carry
+    the actual gate verdict (sanity gate 1 explicitly bands [65%, 82%] and
+    plan6 notes that N=50 has ±10pp CI - the gate is only meaningful at
+    higher N).
+    """
+    best: dict[str, dict] = {}
+    for path in sorted(CELLS_PHONE_DIR.glob("accuracy_parity*.json")):
+        try:
+            data = json.loads(path.read_text())
+        except Exception:
+            continue
+        if not isinstance(data, list):
+            continue
+        for entry in data:
+            cell = entry.get("cell")
+            n = entry.get("n", 0)
+            if not cell or n <= 0:
+                continue
+            if cell not in best or n > best[cell].get("n", 0):
+                best[cell] = {**entry, "source": path.name}
+    return best
+
+
+def _label_outcome(per_cell: dict, sustained: dict, parity: dict) -> tuple[str, str]:
     c2_mac = per_cell.get("C2-Mac", {})
     c2_phone = per_cell.get("C2-iPhone", {})
     a3_mac = per_cell.get("A3-Mac", {})
     a3_phone = per_cell.get("A3-iPhone", {})
 
-    # Outcome F: quantization gate failure (sanity gate 1)
-    accs = [
-        per_cell.get(c, {}).get("accuracy") for c in ("C2-Mac", "C2-iPhone")
-        if per_cell.get(c, {}).get("n", 0) > 0
-    ]
-    if accs and any(a is not None and a < 0.65 for a in accs):
-        return ("F", "MLX 4-bit accuracy below 0.65 - re-quantize at Q5/Q6")
+    # Outcome F: quantization gate failure (sanity gate 1).
+    # Prefer the highest-N accuracy_parity entry per cell (typically N=500);
+    # fall back to the per-cell JSONL accuracy only if no parity file covers
+    # the cell.
+    def _cell_acc_for_gate(cell: str) -> tuple[float | None, int, str]:
+        p = parity.get(cell)
+        if p is not None:
+            return p.get("accuracy"), p.get("n", 0), p.get("source", "parity")
+        c = per_cell.get(cell, {})
+        if c.get("n", 0) > 0:
+            return c.get("accuracy"), c["n"], f"{cell.lower().replace('-', '_')}__*.jsonl"
+        return None, 0, ""
+
+    gate_failures = []
+    for cell in ("C2-Mac", "C2-iPhone"):
+        acc, n, source = _cell_acc_for_gate(cell)
+        if acc is not None and acc < 0.65:
+            gate_failures.append(f"{cell}={acc:.1%} (n={n}, {source})")
+    if gate_failures:
+        return ("F", "MLX 4-bit accuracy below 0.65 [" + "; ".join(gate_failures) + "] - re-quantize at Q5/Q6")
 
     # Outcome E: Mac/phone divergence > 3x
     mac_med = c2_mac.get("median_wallclock_s")
@@ -354,32 +411,42 @@ def _emit_sustained(sustained: dict, out_path: Path) -> bool:
     return True
 
 
-def _print_table(per_cell: dict) -> None:
-    cols = ["cell", "n", "acc", "med_s", "p95_s", "energy", "thermal"]
-    fmt = "{:<11s} {:>3s} {:>5s} {:>7s} {:>7s} {:>10s} {:>9s}"
+def _print_table(per_cell: dict, parity_per_cell: dict) -> None:
+    # acc(N=50) is the per-cell latency JSONL; acc_gate is the highest-N
+    # accuracy_parity entry (typically N=500) used for the gate verdict.
+    cols = ["cell", "n", "acc_n50", "acc_gate", "med_s", "p95_s", "energy", "thermal"]
+    fmt = "{:<11s} {:>3s} {:>7s} {:>13s} {:>7s} {:>7s} {:>10s} {:>9s}"
     print(fmt.format(*cols))
-    print("-" * 60)
+    print("-" * 78)
     for c in CELLS:
         row = per_cell.get(c, {})
         if not row.get("n"):
-            print(fmt.format(c, "0", "-", "-", "-", "-", "-"))
+            print(fmt.format(c, "0", "-", "-", "-", "-", "-", "-"))
             continue
         n_str = str(row["n"])
         acc = row.get("accuracy")
         acc_s = f"{acc:.3f}" if acc is not None else "-"
+        p = parity_per_cell.get(c)
+        if p is not None:
+            gate_s = f"{p.get('accuracy', 0):.3f} (n={p.get('n', 0)})"
+        else:
+            gate_s = "-"
         med = row.get("median_wallclock_s")
         p95 = row.get("p95_wallclock_s")
         if c.endswith("Mac"):
             energy = row.get("mean_joules")
             energy_s = f"{energy:.1f}J" if energy is not None else "-"
             therm = row.get("peak_die_temp_c")
-            therm_s = f"{therm:.1f}C" if therm is not None else "-"
+            if therm is not None:
+                therm_s = f"{therm:.1f}C"
+            else:
+                therm_s = str(row.get("worst_thermal_pressure_mac") or "-")
         else:
             energy = row.get("mean_battery_delta_pct")
             energy_s = f"{energy:.3f}%" if energy is not None else "-"
             therm_s = str(row.get("worst_thermal_state") or "-")
         print(fmt.format(
-            c, n_str, acc_s,
+            c, n_str, acc_s, gate_s,
             f"{med:.2f}" if med else "-",
             f"{p95:.2f}" if p95 else "-",
             energy_s, therm_s,
@@ -397,10 +464,13 @@ def main() -> int:
     per_cell = {c: _summarize_cell(c) for c in CELLS}
     sustained = {c: _load_sustained(c) for c in CELLS if c.startswith("C2") or c.startswith("A3")}
 
-    parity_path = CELLS_PHONE_DIR / "accuracy_parity.json"
-    parity = json.loads(parity_path.read_text()) if parity_path.exists() else None
+    # Per-cell N=50 accuracy from JSONL is too noisy for the gate (plan6 notes
+    # ±10pp CI). Use the highest-N accuracy_parity*.json for the actual gate.
+    parity_per_cell = _load_accuracy_parity()
+    parity_legacy_path = CELLS_PHONE_DIR / "accuracy_parity.json"
+    parity = json.loads(parity_legacy_path.read_text()) if parity_legacy_path.exists() else None
 
-    label, rationale = _label_outcome(per_cell, sustained)
+    label, rationale = _label_outcome(per_cell, sustained, parity_per_cell)
 
     out = {
         "plan": "path_1_cot_tokens/plan8_v2_phone",
@@ -418,11 +488,12 @@ def main() -> int:
             for c, s in sustained.items() if s.get("buckets") or s.get("summary")
         },
         "accuracy_parity": parity,
+        "accuracy_parity_best_per_cell": parity_per_cell,
     }
 
     print()
     print("=== Path 1 plan 8 v2 phone results ===")
-    _print_table(per_cell)
+    _print_table(per_cell, parity_per_cell)
     print()
     print(f"OUTCOME: {label}")
     print(f"   {rationale}")

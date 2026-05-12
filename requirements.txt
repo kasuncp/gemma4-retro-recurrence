@@ -1,0 +1,23 @@
+# Path 1 plan 8 v2 - Mac-side on-device benchmark.
+# Install into the project's Python 3.14 .venv:
+#     .venv/bin/pip install -r requirements.txt
+#
+# Used by experiments/path1_phone_mac.py, path1_phone_analyze.py, and
+# _convert_gemma4_mlx.py. The legacy RunPod scripts (path1_plan8.py and
+# friends) need torch + transformers separately and are not covered here.
+
+# MLX runtime + LLM loader. mlx-lm brings transformers, tokenizers,
+# sentencepiece, huggingface-hub, numpy, and protobuf transitively.
+mlx==0.31.2
+mlx-lm==0.31.3
+
+# GSM8K loader (experiments/path1_plan8_shared.load_problems).
+datasets>=2.14
+
+# Pareto + sustained-probe plots (experiments/path1_phone_analyze.py).
+# Optional - the analyze script falls back gracefully with --json-only.
+matplotlib>=3.7
+
+# Listed transitively by mlx-lm; pinned here so `huggingface-cli upload`
+# (used in the README to push converted weights) is always available.
+huggingface-hub>=0.24

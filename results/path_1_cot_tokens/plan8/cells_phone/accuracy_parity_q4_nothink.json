@@ -1,0 +1,9 @@
+[
+  {
+    "cell": "C2-Mac",
+    "n": 50,
+    "correct": 27,
+    "accuracy": 0.54,
+    "verdict": "FAIL (re-quantize at Q5/Q6)"
+  }
+]

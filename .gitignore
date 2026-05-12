@@ -12,3 +12,13 @@ startup.log
 results/.DS_Store
 **/.DONE
 **/.FAILED
+
+# MLX-converted model weights: regenerate locally via
+# experiments/_convert_gemma4_mlx.py (multi-GB per quant level).
+mlx_models/
+
+# powermetrics raw dumps (~500MB per run) and their stderr capture files
+# (0-byte sentinels) and the pre-bug-fix sustained JSONL kept for forensics
+results/path_1_cot_tokens/plan8/cells_phone/*_powermetrics.plist
+results/path_1_cot_tokens/plan8/cells_phone/*_powermetrics.stderr
+results/path_1_cot_tokens/plan8/cells_phone/*.buggy.jsonl
